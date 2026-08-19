@@ -566,7 +566,7 @@ func TestSettersMarkExplicitAPIError(t *testing.T) {
 func TestSettersAttributesProjection(t *testing.T) {
 	t.Run("SetAttributes", func(t *testing.T) {
 		obj := &AttributesProjection{}
-		var fernTestValueAttributes Attributes
+		var fernTestValueAttributes *Attributes
 		obj.SetAttributes(fernTestValueAttributes)
 		assert.Equal(t, fernTestValueAttributes, obj.Attributes)
 		assert.NotNil(t, obj.explicitFields)
@@ -574,7 +574,7 @@ func TestSettersAttributesProjection(t *testing.T) {
 
 	t.Run("SetAttributesRevisionNo", func(t *testing.T) {
 		obj := &AttributesProjection{}
-		var fernTestValueAttributesRevisionNo AttributeRevisionNo
+		var fernTestValueAttributesRevisionNo *AttributeRevisionNo
 		obj.SetAttributesRevisionNo(fernTestValueAttributesRevisionNo)
 		assert.Equal(t, fernTestValueAttributesRevisionNo, obj.AttributesRevisionNo)
 		assert.NotNil(t, obj.explicitFields)
@@ -603,11 +603,21 @@ func TestGettersAttributesProjection(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &AttributesProjection{}
-		var expected Attributes
+		var expected *Attributes
 		obj.Attributes = expected
 
 		// Act & Assert
 		assert.Equal(t, expected, obj.GetAttributes(), "getter should return the property value")
+	})
+
+	t.Run("GetAttributes_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &AttributesProjection{}
+		obj.Attributes = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAttributes(), "getter should return nil when property is nil")
 	})
 
 	t.Run("GetAttributes_NilReceiver", func(t *testing.T) {
@@ -626,11 +636,21 @@ func TestGettersAttributesProjection(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &AttributesProjection{}
-		var expected AttributeRevisionNo
+		var expected *AttributeRevisionNo
 		obj.AttributesRevisionNo = expected
 
 		// Act & Assert
 		assert.Equal(t, expected, obj.GetAttributesRevisionNo(), "getter should return the property value")
+	})
+
+	t.Run("GetAttributesRevisionNo_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &AttributesProjection{}
+		obj.AttributesRevisionNo = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAttributesRevisionNo(), "getter should return nil when property is nil")
 	})
 
 	t.Run("GetAttributesRevisionNo_NilReceiver", func(t *testing.T) {
@@ -718,7 +738,7 @@ func TestSettersMarkExplicitAttributesProjection(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &AttributesProjection{}
-		var fernTestValueAttributes Attributes
+		var fernTestValueAttributes *Attributes
 
 		// Act
 		obj.SetAttributes(fernTestValueAttributes)
@@ -749,7 +769,7 @@ func TestSettersMarkExplicitAttributesProjection(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &AttributesProjection{}
-		var fernTestValueAttributesRevisionNo AttributeRevisionNo
+		var fernTestValueAttributesRevisionNo *AttributeRevisionNo
 
 		// Act
 		obj.SetAttributesRevisionNo(fernTestValueAttributesRevisionNo)
@@ -843,7 +863,7 @@ func TestSettersMarkExplicitAttributesProjection(t *testing.T) {
 func TestSettersAuthoritativePathEntry(t *testing.T) {
 	t.Run("SetAttributes", func(t *testing.T) {
 		obj := &AuthoritativePathEntry{}
-		var fernTestValueAttributes Attributes
+		var fernTestValueAttributes *Attributes
 		obj.SetAttributes(fernTestValueAttributes)
 		assert.Equal(t, fernTestValueAttributes, obj.Attributes)
 		assert.NotNil(t, obj.explicitFields)
@@ -851,7 +871,7 @@ func TestSettersAuthoritativePathEntry(t *testing.T) {
 
 	t.Run("SetAttributesRevisionNo", func(t *testing.T) {
 		obj := &AuthoritativePathEntry{}
-		var fernTestValueAttributesRevisionNo AttributeRevisionNo
+		var fernTestValueAttributesRevisionNo *AttributeRevisionNo
 		obj.SetAttributesRevisionNo(fernTestValueAttributesRevisionNo)
 		assert.Equal(t, fernTestValueAttributesRevisionNo, obj.AttributesRevisionNo)
 		assert.NotNil(t, obj.explicitFields)
@@ -944,11 +964,21 @@ func TestGettersAuthoritativePathEntry(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &AuthoritativePathEntry{}
-		var expected Attributes
+		var expected *Attributes
 		obj.Attributes = expected
 
 		// Act & Assert
 		assert.Equal(t, expected, obj.GetAttributes(), "getter should return the property value")
+	})
+
+	t.Run("GetAttributes_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &AuthoritativePathEntry{}
+		obj.Attributes = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAttributes(), "getter should return nil when property is nil")
 	})
 
 	t.Run("GetAttributes_NilReceiver", func(t *testing.T) {
@@ -967,11 +997,21 @@ func TestGettersAuthoritativePathEntry(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &AuthoritativePathEntry{}
-		var expected AttributeRevisionNo
+		var expected *AttributeRevisionNo
 		obj.AttributesRevisionNo = expected
 
 		// Act & Assert
 		assert.Equal(t, expected, obj.GetAttributesRevisionNo(), "getter should return the property value")
+	})
+
+	t.Run("GetAttributesRevisionNo_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &AuthoritativePathEntry{}
+		obj.AttributesRevisionNo = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAttributesRevisionNo(), "getter should return nil when property is nil")
 	})
 
 	t.Run("GetAttributesRevisionNo_NilReceiver", func(t *testing.T) {
@@ -1273,7 +1313,7 @@ func TestSettersMarkExplicitAuthoritativePathEntry(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &AuthoritativePathEntry{}
-		var fernTestValueAttributes Attributes
+		var fernTestValueAttributes *Attributes
 
 		// Act
 		obj.SetAttributes(fernTestValueAttributes)
@@ -1304,7 +1344,7 @@ func TestSettersMarkExplicitAuthoritativePathEntry(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &AuthoritativePathEntry{}
-		var fernTestValueAttributesRevisionNo AttributeRevisionNo
+		var fernTestValueAttributesRevisionNo *AttributeRevisionNo
 
 		// Act
 		obj.SetAttributesRevisionNo(fernTestValueAttributesRevisionNo)

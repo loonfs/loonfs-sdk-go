@@ -3,13 +3,8 @@
 package query
 
 import (
-	context "context"
-	http "net/http"
-
-	loonfs "github.com/loonfs/loonfs-sdk-go"
 	core "github.com/loonfs/loonfs-sdk-go/core"
 	internal "github.com/loonfs/loonfs-sdk-go/internal"
-	option "github.com/loonfs/loonfs-sdk-go/option"
 )
 
 type RawClient struct {
@@ -30,51 +25,4 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 			},
 		),
 	}
-}
-
-func (r *RawClient) Grep(
-	ctx context.Context,
-	request *loonfs.GrepRequest,
-	opts ...option.RequestOption,
-) (*core.Response[*loonfs.GrepResponse], error) {
-	options := core.NewRequestOptions(opts...)
-	baseURL := internal.ResolveBaseURL(
-		options.BaseURL,
-		r.baseURL,
-		"",
-	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/v0/namespaces/%v/query/grep",
-		request.NamespaceID,
-	)
-	headers := internal.MergeHeaders(
-		r.options.ToHeader(),
-		options.ToHeader(),
-	)
-	headers.Add("Content-Type", "application/json")
-	var response *loonfs.GrepResponse
-	raw, err := r.caller.Call(
-		ctx,
-		&internal.CallParams{
-			URL:             endpointURL,
-			Method:          http.MethodPost,
-			Headers:         headers,
-			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
-			BodyProperties:  options.BodyProperties,
-			QueryParameters: options.QueryParameters,
-			Client:          options.HTTPClient,
-			Request:         request,
-			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &core.Response[*loonfs.GrepResponse]{
-		StatusCode: raw.StatusCode,
-		Header:     raw.Header,
-		Body:       response,
-	}, nil
 }

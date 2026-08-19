@@ -4,6 +4,7 @@ package query
 
 import (
 	context "context"
+	http "net/http"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
 	core "github.com/loonfs/loonfs-sdk-go/core"
@@ -50,14 +51,61 @@ func (c *Client) Grep(
 	ctx context.Context,
 	request *loonfs.GrepRequest,
 	opts ...option.RequestOption,
-) (*loonfs.GrepResponse, error) {
-	response, err := c.WithRawResponse.Grep(
-		ctx,
-		request,
-		opts...,
+) (*core.Page[*string, *loonfs.GrepMatch, *loonfs.GrepResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
 	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/namespaces/%v/query/grep",
+		request.NamespaceID,
+	)
+	queryParams, err := internal.QueryValues(request)
 	if err != nil {
 		return nil, err
 	}
-	return response.Body, nil
+	headers := internal.MergeHeaders(
+		c.options.ToHeader(),
+		options.ToHeader(),
+	)
+	prepareCall := func(pageRequest *core.PageRequest[*string]) *internal.CallParams {
+		if pageRequest.Cursor != nil {
+			queryParams.Set("cursor", *pageRequest.Cursor)
+		}
+		nextURL := endpointURL
+		if len(queryParams) > 0 {
+			nextURL += "?" + queryParams.Encode()
+		}
+		return &internal.CallParams{
+			URL:             nextURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        pageRequest.Response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		}
+	}
+	readPageResponse := func(response *loonfs.GrepResponse) *core.PageResponse[*string, *loonfs.GrepMatch, *loonfs.GrepResponse] {
+		var zeroValue *string
+		next := response.GetNextCursor()
+		results := response.GetMatches()
+		return &core.PageResponse[*string, *loonfs.GrepMatch, *loonfs.GrepResponse]{
+			Results:  results,
+			Response: response,
+			Next:     next,
+			Done:     next == zeroValue || *next == "",
+		}
+	}
+	pager := internal.NewCursorPager(
+		c.caller,
+		prepareCall,
+		readPageResponse,
+	)
+	return pager.GetPage(ctx, request.Cursor)
 }

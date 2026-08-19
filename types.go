@@ -354,7 +354,11 @@ type AttributeValue = string
 // attributes is a real update with its own revision.
 type Attributes = map[string]AttributeValue
 
-// One inode's structurally complete attribute projection.
+// Attributes returned for one inode.
+//
+// A path entry omits this entire group unless the caller requests attributes.
+// OpenAPI flattens these fields with `allOf`, so none of them can be marked as
+// required on every path entry.
 var (
 	attributesProjectionFieldAttributes            = big.NewInt(1 << 0)
 	attributesProjectionFieldAttributesRevisionNo  = big.NewInt(1 << 1)
@@ -367,9 +371,9 @@ type AttributesProjection struct {
 	//
 	// An inode that has never had attributes written is at revision 0 with
 	// an empty map.
-	Attributes Attributes `json:"attributes" url:"attributes"`
+	Attributes *Attributes `json:"attributes,omitempty" url:"attributes,omitempty"`
 	// The attribute revision this projection represents.
-	AttributesRevisionNo AttributeRevisionNo `json:"attributes_revision_no" url:"attributes_revision_no"`
+	AttributesRevisionNo *AttributeRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
 	// Time of the latest attribute update, in Unix milliseconds. This is
 	// `None` for the initial empty state at revision 0.
 	AttributesUpdatedAtMs *int64 `json:"attributes_updated_at_ms,omitempty" url:"attributes_updated_at_ms,omitempty"`
@@ -384,16 +388,16 @@ type AttributesProjection struct {
 	rawJSON         json.RawMessage
 }
 
-func (a *AttributesProjection) GetAttributes() Attributes {
+func (a *AttributesProjection) GetAttributes() *Attributes {
 	if a == nil {
 		return nil
 	}
 	return a.Attributes
 }
 
-func (a *AttributesProjection) GetAttributesRevisionNo() AttributeRevisionNo {
+func (a *AttributesProjection) GetAttributesRevisionNo() *AttributeRevisionNo {
 	if a == nil {
-		return 0
+		return nil
 	}
 	return a.AttributesRevisionNo
 }
@@ -428,14 +432,14 @@ func (a *AttributesProjection) require(field *big.Int) {
 
 // SetAttributes sets the Attributes field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (a *AttributesProjection) SetAttributes(attributes Attributes) {
+func (a *AttributesProjection) SetAttributes(attributes *Attributes) {
 	a.Attributes = attributes
 	a.require(attributesProjectionFieldAttributes)
 }
 
 // SetAttributesRevisionNo sets the AttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (a *AttributesProjection) SetAttributesRevisionNo(attributesRevisionNo AttributeRevisionNo) {
+func (a *AttributesProjection) SetAttributesRevisionNo(attributesRevisionNo *AttributeRevisionNo) {
 	a.AttributesRevisionNo = attributesRevisionNo
 	a.require(attributesProjectionFieldAttributesRevisionNo)
 }
@@ -496,16 +500,13 @@ func (a *AttributesProjection) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-// Authoritative metadata for one visible path.
+// Metadata for one path returned by stat and directory-listing operations.
 //
-// This is the result shape for stat/list style reads. The entry kind carries
-// the file-only revision and content summary, so a directory cannot carry a
-// partial file payload. Attributes are likewise projected as one value or
-// omitted as one value, while serializing as prefixed sibling fields.
-// The attribute revision is read independently — clients feed it to
-// `expected_attributes_revision_no` on the next write without touching the
-// values — so this is a prefixed-sibling projection rather than a value
-// consumed as one nested unit.
+// File entries include the current revision and content details. Directory
+// entries do not. Attribute fields are included only when requested and are
+// serialized at the top level of the entry. Callers can pass
+// `attributes_revision_no` as `expected_attributes_revision_no` when updating
+// attributes.
 var (
 	authoritativePathEntryFieldAttributes            = big.NewInt(1 << 0)
 	authoritativePathEntryFieldAttributesRevisionNo  = big.NewInt(1 << 1)
@@ -526,9 +527,9 @@ type AuthoritativePathEntry struct {
 	//
 	// An inode that has never had attributes written is at revision 0 with
 	// an empty map.
-	Attributes Attributes `json:"attributes" url:"attributes"`
+	Attributes *Attributes `json:"attributes,omitempty" url:"attributes,omitempty"`
 	// The attribute revision this projection represents.
-	AttributesRevisionNo AttributeRevisionNo `json:"attributes_revision_no" url:"attributes_revision_no"`
+	AttributesRevisionNo *AttributeRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
 	// Time of the latest attribute update, in Unix milliseconds. This is
 	// `None` for the initial empty state at revision 0.
 	AttributesUpdatedAtMs *int64 `json:"attributes_updated_at_ms,omitempty" url:"attributes_updated_at_ms,omitempty"`
@@ -560,16 +561,16 @@ type AuthoritativePathEntry struct {
 	rawJSON         json.RawMessage
 }
 
-func (a *AuthoritativePathEntry) GetAttributes() Attributes {
+func (a *AuthoritativePathEntry) GetAttributes() *Attributes {
 	if a == nil {
 		return nil
 	}
 	return a.Attributes
 }
 
-func (a *AuthoritativePathEntry) GetAttributesRevisionNo() AttributeRevisionNo {
+func (a *AuthoritativePathEntry) GetAttributesRevisionNo() *AttributeRevisionNo {
 	if a == nil {
-		return 0
+		return nil
 	}
 	return a.AttributesRevisionNo
 }
@@ -660,14 +661,14 @@ func (a *AuthoritativePathEntry) require(field *big.Int) {
 
 // SetAttributes sets the Attributes field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (a *AuthoritativePathEntry) SetAttributes(attributes Attributes) {
+func (a *AuthoritativePathEntry) SetAttributes(attributes *Attributes) {
 	a.Attributes = attributes
 	a.require(authoritativePathEntryFieldAttributes)
 }
 
 // SetAttributesRevisionNo sets the AttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (a *AuthoritativePathEntry) SetAttributesRevisionNo(attributesRevisionNo AttributeRevisionNo) {
+func (a *AuthoritativePathEntry) SetAttributesRevisionNo(attributesRevisionNo *AttributeRevisionNo) {
 	a.AttributesRevisionNo = attributesRevisionNo
 	a.require(authoritativePathEntryFieldAttributesRevisionNo)
 }

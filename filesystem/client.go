@@ -5,6 +5,7 @@ package filesystem
 import (
 	context "context"
 	io "io"
+	http "net/http"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
 	core "github.com/loonfs/loonfs-sdk-go/core"
@@ -174,16 +175,63 @@ func (c *Client) ListPathEntries(
 	ctx context.Context,
 	request *loonfs.ListPathEntriesRequest,
 	opts ...option.RequestOption,
-) (*loonfs.ListPathEntriesResponse, error) {
-	response, err := c.WithRawResponse.ListPathEntries(
-		ctx,
-		request,
-		opts...,
+) (*core.Page[*string, *loonfs.AuthoritativePathEntry, *loonfs.ListPathEntriesResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
 	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/namespaces/%v/filesystem/list",
+		request.NamespaceID,
+	)
+	queryParams, err := internal.QueryValues(request)
 	if err != nil {
 		return nil, err
 	}
-	return response.Body, nil
+	headers := internal.MergeHeaders(
+		c.options.ToHeader(),
+		options.ToHeader(),
+	)
+	prepareCall := func(pageRequest *core.PageRequest[*string]) *internal.CallParams {
+		if pageRequest.Cursor != nil {
+			queryParams.Set("cursor", *pageRequest.Cursor)
+		}
+		nextURL := endpointURL
+		if len(queryParams) > 0 {
+			nextURL += "?" + queryParams.Encode()
+		}
+		return &internal.CallParams{
+			URL:             nextURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        pageRequest.Response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		}
+	}
+	readPageResponse := func(response *loonfs.ListPathEntriesResponse) *core.PageResponse[*string, *loonfs.AuthoritativePathEntry, *loonfs.ListPathEntriesResponse] {
+		var zeroValue *string
+		next := response.GetNextCursor()
+		results := response.GetEntries()
+		return &core.PageResponse[*string, *loonfs.AuthoritativePathEntry, *loonfs.ListPathEntriesResponse]{
+			Results:  results,
+			Response: response,
+			Next:     next,
+			Done:     next == zeroValue || *next == "",
+		}
+	}
+	pager := internal.NewCursorPager(
+		c.caller,
+		prepareCall,
+		readPageResponse,
+	)
+	return pager.GetPage(ctx, request.Cursor)
 }
 
 // Resolves the current path to a file inode and returns revisions for that file. If the file could be renamed, use the inode revision API for stable identity.
@@ -202,16 +250,63 @@ func (c *Client) ListFileRevisions(
 	ctx context.Context,
 	request *loonfs.ListFileRevisionsRequest,
 	opts ...option.RequestOption,
-) (*loonfs.ListFileRevisionsResponse, error) {
-	response, err := c.WithRawResponse.ListFileRevisions(
-		ctx,
-		request,
-		opts...,
+) (*core.Page[*string, *loonfs.FileRevision, *loonfs.ListFileRevisionsResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
 	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/namespaces/%v/filesystem/revisions",
+		request.NamespaceID,
+	)
+	queryParams, err := internal.QueryValues(request)
 	if err != nil {
 		return nil, err
 	}
-	return response.Body, nil
+	headers := internal.MergeHeaders(
+		c.options.ToHeader(),
+		options.ToHeader(),
+	)
+	prepareCall := func(pageRequest *core.PageRequest[*string]) *internal.CallParams {
+		if pageRequest.Cursor != nil {
+			queryParams.Set("cursor", *pageRequest.Cursor)
+		}
+		nextURL := endpointURL
+		if len(queryParams) > 0 {
+			nextURL += "?" + queryParams.Encode()
+		}
+		return &internal.CallParams{
+			URL:             nextURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        pageRequest.Response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		}
+	}
+	readPageResponse := func(response *loonfs.ListFileRevisionsResponse) *core.PageResponse[*string, *loonfs.FileRevision, *loonfs.ListFileRevisionsResponse] {
+		var zeroValue *string
+		next := response.GetNextCursor()
+		results := response.GetRevisions()
+		return &core.PageResponse[*string, *loonfs.FileRevision, *loonfs.ListFileRevisionsResponse]{
+			Results:  results,
+			Response: response,
+			Next:     next,
+			Done:     next == zeroValue || *next == "",
+		}
+	}
+	pager := internal.NewCursorPager(
+		c.caller,
+		prepareCall,
+		readPageResponse,
+	)
+	return pager.GetPage(ctx, request.Cursor)
 }
 
 // Returns the current metadata for a path, including inode identity, kind, display name, file content metadata, and the inode's attributes.
@@ -257,14 +352,61 @@ func (c *Client) ListTrash(
 	ctx context.Context,
 	request *loonfs.ListTrashRequest,
 	opts ...option.RequestOption,
-) (*loonfs.ListTrashResponse, error) {
-	response, err := c.WithRawResponse.ListTrash(
-		ctx,
-		request,
-		opts...,
+) (*core.Page[*string, *loonfs.TrashEntry, *loonfs.ListTrashResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
 	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/namespaces/%v/filesystem/trash",
+		request.NamespaceID,
+	)
+	queryParams, err := internal.QueryValues(request)
 	if err != nil {
 		return nil, err
 	}
-	return response.Body, nil
+	headers := internal.MergeHeaders(
+		c.options.ToHeader(),
+		options.ToHeader(),
+	)
+	prepareCall := func(pageRequest *core.PageRequest[*string]) *internal.CallParams {
+		if pageRequest.Cursor != nil {
+			queryParams.Set("cursor", *pageRequest.Cursor)
+		}
+		nextURL := endpointURL
+		if len(queryParams) > 0 {
+			nextURL += "?" + queryParams.Encode()
+		}
+		return &internal.CallParams{
+			URL:             nextURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        pageRequest.Response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		}
+	}
+	readPageResponse := func(response *loonfs.ListTrashResponse) *core.PageResponse[*string, *loonfs.TrashEntry, *loonfs.ListTrashResponse] {
+		var zeroValue *string
+		next := response.GetNextCursor()
+		results := response.GetEntries()
+		return &core.PageResponse[*string, *loonfs.TrashEntry, *loonfs.ListTrashResponse]{
+			Results:  results,
+			Response: response,
+			Next:     next,
+			Done:     next == zeroValue || *next == "",
+		}
+	}
+	pager := internal.NewCursorPager(
+		c.caller,
+		prepareCall,
+		readPageResponse,
+	)
+	return pager.GetPage(ctx, request.Cursor)
 }

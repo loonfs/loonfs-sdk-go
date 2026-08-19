@@ -101,5 +101,5 @@ func TestQueryGrepWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestQueryGrepWithWireMock", "POST", "/v0/namespaces/namespace_id/query/grep", nil, 1)
+	VerifyRequestCount(t, "TestQueryGrepWithWireMock", "GET", "/v0/namespaces/namespace_id/query/grep", map[string]interface{}{"pattern": "pattern"}, 1)
 }

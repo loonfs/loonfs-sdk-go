@@ -11,42 +11,32 @@ import (
 
 var (
 	grepRequestFieldNamespaceID     = big.NewInt(1 << 0)
-	grepRequestFieldAllowScan       = big.NewInt(1 << 1)
-	grepRequestFieldAllowStale      = big.NewInt(1 << 2)
-	grepRequestFieldCaseInsensitive = big.NewInt(1 << 3)
-	grepRequestFieldCursor          = big.NewInt(1 << 4)
-	grepRequestFieldLimit           = big.NewInt(1 << 5)
-	grepRequestFieldPathPrefix      = big.NewInt(1 << 6)
-	grepRequestFieldPattern         = big.NewInt(1 << 7)
+	grepRequestFieldPattern         = big.NewInt(1 << 1)
+	grepRequestFieldCaseInsensitive = big.NewInt(1 << 2)
+	grepRequestFieldPathPrefix      = big.NewInt(1 << 3)
+	grepRequestFieldAllowScan       = big.NewInt(1 << 4)
+	grepRequestFieldAllowStale      = big.NewInt(1 << 5)
+	grepRequestFieldLimit           = big.NewInt(1 << 6)
+	grepRequestFieldCursor          = big.NewInt(1 << 7)
 )
 
 type GrepRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
-	// Permit a capped exhaustive scan when the pattern yields no required
-	// grams. Refused beyond the server's scan budget.
-	AllowScan *bool `json:"allow_scan,omitempty" url:"-"`
-	// When the unindexed tail exceeds the scan budget, return
-	// indexed-only results (reported via `tail_scanned: false`) instead
-	// of failing with `index_lagging`.
-	AllowStale *bool `json:"allow_stale,omitempty" url:"-"`
-	// Match case-insensitively. Verification is exact; the index remains
-	// consulted through its case-folded grams.
-	CaseInsensitive *bool `json:"case_insensitive,omitempty" url:"-"`
-	// Resume cursor from a previous page. The cursor resumes strictly
-	// after the last candidate the issuing page finished scanning and is
-	// bound to that page's request; each page is evaluated against the
-	// namespace head at page time.
-	Cursor *string `json:"cursor,omitempty" url:"-"`
-	// Maximum matches per page.
-	Limit *int `json:"limit,omitempty" url:"-"`
-	// Restrict matches to files under this complete absolute path, resolved
-	// to a directory inode before candidates are filtered.
-	PathPrefix *AbsolutePath `json:"path_prefix,omitempty" url:"-"`
-	// The pattern, in the Rust `regex` crate's dialect (no backreferences
-	// or lookaround). Patterns that require no literal bytes are rejected
-	// with `query_unindexable` unless `allow_scan` is set.
-	Pattern string `json:"pattern" url:"-"`
+	// Pattern in the Rust `regex` crate's dialect. Its UTF-8 encoding must be at most 1024 bytes.
+	Pattern string `json:"-" url:"pattern"`
+	// Match case-insensitively (`true` or `false`). Defaults to `false`.
+	CaseInsensitive *bool `json:"-" url:"case_insensitive,omitempty"`
+	// Complete absolute path used to restrict matches.
+	PathPrefix *string `json:"-" url:"path_prefix,omitempty"`
+	// Permit a capped exhaustive scan when the pattern has no required grams (`true` or `false`). Defaults to `false`.
+	AllowScan *bool `json:"-" url:"allow_scan,omitempty"`
+	// Return indexed-only results when the unindexed tail exceeds the scan budget (`true` or `false`). Defaults to `false`.
+	AllowStale *bool `json:"-" url:"allow_stale,omitempty"`
+	// Maximum matches per page
+	Limit *int `json:"-" url:"limit,omitempty"`
+	// Opaque grep page cursor
+	Cursor *string `json:"-" url:"cursor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -66,6 +56,27 @@ func (g *GrepRequest) SetNamespaceID(namespaceID string) {
 	g.require(grepRequestFieldNamespaceID)
 }
 
+// SetPattern sets the Pattern field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GrepRequest) SetPattern(pattern string) {
+	g.Pattern = pattern
+	g.require(grepRequestFieldPattern)
+}
+
+// SetCaseInsensitive sets the CaseInsensitive field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GrepRequest) SetCaseInsensitive(caseInsensitive *bool) {
+	g.CaseInsensitive = caseInsensitive
+	g.require(grepRequestFieldCaseInsensitive)
+}
+
+// SetPathPrefix sets the PathPrefix field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GrepRequest) SetPathPrefix(pathPrefix *string) {
+	g.PathPrefix = pathPrefix
+	g.require(grepRequestFieldPathPrefix)
+}
+
 // SetAllowScan sets the AllowScan field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (g *GrepRequest) SetAllowScan(allowScan *bool) {
@@ -80,20 +91,6 @@ func (g *GrepRequest) SetAllowStale(allowStale *bool) {
 	g.require(grepRequestFieldAllowStale)
 }
 
-// SetCaseInsensitive sets the CaseInsensitive field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepRequest) SetCaseInsensitive(caseInsensitive *bool) {
-	g.CaseInsensitive = caseInsensitive
-	g.require(grepRequestFieldCaseInsensitive)
-}
-
-// SetCursor sets the Cursor field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepRequest) SetCursor(cursor *string) {
-	g.Cursor = cursor
-	g.require(grepRequestFieldCursor)
-}
-
 // SetLimit sets the Limit field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (g *GrepRequest) SetLimit(limit *int) {
@@ -101,39 +98,11 @@ func (g *GrepRequest) SetLimit(limit *int) {
 	g.require(grepRequestFieldLimit)
 }
 
-// SetPathPrefix sets the PathPrefix field and marks it as non-optional;
+// SetCursor sets the Cursor field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepRequest) SetPathPrefix(pathPrefix *AbsolutePath) {
-	g.PathPrefix = pathPrefix
-	g.require(grepRequestFieldPathPrefix)
-}
-
-// SetPattern sets the Pattern field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepRequest) SetPattern(pattern string) {
-	g.Pattern = pattern
-	g.require(grepRequestFieldPattern)
-}
-
-func (g *GrepRequest) UnmarshalJSON(data []byte) error {
-	type unmarshaler GrepRequest
-	var body unmarshaler
-	if err := json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	*g = GrepRequest(body)
-	return nil
-}
-
-func (g *GrepRequest) MarshalJSON() ([]byte, error) {
-	type embed GrepRequest
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*g),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, g.explicitFields)
-	return json.Marshal(explicitMarshaler)
+func (g *GrepRequest) SetCursor(cursor *string) {
+	g.Cursor = cursor
+	g.require(grepRequestFieldCursor)
 }
 
 // One line-oriented match.
