@@ -8,5 +8,7 @@
     },
     "packageName": "loonfs"
   },
+  "originGitCommit": "6ed44c785480a0ace3e7a43d0eed39f0741c8492",
+  "originGitCommitIsDirty": false,
   "invokedBy": "manual"
 }

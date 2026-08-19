@@ -4,6 +4,7 @@ package admin
 
 import (
 	context "context"
+	http "net/http"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
 	core "github.com/loonfs/loonfs-sdk-go/core"
@@ -49,16 +50,63 @@ func (c *Client) ListCheckpoints(
 	ctx context.Context,
 	request *loonfs.ListCheckpointsRequest,
 	opts ...option.RequestOption,
-) (*loonfs.ListCheckpointsResponse, error) {
-	response, err := c.WithRawResponse.ListCheckpoints(
-		ctx,
-		request,
-		opts...,
+) (*core.Page[*string, *loonfs.Checkpoint, *loonfs.ListCheckpointsResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
 	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/admin/namespaces/%v/checkpoints",
+		request.NamespaceID,
+	)
+	queryParams, err := internal.QueryValues(request)
 	if err != nil {
 		return nil, err
 	}
-	return response.Body, nil
+	headers := internal.MergeHeaders(
+		c.options.ToHeader(),
+		options.ToHeader(),
+	)
+	prepareCall := func(pageRequest *core.PageRequest[*string]) *internal.CallParams {
+		if pageRequest.Cursor != nil {
+			queryParams.Set("cursor", *pageRequest.Cursor)
+		}
+		nextURL := endpointURL
+		if len(queryParams) > 0 {
+			nextURL += "?" + queryParams.Encode()
+		}
+		return &internal.CallParams{
+			URL:             nextURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        pageRequest.Response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		}
+	}
+	readPageResponse := func(response *loonfs.ListCheckpointsResponse) *core.PageResponse[*string, *loonfs.Checkpoint, *loonfs.ListCheckpointsResponse] {
+		var zeroValue *string
+		next := response.GetNextCursor()
+		results := response.GetCheckpoints()
+		return &core.PageResponse[*string, *loonfs.Checkpoint, *loonfs.ListCheckpointsResponse]{
+			Results:  results,
+			Response: response,
+			Next:     next,
+			Done:     next == zeroValue || *next == "",
+		}
+	}
+	pager := internal.NewCursorPager(
+		c.caller,
+		prepareCall,
+		readPageResponse,
+	)
+	return pager.GetPage(ctx, request.Cursor)
 }
 
 // Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is released, so routine maintenance should flush the WAL instead. This is a maintenance/admin operation, not a file mutation.

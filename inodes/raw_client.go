@@ -87,59 +87,6 @@ func (r *RawClient) StatInode(
 	}, nil
 }
 
-func (r *RawClient) ListFileRevisionsByInode(
-	ctx context.Context,
-	request *loonfs.ListFileRevisionsByInodeRequest,
-	opts ...option.RequestOption,
-) (*core.Response[*loonfs.ListFileRevisionsResponse], error) {
-	options := core.NewRequestOptions(opts...)
-	baseURL := internal.ResolveBaseURL(
-		options.BaseURL,
-		r.baseURL,
-		"",
-	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/v0/namespaces/%v/inodes/%v/revisions",
-		request.NamespaceID,
-		request.InodeID,
-	)
-	queryParams, err := internal.QueryValues(request)
-	if err != nil {
-		return nil, err
-	}
-	if len(queryParams) > 0 {
-		endpointURL += "?" + queryParams.Encode()
-	}
-	headers := internal.MergeHeaders(
-		r.options.ToHeader(),
-		options.ToHeader(),
-	)
-	var response *loonfs.ListFileRevisionsResponse
-	raw, err := r.caller.Call(
-		ctx,
-		&internal.CallParams{
-			URL:             endpointURL,
-			Method:          http.MethodGet,
-			Headers:         headers,
-			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
-			BodyProperties:  options.BodyProperties,
-			QueryParameters: options.QueryParameters,
-			Client:          options.HTTPClient,
-			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &core.Response[*loonfs.ListFileRevisionsResponse]{
-		StatusCode: raw.StatusCode,
-		Header:     raw.Header,
-		Body:       response,
-	}, nil
-}
-
 func (r *RawClient) GetFileRevisionBytesByInode(
 	ctx context.Context,
 	request *loonfs.GetFileRevisionBytesByInodeRequest,

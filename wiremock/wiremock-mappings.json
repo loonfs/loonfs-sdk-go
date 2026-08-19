@@ -1069,11 +1069,11 @@
       }
     },
     {
-      "id": "9c33fabb-f948-42c1-9ebc-73e31a87c774",
+      "id": "1cc47dd9-635f-45e1-a279-81bffdeb5b20",
       "name": "Content search - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/query/grep",
-        "method": "POST",
+        "method": "GET",
         "headers": {
           "Authorization": {
             "matches": "Bearer .+"
@@ -1082,6 +1082,11 @@
         "pathParameters": {
           "namespace_id": {
             "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "pattern": {
+            "equalTo": "pattern"
           }
         }
       },
@@ -1092,7 +1097,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "9c33fabb-f948-42c1-9ebc-73e31a87c774",
+      "uuid": "1cc47dd9-635f-45e1-a279-81bffdeb5b20",
       "persistent": true,
       "priority": 3,
       "metadata": {
