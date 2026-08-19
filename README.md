@@ -54,7 +54,7 @@ WIREMOCK_URL="http://localhost:$(docker compose -f wiremock/docker-compose.test.
 
 ## Generated code
 
-The code is generated with Fern from the LoonFS OpenAPI spec (`docs/specs/openapi.json` in `github.com/loonfs/loonfs`). Regeneration runs from the `fern/` config in that repository (`scripts/generate-sdks.sh`). Do not edit generated files by hand.
+The code is generated with Fern from the LoonFS OpenAPI spec (`docs/specs/openapi.json` in `github.com/loonfs/loonfs`). Regeneration runs from the `sdk/fern/` config in that repository (`scripts/generate-sdks.sh`). Do not edit generated files by hand.
 
 ## License
 
