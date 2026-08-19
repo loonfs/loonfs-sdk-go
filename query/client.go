@@ -39,7 +39,7 @@ func NewClient(options *core.RequestOptions) *Client {
 //
 // Example:
 //
-//	request := &loonfs.GrepBody{
+//	request := &loonfs.GrepRequest{
 //	    NamespaceID: "namespace_id",
 //	    Pattern: "pattern",
 //	}
@@ -49,7 +49,7 @@ func NewClient(options *core.RequestOptions) *Client {
 //	)
 func (c *Client) Grep(
 	ctx context.Context,
-	request *loonfs.GrepBody,
+	request *loonfs.GrepRequest,
 	opts ...option.RequestOption,
 ) (*core.Page[*string, *loonfs.GrepMatch, *loonfs.GrepResponse], error) {
 	options := core.NewRequestOptions(opts...)

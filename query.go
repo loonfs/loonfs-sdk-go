@@ -10,17 +10,17 @@ import (
 )
 
 var (
-	grepBodyFieldNamespaceID     = big.NewInt(1 << 0)
-	grepBodyFieldPattern         = big.NewInt(1 << 1)
-	grepBodyFieldCaseInsensitive = big.NewInt(1 << 2)
-	grepBodyFieldPathPrefix      = big.NewInt(1 << 3)
-	grepBodyFieldAllowScan       = big.NewInt(1 << 4)
-	grepBodyFieldAllowStale      = big.NewInt(1 << 5)
-	grepBodyFieldLimit           = big.NewInt(1 << 6)
-	grepBodyFieldCursor          = big.NewInt(1 << 7)
+	grepRequestFieldNamespaceID     = big.NewInt(1 << 0)
+	grepRequestFieldPattern         = big.NewInt(1 << 1)
+	grepRequestFieldCaseInsensitive = big.NewInt(1 << 2)
+	grepRequestFieldPathPrefix      = big.NewInt(1 << 3)
+	grepRequestFieldAllowScan       = big.NewInt(1 << 4)
+	grepRequestFieldAllowStale      = big.NewInt(1 << 5)
+	grepRequestFieldLimit           = big.NewInt(1 << 6)
+	grepRequestFieldCursor          = big.NewInt(1 << 7)
 )
 
-type GrepBody struct {
+type GrepRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// Pattern in the Rust `regex` crate's dialect. Its UTF-8 encoding must be at most 1024 bytes.
@@ -42,7 +42,7 @@ type GrepBody struct {
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (g *GrepBody) require(field *big.Int) {
+func (g *GrepRequest) require(field *big.Int) {
 	if g.explicitFields == nil {
 		g.explicitFields = big.NewInt(0)
 	}
@@ -51,58 +51,58 @@ func (g *GrepBody) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepBody) SetNamespaceID(namespaceID string) {
+func (g *GrepRequest) SetNamespaceID(namespaceID string) {
 	g.NamespaceID = namespaceID
-	g.require(grepBodyFieldNamespaceID)
+	g.require(grepRequestFieldNamespaceID)
 }
 
 // SetPattern sets the Pattern field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepBody) SetPattern(pattern string) {
+func (g *GrepRequest) SetPattern(pattern string) {
 	g.Pattern = pattern
-	g.require(grepBodyFieldPattern)
+	g.require(grepRequestFieldPattern)
 }
 
 // SetCaseInsensitive sets the CaseInsensitive field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepBody) SetCaseInsensitive(caseInsensitive *bool) {
+func (g *GrepRequest) SetCaseInsensitive(caseInsensitive *bool) {
 	g.CaseInsensitive = caseInsensitive
-	g.require(grepBodyFieldCaseInsensitive)
+	g.require(grepRequestFieldCaseInsensitive)
 }
 
 // SetPathPrefix sets the PathPrefix field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepBody) SetPathPrefix(pathPrefix *string) {
+func (g *GrepRequest) SetPathPrefix(pathPrefix *string) {
 	g.PathPrefix = pathPrefix
-	g.require(grepBodyFieldPathPrefix)
+	g.require(grepRequestFieldPathPrefix)
 }
 
 // SetAllowScan sets the AllowScan field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepBody) SetAllowScan(allowScan *bool) {
+func (g *GrepRequest) SetAllowScan(allowScan *bool) {
 	g.AllowScan = allowScan
-	g.require(grepBodyFieldAllowScan)
+	g.require(grepRequestFieldAllowScan)
 }
 
 // SetAllowStale sets the AllowStale field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepBody) SetAllowStale(allowStale *bool) {
+func (g *GrepRequest) SetAllowStale(allowStale *bool) {
 	g.AllowStale = allowStale
-	g.require(grepBodyFieldAllowStale)
+	g.require(grepRequestFieldAllowStale)
 }
 
 // SetLimit sets the Limit field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepBody) SetLimit(limit *int) {
+func (g *GrepRequest) SetLimit(limit *int) {
 	g.Limit = limit
-	g.require(grepBodyFieldLimit)
+	g.require(grepRequestFieldLimit)
 }
 
 // SetCursor sets the Cursor field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepBody) SetCursor(cursor *string) {
+func (g *GrepRequest) SetCursor(cursor *string) {
 	g.Cursor = cursor
-	g.require(grepBodyFieldCursor)
+	g.require(grepRequestFieldCursor)
 }
 
 // One line-oriented match.

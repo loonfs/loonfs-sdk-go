@@ -9,9 +9,9 @@ import (
 	testing "testing"
 )
 
-func TestSettersGrepBody(t *testing.T) {
+func TestSettersGrepRequest(t *testing.T) {
 	t.Run("SetNamespaceID", func(t *testing.T) {
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueNamespaceID string
 		obj.SetNamespaceID(fernTestValueNamespaceID)
 		assert.Equal(t, fernTestValueNamespaceID, obj.NamespaceID)
@@ -19,7 +19,7 @@ func TestSettersGrepBody(t *testing.T) {
 	})
 
 	t.Run("SetPattern", func(t *testing.T) {
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValuePattern string
 		obj.SetPattern(fernTestValuePattern)
 		assert.Equal(t, fernTestValuePattern, obj.Pattern)
@@ -27,7 +27,7 @@ func TestSettersGrepBody(t *testing.T) {
 	})
 
 	t.Run("SetCaseInsensitive", func(t *testing.T) {
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueCaseInsensitive *bool
 		obj.SetCaseInsensitive(fernTestValueCaseInsensitive)
 		assert.Equal(t, fernTestValueCaseInsensitive, obj.CaseInsensitive)
@@ -35,7 +35,7 @@ func TestSettersGrepBody(t *testing.T) {
 	})
 
 	t.Run("SetPathPrefix", func(t *testing.T) {
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValuePathPrefix *string
 		obj.SetPathPrefix(fernTestValuePathPrefix)
 		assert.Equal(t, fernTestValuePathPrefix, obj.PathPrefix)
@@ -43,7 +43,7 @@ func TestSettersGrepBody(t *testing.T) {
 	})
 
 	t.Run("SetAllowScan", func(t *testing.T) {
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueAllowScan *bool
 		obj.SetAllowScan(fernTestValueAllowScan)
 		assert.Equal(t, fernTestValueAllowScan, obj.AllowScan)
@@ -51,7 +51,7 @@ func TestSettersGrepBody(t *testing.T) {
 	})
 
 	t.Run("SetAllowStale", func(t *testing.T) {
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueAllowStale *bool
 		obj.SetAllowStale(fernTestValueAllowStale)
 		assert.Equal(t, fernTestValueAllowStale, obj.AllowStale)
@@ -59,7 +59,7 @@ func TestSettersGrepBody(t *testing.T) {
 	})
 
 	t.Run("SetLimit", func(t *testing.T) {
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueLimit *int
 		obj.SetLimit(fernTestValueLimit)
 		assert.Equal(t, fernTestValueLimit, obj.Limit)
@@ -67,7 +67,7 @@ func TestSettersGrepBody(t *testing.T) {
 	})
 
 	t.Run("SetCursor", func(t *testing.T) {
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueCursor *string
 		obj.SetCursor(fernTestValueCursor)
 		assert.Equal(t, fernTestValueCursor, obj.Cursor)
@@ -76,11 +76,11 @@ func TestSettersGrepBody(t *testing.T) {
 
 }
 
-func TestSettersMarkExplicitGrepBody(t *testing.T) {
+func TestSettersMarkExplicitGrepRequest(t *testing.T) {
 	t.Run("SetNamespaceID_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueNamespaceID string
 
 		// Act
@@ -111,7 +111,7 @@ func TestSettersMarkExplicitGrepBody(t *testing.T) {
 	t.Run("SetPattern_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValuePattern string
 
 		// Act
@@ -142,7 +142,7 @@ func TestSettersMarkExplicitGrepBody(t *testing.T) {
 	t.Run("SetCaseInsensitive_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueCaseInsensitive *bool
 
 		// Act
@@ -173,7 +173,7 @@ func TestSettersMarkExplicitGrepBody(t *testing.T) {
 	t.Run("SetPathPrefix_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValuePathPrefix *string
 
 		// Act
@@ -204,7 +204,7 @@ func TestSettersMarkExplicitGrepBody(t *testing.T) {
 	t.Run("SetAllowScan_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueAllowScan *bool
 
 		// Act
@@ -235,7 +235,7 @@ func TestSettersMarkExplicitGrepBody(t *testing.T) {
 	t.Run("SetAllowStale_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueAllowStale *bool
 
 		// Act
@@ -266,7 +266,7 @@ func TestSettersMarkExplicitGrepBody(t *testing.T) {
 	t.Run("SetLimit_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueLimit *int
 
 		// Act
@@ -297,7 +297,7 @@ func TestSettersMarkExplicitGrepBody(t *testing.T) {
 	t.Run("SetCursor_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &GrepBody{}
+		obj := &GrepRequest{}
 		var fernTestValueCursor *string
 
 		// Act

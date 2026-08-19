@@ -88,7 +88,7 @@ func TestQueryGrepWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &loonfs.GrepBody{
+	request := &loonfs.GrepRequest{
 		NamespaceID: "namespace_id",
 		Pattern:     "pattern",
 	}

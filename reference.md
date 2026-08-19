@@ -2171,7 +2171,7 @@ Searches file content with a regular expression, accelerated by the namespace's 
 <dd>
 
 ```go
-request := &loonfs.GrepBody{
+request := &loonfs.GrepRequest{
     NamespaceID: "namespace_id",
     Pattern: "pattern",
 }
