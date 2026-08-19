@@ -1,0 +1,1335 @@
+{
+  "mappings": [
+    {
+      "id": "561248bc-08d8-4e52-9a81-0e4c973cf483",
+      "name": "Check health - default",
+      "request": {
+        "urlPathTemplate": "/health",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"string\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "561248bc-08d8-4e52-9a81-0e4c973cf483",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "edfcce05-8ddb-441f-9a5e-bd6cae3e80f0",
+      "name": "Scrape metrics - default",
+      "request": {
+        "urlPathTemplate": "/metrics",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"string\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "edfcce05-8ddb-441f-9a5e-bd6cae3e80f0",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "5ca06406-5814-42ad-97a8-940e1385aed6",
+      "name": "Check readiness - default",
+      "request": {
+        "urlPathTemplate": "/readiness",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"string\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "5ca06406-5814-42ad-97a8-940e1385aed6",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "217ee7ed-117d-4bfe-80cd-38c672e5f426",
+      "name": "List checkpoints - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/checkpoints",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"checkpoints\": [\n    {\n      \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n      \"checkpoint_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"manifest_id\": 1000000,\n      \"owner\": {\n        \"name\": \"name\",\n        \"kind\": \"user\"\n      }\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "217ee7ed-117d-4bfe-80cd-38c672e5f426",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "f329e1eb-4031-4b89-83b0-c297f0a67fe2",
+      "name": "Create checkpoint - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/checkpoints",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n  \"checkpoint_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_id\": 1000000,\n  \"owner\": {\n    \"name\": \"name\",\n    \"kind\": \"user\"\n  },\n  \"namespace_id\": \"demo\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "f329e1eb-4031-4b89-83b0-c297f0a67fe2",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "1a156511-4a6f-4bb9-b26f-2c5f6f170f72",
+      "name": "Release checkpoint - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/checkpoints/{checkpoint_id}/release",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "checkpoint_id": {
+            "equalTo": "checkpoint_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n  \"namespace_id\": \"demo\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "1a156511-4a6f-4bb9-b26f-2c5f6f170f72",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "179798af-3fdc-4c47-b0b1-2bbbe5fed684",
+      "name": "Get namespace diagnostics - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/diagnostics",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"current_manifest_id\": 1000000,\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_segments\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "179798af-3fdc-4c47-b0b1-2bbbe5fed684",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "8a94e010-392c-409d-af5f-e931a45e16b1",
+      "name": "Get grep index status - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_ordinal\": 1000000,\n  \"reorganize_pending\": true\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "8a94e010-392c-409d-af5f-e931a45e16b1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c9a8f9d0-ef0c-42c2-97e1-aace6b4e52a1",
+      "name": "Disable the grep index - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index/disable",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_ordinal\": 1000000,\n  \"reorganize_pending\": true\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c9a8f9d0-ef0c-42c2-97e1-aace6b4e52a1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c2d90a6a-0de0-45f1-b914-69eac2c69103",
+      "name": "Enable the grep index - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index/enable",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_ordinal\": 1000000,\n  \"reorganize_pending\": true\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c2d90a6a-0de0-45f1-b914-69eac2c69103",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "bb7fa2ab-4ee2-4709-a2d1-1aa719c0dc7b",
+      "name": "Collect grep-index garbage - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index/gc",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"deleted_other_objects\": 1000000,\n  \"deleted_segments\": 1000000,\n  \"namespace_degraded\": true,\n  \"namespace_id\": \"demo\",\n  \"namespace_reaped\": true,\n  \"next_cursor\": \"next_cursor\",\n  \"retained_candidates\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "bb7fa2ab-4ee2-4709-a2d1-1aa719c0dc7b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "07bc44d3-841d-4be3-8708-f2c419cb30ff",
+      "name": "Run maintenance step - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/maintenance/step",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"gc\": {\n    \"budget_exhausted\": true,\n    \"content_reclamation_deferred\": true,\n    \"degraded_retention\": true,\n    \"deleted_checkpoint_records\": 1000000,\n    \"deleted_content_objects\": 1000000,\n    \"deleted_manifests\": 1000000,\n    \"deleted_metadata_tables\": 1000000,\n    \"deleted_upload_sessions\": 1000000,\n    \"deleted_wal_segments\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"next_cursor\": \"next_cursor\",\n    \"next_reclamation_at_ms\": 1000000,\n    \"released_expired_checkpoints\": 1000000,\n    \"released_fork_checkpoints\": 1000000,\n    \"released_missing_basis_checkpoints\": 1000000,\n    \"retained\": {\n      \"checkpoint_not_releasable\": 1000000,\n      \"content_scan_deferred\": 1000000,\n      \"degraded_roots\": 1000000,\n      \"grace_window\": 1000000,\n      \"no_provider_timestamp\": 1000000,\n      \"no_reference_manifest\": 1000000,\n      \"referenced\": 1000000,\n      \"unrecognized_key\": 1000000,\n      \"upload_session_undecided\": 1000000,\n      \"upload_session_window\": 1000000\n    },\n    \"retained_candidates\": 1000000\n  },\n  \"metadata\": {\n    \"reorganize\": {\n      \"outcome\": \"not_needed\"\n    },\n    \"wal_flush\": {\n      \"outcome\": \"not_needed\"\n    }\n  },\n  \"namespace_id\": \"demo\",\n  \"retention\": {\n    \"retention_floor_seq\": 1000000\n  },\n  \"status_before\": {\n    \"current_manifest_id\": 1000000,\n    \"head_seq\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"retention_floor_seq\": 1000000,\n    \"wal_tail_segments\": 1000000\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "07bc44d3-841d-4be3-8708-f2c419cb30ff",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "1f01604c-e619-4954-a8d8-ac4fe5b7b18b",
+      "name": "Probe the store contract - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/store/probe",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"checks\": [\n    {\n      \"message\": \"message\",\n      \"name\": \"name\",\n      \"outcome\": \"passed\"\n    }\n  ],\n  \"run_id\": \"run_id\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "1f01604c-e619-4954-a8d8-ac4fe5b7b18b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "11d088d4-b602-40d1-9cfb-65f6cc8739b3",
+      "name": "Create namespace - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "11d088d4-b602-40d1-9cfb-65f6cc8739b3",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "8013608d-56e3-4304-a694-af2756d4f6aa",
+      "name": "Get namespace - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "8013608d-56e3-4304-a694-af2756d4f6aa",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "5ef6ca5c-079c-42b5-81ac-e16ca1eb7888",
+      "name": "Delete namespace - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "5ef6ca5c-079c-42b5-81ac-e16ca1eb7888",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "6fdf419b-8efd-4225-ab34-5479eb876956",
+      "name": "Fork namespace - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/forks",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6fdf419b-8efd-4225-ab34-5479eb876956",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "24098507-e183-46fd-919d-34af2cc92a26",
+      "name": "List changes after a sequence - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/changes",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "after_seq": {
+            "equalTo": "1000000"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"display_name\": \"report.txt\",\n          \"inode_id\": \"ino_123\",\n          \"parent_inode_id\": \"ino_123\",\n          \"kind\": \"directory_created\"\n        }\n      ],\n      \"message\": \"message\"\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"through_seq\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "24098507-e183-46fd-919d-34af2cc92a26",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3ebc5e14-363d-4cf4-a079-7823e08f6899",
+      "name": "Apply a commit - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/commits",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n  \"committed_seq\": 1000000,\n  \"namespace_id\": \"demo\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3ebc5e14-363d-4cf4-a079-7823e08f6899",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ded053c1-294d-4346-99bb-8c76db80ffa9",
+      "name": "Read file - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/content",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "path": {
+            "equalTo": "path"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"code\": \"code\",\n  \"message\": \"message\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ded053c1-294d-4346-99bb-8c76db80ffa9",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "31e224c3-c783-4278-b47b-e2ffd3998804",
+      "name": "Begin download - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/downloads",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"access\": {\n    \"expires_at_ms\": 1000000,\n    \"headers\": {\n      \"key\": \"value\"\n    },\n    \"method\": \"method\",\n    \"url\": \"url\",\n    \"kind\": \"presigned_url\"\n  },\n  \"content_ref\": {\n    \"checksum\": {\n      \"algorithm\": \"sha256\",\n      \"value\": \"value\"\n    },\n    \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n    \"kind\": \"kind\",\n    \"size_bytes\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"path\": \"/docs/report.txt\",\n  \"revision_no\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "31e224c3-c783-4278-b47b-e2ffd3998804",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3d4ab25b-267d-4769-b900-43fd20f7ad28",
+      "name": "List directory - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/list",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "path": {
+            "equalTo": "path"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"created_at_ms\": 1000000,\n      \"created_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"path\": \"/docs/report.txt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3d4ab25b-267d-4769-b900-43fd20f7ad28",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "f2bc7806-d55b-4e0d-a1a4-bbe38815ba18",
+      "name": "List file revisions - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/revisions",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "path": {
+            "equalTo": "path"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"sha256\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n        \"kind\": \"kind\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_123\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "f2bc7806-d55b-4e0d-a1a4-bbe38815ba18",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3a3722ed-cf9b-43db-aea9-37d8512eeba4",
+      "name": "Stat path - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/stat",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "path": {
+            "equalTo": "path"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3a3722ed-cf9b-43db-aea9-37d8512eeba4",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "9f6e3ea5-9d8d-4d87-b938-00d85085d5c5",
+      "name": "List recoverable deletions - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/trash",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"deletion_seq\": 1000000,\n      \"display_name\": \"report.txt\",\n      \"inode_id\": \"ino_123\",\n      \"name_key\": \"report.txt\",\n      \"parent_inode_id\": \"ino_123\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "9f6e3ea5-9d8d-4d87-b938-00d85085d5c5",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "50d0bf66-b44e-4a32-9dd8-8c7295dca019",
+      "name": "Stat inode - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "inode_id": {
+            "equalTo": "ino_123"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "50d0bf66-b44e-4a32-9dd8-8c7295dca019",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "b0f58d8b-c117-446f-bdef-9e37e85c67ce",
+      "name": "List file revisions by inode - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/revisions",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "inode_id": {
+            "equalTo": "ino_123"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"sha256\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n        \"kind\": \"kind\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_123\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "b0f58d8b-c117-446f-bdef-9e37e85c67ce",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "20461b01-f88d-4031-9dfd-bb986c327218",
+      "name": "Read file revision by inode - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/revisions/{revision_no}/content",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "inode_id": {
+            "equalTo": "inode_id"
+          },
+          "revision_no": {
+            "equalTo": "1000000"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"code\": \"code\",\n  \"message\": \"message\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "20461b01-f88d-4031-9dfd-bb986c327218",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c830fbf0-efdd-4d82-b605-956b1f77b185",
+      "name": "Begin download by inode - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/revisions/{revision_no}/downloads",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "inode_id": {
+            "equalTo": "ino_123"
+          },
+          "revision_no": {
+            "equalTo": "1000000"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"access\": {\n    \"expires_at_ms\": 1000000,\n    \"headers\": {\n      \"key\": \"value\"\n    },\n    \"method\": \"method\",\n    \"url\": \"url\",\n    \"kind\": \"presigned_url\"\n  },\n  \"content_ref\": {\n    \"checksum\": {\n      \"algorithm\": \"sha256\",\n      \"value\": \"value\"\n    },\n    \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n    \"kind\": \"kind\",\n    \"size_bytes\": 1000000\n  },\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"revision_no\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c830fbf0-efdd-4d82-b605-956b1f77b185",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "9c33fabb-f948-42c1-9ebc-73e31a87c774",
+      "name": "Content search - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/query/grep",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"built_through_seq\": 1000000,\n  \"head_seq\": 1000000,\n  \"matches\": [\n    {\n      \"byte_offset\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"line\": \"line\",\n      \"line_number\": 1000000,\n      \"line_truncated\": true,\n      \"path\": \"/docs/report.txt\",\n      \"revision_no\": 1000000\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"tail_scanned\": true\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "9c33fabb-f948-42c1-9ebc-73e31a87c774",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "d370adfa-03b8-401a-ba77-313b606dc673",
+      "name": "Begin upload - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"mode\": \"service_proxied\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "d370adfa-03b8-401a-ba77-313b606dc673",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "64d57b65-44ce-452f-9852-21bd884edd8f",
+      "name": "Get upload session - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads/{upload_id}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "upload_id": {
+            "equalTo": "upload_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "64d57b65-44ce-452f-9852-21bd884edd8f",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "e3393b2a-1faf-4e78-93bd-96532bac1870",
+      "name": "Abort upload - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads/{upload_id}/abort",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "upload_id": {
+            "equalTo": "upload_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e3393b2a-1faf-4e78-93bd-96532bac1870",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "426d5d85-d8d6-4b5f-b71d-1b2cbd45923c",
+      "name": "Complete upload - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads/{upload_id}/complete",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "upload_id": {
+            "equalTo": "upload_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "426d5d85-d8d6-4b5f-b71d-1b2cbd45923c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "4d774dce-a042-49a3-b6f1-d1bda2fc9431",
+      "name": "Sign multipart parts - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads/{upload_id}/parts",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "upload_id": {
+            "equalTo": "upload_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"parts\": [\n    {\n      \"access\": {\n        \"expires_at_ms\": 1000000,\n        \"method\": \"method\",\n        \"url\": \"url\",\n        \"kind\": \"presigned_url\"\n      },\n      \"part_number\": 1\n    }\n  ],\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "4d774dce-a042-49a3-b6f1-d1bda2fc9431",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "26e9b720-ea90-4f37-8f3e-3ac09b0ec48a",
+      "name": "Get capabilities - default",
+      "request": {
+        "urlPathTemplate": "/v0/capabilities",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"features\": {\n    \"key\": true\n  },\n  \"limits\": {\n    \"key\": 1000000\n  },\n  \"profiles\": [\n    \"profiles\"\n  ],\n  \"protocol_version\": \"protocol_version\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "26e9b720-ea90-4f37-8f3e-3ac09b0ec48a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    }
+  ],
+  "meta": {
+    "total": 36
+  }
+}
