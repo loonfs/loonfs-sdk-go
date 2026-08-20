@@ -1,135 +1,143 @@
-# Contributing to LoonFS
+# Contributing
 
-While the project is in early development, we are only accepting contributions from core
-maintainers.
+Thanks for your interest in contributing to this SDK! This document provides guidelines for contributing to the project.
 
-This guide covers workflow: building, testing, spec-locked artifacts, and git conventions.
-`STYLE.md` covers how code is written. `docs/specs/` is normative for durable formats and the API —
-when code and spec disagree, one of them is wrong and the PR fixes both together.
+## Getting Started
 
-## Toolchain and first build
+### Prerequisites
 
-`rust-toolchain.toml` pins stable with `rustfmt` and `clippy`; MSRV is the workspace
-`rust-version` (1.83). No other system dependencies are required — the local-fs provider backs all
-default tests.
+- Go 1.21+
+- Docker (only required to run wire tests; see [Wire Tests](#wire-tests))
+
+### Installation
+
+Install the project dependencies:
 
 ```bash
-cargo build -p loonfs-server        # build the server binary first —
-cargo test --all                    # the CLI suite drives target/debug/loonfs-server
-cargo fmt --all --check
-cargo clippy --all-targets --all-features -- -D warnings
+go mod tidy
 ```
 
-## Crate map
+### Building
 
-Dependency direction is strictly downward; a type lives in the lowest crate whose vocabulary it
-belongs to (see `STYLE.md` → Crates and modules).
+Build the project:
 
-| Crate | Role | Spec-locked? |
-| --- | --- | --- |
-| `loonfs-api` | Ids, paths, wire shapes, durable-format codecs | Yes — golden fixtures + `format.md`/`api.md` |
-| `loonfs-objectstore` | `ObjectStore` contract, key layout, providers, `StoreConfig` | Yes — key table pinned to `format.md` |
-| `loonfs-core` | Protocol engine: metadata, commits, replay, maintenance | Via api's formats |
-| `loonfs` | Runtime: `FsWriter`/`FsReader`/`FsAdmin`, caching, background work, publisher | No |
-| `loonfs-server` | Reference HTTP server (v0 API) | Yes — `openapi.json` + `api.md` tables |
-| `loonfs-client` | HTTP client for a LoonFS server | No |
-| `loonfs-cli` | `loon` binary; embedded and remote profiles | CLI JSON output snapshot-pinned |
-| `loonfs-model` | Independent reference oracle for differential tests (`publish = false`) | — |
-| `loonfs-sim` | Harness contract for the out-of-repo simulator (`publish = false`) | — |
+```bash
+go build ./...
+```
 
-Two hard boundaries:
+### Testing
 
-- `loonfs-server` never depends on `loonfs-core` in production code — everything the server needs
-  is (re-)exported through `loonfs`. If a core type is missing from the seam, widen the seam.
-- The deterministic simulator and the benchmark harness live in a separate private repo as a
-  deliberate structure — this repo carries only the hooks they consume (`loonfs-sim`, core's
-  `inspection` feature, injection seams such as `MonotonicTimer`). Keep the hooks coherent and
-  update them alongside repo refactors; breaking changes are fine — the external driver follows
-  this repo, not the reverse, and is amended afterward. Do not delete the hooks or grow
-  compatibility fallbacks for their sake.
+Run the test suite:
 
-## Running tests
+```bash
+go test ./...
+```
 
-`cargo test --all` runs everything hermetic (~600+ tests). Details by tier (full table in
-`STYLE.md` → Testing):
+#### Wire Tests
 
-- **Golden wire fixtures** (`crates/loonfs-api/tests/golden/`): fail on byte divergence and print
-  the regen command. `UPDATE_GOLDEN=1 cargo test -p loonfs-api` regenerates; updating fixtures is
-  **expected** for deliberate format changes and must be called out in the PR description.
-- **OpenAPI**: `openapi_static_file_is_current` fails when handlers drift from
-  `docs/specs/openapi.json` and prints the regen command
-  (`cargo run -p loonfs-server --features openapi --bin loonfs-openapi -- docs/specs/openapi.json`).
-- **Spec tables**: the `api.md` error-status table and the `format.md` key table are test-enforced
-  (`error_status_mapping_matches_the_api_spec_table`,
-  `standard_key_patterns_match_format_spec_table`). Change doc and code together.
-- **insta snapshots**: review with `cargo insta review`; never hand-edit `.snap` files.
-- **CLI suite** (`loonfs-cli/tests/cli.rs`): drives the real `loon` and `loonfs-server` binaries —
-  build `loonfs-server` before running it in isolation.
-- **Live provider conformance** (`loonfs-objectstore/tests/`, `direct_put_real_provider`): skipped
-  unless `LOONFS_TEST_{S3,R2,GCS,ABS}_*` credentials are set; see
-  `crates/loonfs-objectstore/tests/provider-conformance.env.example`. These are not CI gates —
-  run them when touching provider code.
-- **Differential suite** (`loonfs-core/tests/it/differential.rs`): replays scenarios through core and
-  the `loonfs-model` oracle and compares. A visibility-semantics change that doesn't touch both is
-  suspicious.
+If this SDK includes a `wiremock/` directory, the test suite contains wire tests that exercise the client against a [WireMock](https://wiremock.org/) server. The `go test` command above expects `WIREMOCK_URL` to point at a running WireMock instance.
 
-Never hand-edit a spec-locked artifact to silence a test — regenerate it through the printed
-command, or the change is wrong.
+Start WireMock, run the tests, then tear it down:
 
-## Changing a wire or durable format
+```bash
+docker compose -f wiremock/docker-compose.test.yml up -d
+export WIREMOCK_URL=http://localhost:$(docker compose -f wiremock/docker-compose.test.yml port wiremock 8080 | cut -d: -f2)
+go test ./...
+docker compose -f wiremock/docker-compose.test.yml down
+```
 
-Backwards compatibility is currently a non-goal (no users, no deployments) — break formats the
-clean way rather than the compatible way. The mechanical checklist:
+The compose file maps WireMock's container port `8080` to a random host port, which is why `WIREMOCK_URL` is derived from `docker compose ... port` rather than hardcoded.
 
-1. Change the type in `loonfs-api` (tag `kind`, snake_case, `_id` suffixes, tolerant decoding —
-   see `STYLE.md` → Serde).
-2. Non-additive payload change? Bump that family's `format_version` — and only that family's.
-3. `UPDATE_GOLDEN=1 cargo test -p loonfs-api`; commit the regenerated fixtures.
-4. Update the `format.md` / `api.md` tables and examples the sync tests point at.
-5. Regenerate `openapi.json` if HTTP shapes changed.
-6. If metadata semantics changed, mirror it in `loonfs-model` (independently — no shared code).
-7. Sweep every consumer (core, server, client, CLI render) — exhaustive matches will tell you.
-8. Say "wire format change; goldens regenerated" in the PR description.
+### Formatting
 
-## Determinism rules
+Format code:
 
-`clippy.toml` bans ambient `SystemTime::now`, `Instant::now`, `thread::sleep`,
-`tokio::time::sleep`, and `rand::random`. New time or randomness enters through a named boundary
-function with a function-scoped `#[allow(clippy::disallowed_methods)]` and a reason comment —
-never file-scoped, in prod or tests. CLI output goes through `crates/loonfs-cli/src/render.rs`
-(that is how the `print_stdout` lint stays satisfied); no bare `println!`.
+```bash
+gofmt -w .
+```
 
-## Git conventions
+Or equivalently:
 
-- **Branches**: `<author>/<kebab-description>` (e.g. `conor/error-style-sweep`). Never include
-  "claude", "ai", or any agent identifier in branch names, commits, or PRs.
-- **Commits**: one line, `type(scope): lowercase summary`. Types in use: `feat`, `fix`, `refactor`,
-  `test`, `docs`, `ci`, `chore`. Scopes are crate short-names or subsystems (`api`, `core`, `cli`,
-  `server`, `client`, `objectstore`, `runtime`, `wal`, `manifest`, `storage`, `specs`); omit the
-  scope for workspace-wide sweeps. No bodies, no bullet changelogs.
-- **No AI attribution** — no `Co-Authored-By: Claude`, no "Generated with" trailers, anywhere.
-  Check `git log -1` before pushing; amend if tooling injected anything.
-- **PRs**: 1–4 sentences of rationale-first prose (why the change exists). No section templates,
-  no diff restatement. Base on `main`; if stacking is unavoidable, name the base branch in the
-  description. PRs merge by squash, so the PR title follows the commit convention.
+```bash
+go fmt ./...
+```
 
-## Definition of done
+### Vetting
 
-Every PR, before review:
+Run the Go vet tool to catch common mistakes:
 
-1. `cargo fmt --all --check`
-2. `cargo clippy --all-targets --all-features -- -D warnings`
-3. `cargo test --all` (build `loonfs-server` first) and, when server shapes changed,
-   `cargo test -p loonfs-server --features openapi`
-4. Spec-locked artifacts regenerated deliberately (goldens, `openapi.json`, spec tables, insta) —
-   with the change acknowledged in the PR description.
-5. If the PR changes a convention, sweep it to 100% — grep for stragglers before finishing.
-   Half-migrations are worse than no migration.
+```bash
+go vet ./...
+```
 
-## Where decisions live
+## About Generated Code
 
-- `docs/specs/` — the normative durable format and API (start with its `README.md` reading guide).
-- `STYLE.md` — code conventions and their rationale.
-- `docs/specs/glossary.md` — the domain vocabulary; use its terms exactly.
-- `AUDIT_PR_PLANS.md` — the pre-release cleanup ledger (executed round-1 plans and the deferred
-  round-2 queue); useful history for why a canon exists.
+**Important**: Most files in this SDK are automatically generated by [Fern](https://buildwithfern.com) from the API definition. Direct modifications to generated files will be overwritten the next time the SDK is generated.
+
+### Generated Files
+
+The following directories contain generated code:
+- Most Go files in the project
+
+### How to Customize
+
+If you need to customize the SDK, you have two options:
+
+#### Option 1: Use `.fernignore`
+
+For custom code that should persist across SDK regenerations:
+
+1. Create a `.fernignore` file in the project root
+2. Add file patterns for files you want to preserve (similar to `.gitignore` syntax)
+3. Add your custom code to those files
+
+Files listed in `.fernignore` will not be overwritten when the SDK is regenerated.
+
+For more information, see the [Fern documentation on custom code](https://buildwithfern.com/learn/sdks/overview/custom-code).
+
+#### Option 2: Contribute to the Generator
+
+If you want to change how code is generated for all users of this SDK:
+
+1. The Go SDK generator lives in the [Fern repository](https://github.com/fern-api/fern)
+2. Generator code is located at `generators/go-v2/`
+3. Follow the [Fern contributing guidelines](https://github.com/fern-api/fern/blob/main/CONTRIBUTING.md)
+4. Submit a pull request with your changes to the generator
+
+This approach is best for:
+- Bug fixes in generated code
+- New features that would benefit all users
+- Improvements to code generation patterns
+
+## Making Changes
+
+### Workflow
+
+1. Create a new branch for your changes
+2. Make your modifications
+3. Run tests to ensure nothing breaks: `go test ./...`
+4. Format your code: `gofmt -w .`
+5. Vet your code: `go vet ./...`
+6. Build the project: `go build ./...`
+7. Commit your changes with a clear commit message
+8. Push your branch and create a pull request
+
+### Commit Messages
+
+Write clear, descriptive commit messages that explain what changed and why.
+
+### Code Style
+
+This project uses `gofmt` for code formatting. Run `gofmt -w .` before committing to ensure your code meets the project's style guidelines.
+
+## Questions or Issues?
+
+If you have questions or run into issues:
+
+1. Check the [Fern documentation](https://buildwithfern.com)
+2. Search existing [GitHub issues](https://github.com/fern-api/fern/issues)
+3. Open a new issue if your question hasn't been addressed
+
+## License
+
+By contributing to this project, you agree that your contributions will be licensed under the same license as the project.
