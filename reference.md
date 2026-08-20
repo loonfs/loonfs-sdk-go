@@ -2483,7 +2483,7 @@ client.Uploads.AbortUpload(
 <dl>
 <dd>
 
-Completes an upload. The request mode must match the mode used to start the session. Direct-multipart requests also include the content claim and completed parts.
+Completes an upload. The request mode must match the mode used to start the session. Direct uploads include a content claim; multipart also includes completed parts.
 </dd>
 </dl>
 </dd>
@@ -2627,9 +2627,8 @@ client.Uploads.SignUploadParts(
 
 **parts:** `[]*loonfs.UploadPartChecksumClaim` 
 
-Parts to authorize, each with the checksum the provider will enforce
-on it. Asking again for a part already uploaded is how a client
-retries one: a repeated part is last-write-wins at the provider.
+Parts to authorize and the checksum for each part. Requesting a part
+again replaces the previous upload for that part number.
     
 </dd>
 </dl>
