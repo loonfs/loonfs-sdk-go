@@ -511,39 +511,39 @@ func TestSettersMarkExplicitBeginUploadDirectMultipart(t *testing.T) {
 }
 
 func TestSettersBeginUploadDirectPut(t *testing.T) {
-	t.Run("SetContent", func(t *testing.T) {
+	t.Run("SetSizeBytes", func(t *testing.T) {
 		obj := &BeginUploadDirectPut{}
-		var fernTestValueContent *UploadContentClaim
-		obj.SetContent(fernTestValueContent)
-		assert.Equal(t, fernTestValueContent, obj.Content)
+		var fernTestValueSizeBytes *int64
+		obj.SetSizeBytes(fernTestValueSizeBytes)
+		assert.Equal(t, fernTestValueSizeBytes, obj.SizeBytes)
 		assert.NotNil(t, obj.explicitFields)
 	})
 
 }
 
 func TestGettersBeginUploadDirectPut(t *testing.T) {
-	t.Run("GetContent", func(t *testing.T) {
+	t.Run("GetSizeBytes", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &BeginUploadDirectPut{}
-		var expected *UploadContentClaim
-		obj.Content = expected
+		var expected *int64
+		obj.SizeBytes = expected
 
 		// Act & Assert
-		assert.Equal(t, expected, obj.GetContent(), "getter should return the property value")
+		assert.Equal(t, expected, obj.GetSizeBytes(), "getter should return the property value")
 	})
 
-	t.Run("GetContent_NilValue", func(t *testing.T) {
+	t.Run("GetSizeBytes_NilValue", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &BeginUploadDirectPut{}
-		obj.Content = nil
+		obj.SizeBytes = nil
 
 		// Act & Assert
-		assert.Nil(t, obj.GetContent(), "getter should return nil when property is nil")
+		assert.Nil(t, obj.GetSizeBytes(), "getter should return nil when property is nil")
 	})
 
-	t.Run("GetContent_NilReceiver", func(t *testing.T) {
+	t.Run("GetSizeBytes_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *BeginUploadDirectPut
 		// Should not panic - getters should handle nil receiver gracefully
@@ -552,20 +552,20 @@ func TestGettersBeginUploadDirectPut(t *testing.T) {
 				t.Errorf("Getter panicked on nil receiver: %v", r)
 			}
 		}()
-		_ = obj.GetContent() // Should return zero value
+		_ = obj.GetSizeBytes() // Should return zero value
 	})
 
 }
 
 func TestSettersMarkExplicitBeginUploadDirectPut(t *testing.T) {
-	t.Run("SetContent_MarksExplicit", func(t *testing.T) {
+	t.Run("SetSizeBytes_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &BeginUploadDirectPut{}
-		var fernTestValueContent *UploadContentClaim
+		var fernTestValueSizeBytes *int64
 
 		// Act
-		obj.SetContent(fernTestValueContent)
+		obj.SetSizeBytes(fernTestValueSizeBytes)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -1537,6 +1537,87 @@ func TestSettersMarkExplicitCompleteUploadDirectMultipart(t *testing.T) {
 
 }
 
+func TestSettersCompleteUploadDirectPut(t *testing.T) {
+	t.Run("SetContent", func(t *testing.T) {
+		obj := &CompleteUploadDirectPut{}
+		var fernTestValueContent *UploadContentClaim
+		obj.SetContent(fernTestValueContent)
+		assert.Equal(t, fernTestValueContent, obj.Content)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersCompleteUploadDirectPut(t *testing.T) {
+	t.Run("GetContent", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CompleteUploadDirectPut{}
+		var expected *UploadContentClaim
+		obj.Content = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetContent(), "getter should return the property value")
+	})
+
+	t.Run("GetContent_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CompleteUploadDirectPut{}
+		obj.Content = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetContent(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetContent_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CompleteUploadDirectPut
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetContent() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitCompleteUploadDirectPut(t *testing.T) {
+	t.Run("SetContent_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CompleteUploadDirectPut{}
+		var fernTestValueContent *UploadContentClaim
+
+		// Act
+		obj.SetContent(fernTestValueContent)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestGettersCompleteUploadRequest(t *testing.T) {
 	t.Run("GetMode", func(t *testing.T) {
 		t.Parallel()
@@ -2090,11 +2171,11 @@ func TestSettersDirectPutUpload(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
-	t.Run("SetContentRef", func(t *testing.T) {
+	t.Run("SetChecksumAlgorithm", func(t *testing.T) {
 		obj := &DirectPutUpload{}
-		var fernTestValueContentRef *ContentRef
-		obj.SetContentRef(fernTestValueContentRef)
-		assert.Equal(t, fernTestValueContentRef, obj.ContentRef)
+		var fernTestValueChecksumAlgorithm ChecksumAlgorithm
+		obj.SetChecksumAlgorithm(fernTestValueChecksumAlgorithm)
+		assert.Equal(t, fernTestValueChecksumAlgorithm, obj.ChecksumAlgorithm)
 		assert.NotNil(t, obj.explicitFields)
 	})
 
@@ -2134,28 +2215,18 @@ func TestGettersDirectPutUpload(t *testing.T) {
 		_ = obj.GetAccess() // Should return zero value
 	})
 
-	t.Run("GetContentRef", func(t *testing.T) {
+	t.Run("GetChecksumAlgorithm", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &DirectPutUpload{}
-		var expected *ContentRef
-		obj.ContentRef = expected
+		var expected ChecksumAlgorithm
+		obj.ChecksumAlgorithm = expected
 
 		// Act & Assert
-		assert.Equal(t, expected, obj.GetContentRef(), "getter should return the property value")
+		assert.Equal(t, expected, obj.GetChecksumAlgorithm(), "getter should return the property value")
 	})
 
-	t.Run("GetContentRef_NilValue", func(t *testing.T) {
-		t.Parallel()
-		// Arrange
-		obj := &DirectPutUpload{}
-		obj.ContentRef = nil
-
-		// Act & Assert
-		assert.Nil(t, obj.GetContentRef(), "getter should return nil when property is nil")
-	})
-
-	t.Run("GetContentRef_NilReceiver", func(t *testing.T) {
+	t.Run("GetChecksumAlgorithm_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *DirectPutUpload
 		// Should not panic - getters should handle nil receiver gracefully
@@ -2164,7 +2235,7 @@ func TestGettersDirectPutUpload(t *testing.T) {
 				t.Errorf("Getter panicked on nil receiver: %v", r)
 			}
 		}()
-		_ = obj.GetContentRef() // Should return zero value
+		_ = obj.GetChecksumAlgorithm() // Should return zero value
 	})
 
 }
@@ -2201,14 +2272,14 @@ func TestSettersMarkExplicitDirectPutUpload(t *testing.T) {
 		// It verifies that setting a field via setter allows successful JSON round-trip
 	})
 
-	t.Run("SetContentRef_MarksExplicit", func(t *testing.T) {
+	t.Run("SetChecksumAlgorithm_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &DirectPutUpload{}
-		var fernTestValueContentRef *ContentRef
+		var fernTestValueChecksumAlgorithm ChecksumAlgorithm
 
 		// Act
-		obj.SetContentRef(fernTestValueContentRef)
+		obj.SetChecksumAlgorithm(fernTestValueChecksumAlgorithm)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)

@@ -121,7 +121,7 @@ func (c *Client) AbortUpload(
 	return response.Body, nil
 }
 
-// Completes an upload. The request mode must match the mode used to start the session. Direct-multipart requests also include the content claim and completed parts.
+// Completes an upload. The request mode must match the mode used to start the session. Direct uploads include a content claim; multipart also includes completed parts.
 //
 // Example:
 //

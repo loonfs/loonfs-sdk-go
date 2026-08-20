@@ -182,9 +182,8 @@ type SignUploadPartsRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// Upload session id
 	UploadID string `json:"-" url:"-"`
-	// Parts to authorize, each with the checksum the provider will enforce
-	// on it. Asking again for a part already uploaded is how a client
-	// retries one: a repeated part is last-write-wins at the provider.
+	// Parts to authorize and the checksum for each part. Requesting a part
+	// again replaces the previous upload for that part number.
 	Parts []*UploadPartChecksumClaim `json:"parts" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -246,9 +245,7 @@ var (
 )
 
 type BeginUploadDirectMultipart struct {
-	// Selects the part geometry; absent takes the server's default.
-	// A multipart upload claims its content at completion, so nothing
-	// about the payload is declared here.
+	// Part size options. The server uses its default when omitted.
 	Multipart *DirectMultipartUploadOptions `json:"multipart,omitempty" url:"multipart,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -328,16 +325,14 @@ func (b *BeginUploadDirectMultipart) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
-// Write the whole object through one presigned request. The server
-// signs exactly these bytes into the write it authorizes, so the claim
-// is required.
+// Write the whole object through one presigned request.
 var (
-	beginUploadDirectPutFieldContent = big.NewInt(1 << 0)
+	beginUploadDirectPutFieldSizeBytes = big.NewInt(1 << 0)
 )
 
 type BeginUploadDirectPut struct {
-	// Byte length and digest of the payload about to be written.
-	Content *UploadContentClaim `json:"content" url:"content"`
+	// Advisory byte length for an early provider-limit check.
+	SizeBytes *int64 `json:"size_bytes,omitempty" url:"size_bytes,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -346,11 +341,11 @@ type BeginUploadDirectPut struct {
 	rawJSON         json.RawMessage
 }
 
-func (b *BeginUploadDirectPut) GetContent() *UploadContentClaim {
+func (b *BeginUploadDirectPut) GetSizeBytes() *int64 {
 	if b == nil {
 		return nil
 	}
-	return b.Content
+	return b.SizeBytes
 }
 
 func (b *BeginUploadDirectPut) GetExtraProperties() map[string]interface{} {
@@ -367,11 +362,11 @@ func (b *BeginUploadDirectPut) require(field *big.Int) {
 	b.explicitFields.Or(b.explicitFields, field)
 }
 
-// SetContent sets the Content field and marks it as non-optional;
+// SetSizeBytes sets the SizeBytes field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadDirectPut) SetContent(content *UploadContentClaim) {
-	b.Content = content
-	b.require(beginUploadDirectPutFieldContent)
+func (b *BeginUploadDirectPut) SetSizeBytes(sizeBytes *int64) {
+	b.SizeBytes = sizeBytes
+	b.require(beginUploadDirectPutFieldSizeBytes)
 }
 
 func (b *BeginUploadDirectPut) UnmarshalJSON(data []byte) error {
@@ -1239,13 +1234,26 @@ func (c *CompleteUploadDirectMultipart) String() string {
 }
 
 // Complete a direct-PUT upload.
+var (
+	completeUploadDirectPutFieldContent = big.NewInt(1 << 0)
+)
+
 type CompleteUploadDirectPut struct {
+	// Expected length and checksum of the stored object.
+	Content *UploadContentClaim `json:"content" url:"content"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *CompleteUploadDirectPut) GetContent() *UploadContentClaim {
+	if c == nil {
+		return nil
+	}
+	return c.Content
 }
 
 func (c *CompleteUploadDirectPut) GetExtraProperties() map[string]interface{} {
@@ -1260,6 +1268,13 @@ func (c *CompleteUploadDirectPut) require(field *big.Int) {
 		c.explicitFields = big.NewInt(0)
 	}
 	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetContent sets the Content field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CompleteUploadDirectPut) SetContent(content *UploadContentClaim) {
+	c.Content = content
+	c.require(completeUploadDirectPutFieldContent)
 }
 
 func (c *CompleteUploadDirectPut) UnmarshalJSON(data []byte) error {
@@ -1306,9 +1321,8 @@ func (c *CompleteUploadDirectPut) String() string {
 
 // Request to complete an upload session.
 //
-// `mode` must match the mode used to start the session. Service-proxied and
-// direct-PUT uploads need no other fields. Direct multipart uploads also
-// include the completed parts and the expected content details.
+// `mode` must match the mode used to start the session. Direct uploads
+// include the expected content details. Multipart also includes its parts.
 type CompleteUploadRequest struct {
 	Mode            string
 	ServiceProxied  *CompleteUploadServiceProxied
@@ -1649,19 +1663,14 @@ func (c *CompletedUploadPart) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Part geometry returned for a direct multipart upload.
-//
-// The begin response does not include a content reference or part count
-// because the final payload is not known yet. The server owns the provider
-// upload id and returns the content reference only after completion.
+// Settings returned for a direct multipart upload.
 var (
 	directMultipartUploadFieldChecksumAlgorithm = big.NewInt(1 << 0)
 	directMultipartUploadFieldPartSizeBytes     = big.NewInt(1 << 1)
 )
 
 type DirectMultipartUpload struct {
-	// Checksum algorithm every part and the complete assembled payload must
-	// use for this session.
+	// Checksum algorithm for every part and for the complete payload.
 	ChecksumAlgorithm ChecksumAlgorithm `json:"checksum_algorithm" url:"checksum_algorithm"`
 	// Byte length of every part except the last. At most 10,000 parts may
 	// be uploaded, so this bounds the object at `part_size_bytes × 10_000`.
@@ -1758,11 +1767,7 @@ func (d *DirectMultipartUpload) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// What a `direct_multipart` client asks for when it opens a session.
-//
-// A begin request declares no length and no digest: the session exists to
-// receive bytes whose length may not be known yet. All it settles is the
-// geometry the client cuts to.
+// Options for starting a direct multipart upload.
 var (
 	directMultipartUploadOptionsFieldPartSizeBytes = big.NewInt(1 << 0)
 )
@@ -1771,11 +1776,8 @@ type DirectMultipartUploadOptions struct {
 	// Byte length of every part except the last, or `None` for the
 	// server's default.
 	//
-	// The value bounds the object: a provider accepts at most 10,000
-	// parts, so this session can carry at most `part_size_bytes × 10_000`
-	// bytes. A client that knows its payload is very large asks for a
-	// larger part size; one that does not know its length at all takes the
-	// default and keeps asking for part URLs until its stream ends.
+	// Providers accept at most 10,000 parts, so this value also limits the
+	// maximum upload size. Clients can request larger parts for large files.
 	PartSizeBytes *int64 `json:"part_size_bytes,omitempty" url:"part_size_bytes,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1855,19 +1857,17 @@ func (d *DirectMultipartUploadOptions) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// Presigned direct_put upload details. The raw object key is intentionally not public.
+// Details for a direct PUT upload.
 var (
-	directPutUploadFieldAccess     = big.NewInt(1 << 0)
-	directPutUploadFieldContentRef = big.NewInt(1 << 1)
+	directPutUploadFieldAccess            = big.NewInt(1 << 0)
+	directPutUploadFieldChecksumAlgorithm = big.NewInt(1 << 1)
 )
 
 type DirectPutUpload struct {
-	// Short-lived write capability the client uses without learning the raw object key.
+	// Short-lived permission to write the object.
 	Access *ObjectTransferAccess `json:"access" url:"access"`
-	// Immutable object identity the server minted, plus the byte length and
-	// checksum covered by the signed request. Completion and the later
-	// commit both name exactly this reference.
-	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
+	// Checksum algorithm the client must use for its completion claim.
+	ChecksumAlgorithm ChecksumAlgorithm `json:"checksum_algorithm" url:"checksum_algorithm"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1883,11 +1883,11 @@ func (d *DirectPutUpload) GetAccess() *ObjectTransferAccess {
 	return d.Access
 }
 
-func (d *DirectPutUpload) GetContentRef() *ContentRef {
+func (d *DirectPutUpload) GetChecksumAlgorithm() ChecksumAlgorithm {
 	if d == nil {
-		return nil
+		return ""
 	}
-	return d.ContentRef
+	return d.ChecksumAlgorithm
 }
 
 func (d *DirectPutUpload) GetExtraProperties() map[string]interface{} {
@@ -1911,11 +1911,11 @@ func (d *DirectPutUpload) SetAccess(access *ObjectTransferAccess) {
 	d.require(directPutUploadFieldAccess)
 }
 
-// SetContentRef sets the ContentRef field and marks it as non-optional;
+// SetChecksumAlgorithm sets the ChecksumAlgorithm field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DirectPutUpload) SetContentRef(contentRef *ContentRef) {
-	d.ContentRef = contentRef
-	d.require(directPutUploadFieldContentRef)
+func (d *DirectPutUpload) SetChecksumAlgorithm(checksumAlgorithm ChecksumAlgorithm) {
+	d.ChecksumAlgorithm = checksumAlgorithm
+	d.require(directPutUploadFieldChecksumAlgorithm)
 }
 
 func (d *DirectPutUpload) UnmarshalJSON(data []byte) error {
@@ -2183,18 +2183,10 @@ func (s *SignedUploadPart) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// What an upload client claims about a complete payload.
+// Size and checksum reported by the client for a complete payload.
 //
-// The server mints the content object's identity — a client cannot name a
-// key it has not been given — so a direct upload declares only what it can
-// know about its own bytes. Direct PUT binds the claim into the provider
-// write; multipart verifies it against the assembled object at completion.
-//
-// The digest names its own algorithm because providers do not agree on one:
-// each binds into a presigned write whatever its API can enforce. The
-// deployment advertises which it is, and a claim in any other algorithm is
-// refused at begin rather than signed into a write the provider would
-// reject.
+// Direct uploads provide this at completion. The server verifies it against
+// the object stored by the provider.
 var (
 	uploadContentClaimFieldChecksum  = big.NewInt(1 << 0)
 	uploadContentClaimFieldSizeBytes = big.NewInt(1 << 1)
@@ -2203,7 +2195,7 @@ var (
 type UploadContentClaim struct {
 	// Whole-payload checksum in the algorithm required by this operation.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
-	// Complete byte length the client will write.
+	// Complete payload size in bytes.
 	SizeBytes int64 `json:"size_bytes" url:"size_bytes"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
