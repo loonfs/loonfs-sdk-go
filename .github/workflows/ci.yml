@@ -14,7 +14,6 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22.x'
-      - run: go build ./...
       - run: go vet ./...
       - name: Start the WireMock test server
         run: docker compose -f wiremock/docker-compose.test.yml up -d --wait
@@ -22,6 +21,3 @@ jobs:
         run: |
           PORT=$(docker compose -f wiremock/docker-compose.test.yml port wiremock 8080 | cut -d: -f2)
           WIREMOCK_URL="http://localhost:$PORT" go test ./...
-      - name: Stop the WireMock test server
-        if: always()
-        run: docker compose -f wiremock/docker-compose.test.yml down
