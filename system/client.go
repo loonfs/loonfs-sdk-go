@@ -5,6 +5,7 @@ package system
 import (
 	context "context"
 
+	loonfs "github.com/loonfs/loonfs-sdk-go"
 	core "github.com/loonfs/loonfs-sdk-go/core"
 	internal "github.com/loonfs/loonfs-sdk-go/internal"
 	option "github.com/loonfs/loonfs-sdk-go/option"
@@ -37,14 +38,14 @@ func NewClient(options *core.RequestOptions) *Client {
 //
 // Example:
 //
-//	client.System.Health(
+//	client.System.GetHealth(
 //	    context.TODO(),
 //	)
-func (c *Client) Health(
+func (c *Client) GetHealth(
 	ctx context.Context,
 	opts ...option.RequestOption,
 ) (string, error) {
-	response, err := c.WithRawResponse.Health(
+	response, err := c.WithRawResponse.GetHealth(
 		ctx,
 		opts...,
 	)
@@ -79,19 +80,40 @@ func (c *Client) GetMetrics(
 //
 // Example:
 //
-//	client.System.Readiness(
+//	client.System.GetReadiness(
 //	    context.TODO(),
 //	)
-func (c *Client) Readiness(
+func (c *Client) GetReadiness(
 	ctx context.Context,
 	opts ...option.RequestOption,
 ) (string, error) {
-	response, err := c.WithRawResponse.Readiness(
+	response, err := c.WithRawResponse.GetReadiness(
 		ctx,
 		opts...,
 	)
 	if err != nil {
 		return "", err
+	}
+	return response.Body, nil
+}
+
+// Returns a summary of supported features and limits.
+//
+// Example:
+//
+//	client.System.GetCapabilities(
+//	    context.TODO(),
+//	)
+func (c *Client) GetCapabilities(
+	ctx context.Context,
+	opts ...option.RequestOption,
+) (*loonfs.CapabilityDocument, error) {
+	response, err := c.WithRawResponse.GetCapabilities(
+		ctx,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
 	}
 	return response.Body, nil
 }

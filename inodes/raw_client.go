@@ -34,11 +34,11 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 	}
 }
 
-func (r *RawClient) StatInode(
+func (r *RawClient) GetInode(
 	ctx context.Context,
-	request *loonfs.StatInodeRequest,
+	request *loonfs.GetInodeRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.AuthoritativePathEntry], error) {
+) (*core.Response[*loonfs.PathEntry], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -61,7 +61,7 @@ func (r *RawClient) StatInode(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.AuthoritativePathEntry
+	var response *loonfs.PathEntry
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -80,7 +80,7 @@ func (r *RawClient) StatInode(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.AuthoritativePathEntry]{
+	return &core.Response[*loonfs.PathEntry]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -134,9 +134,9 @@ func (r *RawClient) GetFileRevisionBytesByInode(
 	}, nil
 }
 
-func (r *RawClient) BeginDownloadByInode(
+func (r *RawClient) CreateDownloadByInode(
 	ctx context.Context,
-	request *loonfs.BeginDownloadByInodeBody,
+	request *loonfs.CreateDownloadByInodeRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*loonfs.BeginDownloadByInodeResponse], error) {
 	options := core.NewRequestOptions(opts...)

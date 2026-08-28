@@ -126,7 +126,7 @@ type GrepMatch struct {
 	// One-based line number of the match.
 	LineNumber int64 `json:"line_number" url:"line_number"`
 	// True when `line` was truncated.
-	LineTruncated *bool `json:"line_truncated,omitempty" url:"line_truncated,omitempty"`
+	LineTruncated bool `json:"line_truncated" url:"line_truncated"`
 	// The file's absolute path, derived at the snapshot.
 	Path AbsolutePath `json:"path" url:"path"`
 	// The matched revision (the newest visible one at the snapshot).
@@ -167,9 +167,9 @@ func (g *GrepMatch) GetLineNumber() int64 {
 	return g.LineNumber
 }
 
-func (g *GrepMatch) GetLineTruncated() *bool {
+func (g *GrepMatch) GetLineTruncated() bool {
 	if g == nil {
-		return nil
+		return false
 	}
 	return g.LineTruncated
 }
@@ -232,7 +232,7 @@ func (g *GrepMatch) SetLineNumber(lineNumber int64) {
 
 // SetLineTruncated sets the LineTruncated field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepMatch) SetLineTruncated(lineTruncated *bool) {
+func (g *GrepMatch) SetLineTruncated(lineTruncated bool) {
 	g.LineTruncated = lineTruncated
 	g.require(grepMatchFieldLineTruncated)
 }

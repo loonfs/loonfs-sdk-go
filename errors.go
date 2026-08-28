@@ -79,30 +79,6 @@ func (c *ContentTooLargeError) Unwrap() error {
 	return c.APIError
 }
 
-// The backing store rejected its configured credentials
-type ForbiddenError struct {
-	*core.APIError
-	Body *APIError
-}
-
-func (f *ForbiddenError) UnmarshalJSON(data []byte) error {
-	var body *APIError
-	if err := json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	f.StatusCode = 403
-	f.Body = body
-	return nil
-}
-
-func (f *ForbiddenError) MarshalJSON() ([]byte, error) {
-	return json.Marshal(f.Body)
-}
-
-func (f *ForbiddenError) Unwrap() error {
-	return f.APIError
-}
-
 // Namespace deleted
 type GoneError struct {
 	*core.APIError
@@ -199,38 +175,14 @@ func (n *NotImplementedError) Unwrap() error {
 	return n.APIError
 }
 
-// The request exceeded `request_deadline_ms`. A timed-out mutation may still complete, so clients must determine its outcome before retrying.
-type RequestTimeoutError struct {
+// The server cannot complete the request now. Inspect `code` to determine whether the cause is a deadline, shutdown, load, required maintenance, or invalid storage credentials. A mutation may still complete after a deadline or lost acknowledgment, so determine its outcome before retrying.
+type ServiceUnavailableError struct {
 	*core.APIError
 	Body any
 }
 
-func (r *RequestTimeoutError) UnmarshalJSON(data []byte) error {
-	var body any
-	if err := json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	r.StatusCode = 408
-	r.Body = body
-	return nil
-}
-
-func (r *RequestTimeoutError) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.Body)
-}
-
-func (r *RequestTimeoutError) Unwrap() error {
-	return r.APIError
-}
-
-// Shutdown has begun; admission is closed
-type ServiceUnavailableError struct {
-	*core.APIError
-	Body *APIError
-}
-
 func (s *ServiceUnavailableError) UnmarshalJSON(data []byte) error {
-	var body *APIError
+	var body any
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}

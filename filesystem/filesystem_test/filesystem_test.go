@@ -91,6 +91,9 @@ func TestFilesystemListChangesWithWireMock(
 	request := &loonfs.ListChangesRequest{
 		NamespaceID: "namespace_id",
 		AfterSeq:    int64(1000000),
+		SnapshotID: loonfs.String(
+			"chk_00000000000000000000000000000002",
+		),
 	}
 	_, invocationErr := client.Filesystem.ListChanges(
 		context.TODO(),
@@ -101,10 +104,10 @@ func TestFilesystemListChangesWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFilesystemListChangesWithWireMock", "GET", "/v0/namespaces/namespace_id/changes", map[string]interface{}{"after_seq": "1000000"}, 1)
+	VerifyRequestCount(t, "TestFilesystemListChangesWithWireMock", "GET", "/v0/namespaces/namespace_id/changes", map[string]interface{}{"after_seq": "1000000", "snapshot_id": "chk_00000000000000000000000000000002"}, 1)
 }
 
-func TestFilesystemApplyCommitWithWireMock(
+func TestFilesystemCreateCommitWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -124,25 +127,25 @@ func TestFilesystemApplyCommitWithWireMock(
 		CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
 		Operations: []*loonfs.FilesystemOperation{
 			&loonfs.FilesystemOperation{
-				CreateDirectory: &loonfs.FsOpCreateDirectory{
+				CreateDirectory: &loonfs.FilesystemOperationCreateDirectory{
 					Path: "/docs/report.txt",
 				},
 			},
 		},
 	}
-	_, invocationErr := client.Filesystem.ApplyCommit(
+	_, invocationErr := client.Filesystem.CreateCommit(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestFilesystemApplyCommitWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestFilesystemCreateCommitWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFilesystemApplyCommitWithWireMock", "POST", "/v0/namespaces/namespace_id/commits", nil, 1)
+	VerifyRequestCount(t, "TestFilesystemCreateCommitWithWireMock", "POST", "/v0/namespaces/namespace_id/commits", nil, 1)
 }
 
-func TestFilesystemBeginDownloadWithWireMock(
+func TestFilesystemCreateDownloadWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -155,18 +158,21 @@ func TestFilesystemBeginDownloadWithWireMock(
 	)
 	request := &loonfs.BeginDownloadRequest{
 		NamespaceID: "namespace_id",
-		Path:        "/docs/report.txt",
+		SnapshotID: loonfs.String(
+			"chk_00000000000000000000000000000002",
+		),
+		Path: "/docs/report.txt",
 	}
-	_, invocationErr := client.Filesystem.BeginDownload(
+	_, invocationErr := client.Filesystem.CreateDownload(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestFilesystemBeginDownloadWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestFilesystemCreateDownloadWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFilesystemBeginDownloadWithWireMock", "POST", "/v0/namespaces/namespace_id/filesystem/downloads", nil, 1)
+	VerifyRequestCount(t, "TestFilesystemCreateDownloadWithWireMock", "POST", "/v0/namespaces/namespace_id/filesystem/downloads", map[string]interface{}{"snapshot_id": "chk_00000000000000000000000000000002"}, 1)
 }
 
 func TestFilesystemListPathEntriesWithWireMock(
@@ -183,6 +189,9 @@ func TestFilesystemListPathEntriesWithWireMock(
 	request := &loonfs.ListPathEntriesRequest{
 		NamespaceID: "namespace_id",
 		Path:        "path",
+		SnapshotID: loonfs.String(
+			"chk_00000000000000000000000000000002",
+		),
 	}
 	_, invocationErr := client.Filesystem.ListPathEntries(
 		context.TODO(),
@@ -193,7 +202,37 @@ func TestFilesystemListPathEntriesWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFilesystemListPathEntriesWithWireMock", "GET", "/v0/namespaces/namespace_id/filesystem/list", map[string]interface{}{"path": "path"}, 1)
+	VerifyRequestCount(t, "TestFilesystemListPathEntriesWithWireMock", "GET", "/v0/namespaces/namespace_id/filesystem/entries", map[string]interface{}{"path": "path", "snapshot_id": "chk_00000000000000000000000000000002"}, 1)
+}
+
+func TestFilesystemGetPathEntryWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &loonfs.GetPathEntryRequest{
+		NamespaceID: "namespace_id",
+		Path:        "path",
+		SnapshotID: loonfs.String(
+			"chk_00000000000000000000000000000002",
+		),
+	}
+	_, invocationErr := client.Filesystem.GetPathEntry(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestFilesystemGetPathEntryWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestFilesystemGetPathEntryWithWireMock", "GET", "/v0/namespaces/namespace_id/filesystem/entry", map[string]interface{}{"path": "path", "snapshot_id": "chk_00000000000000000000000000000002"}, 1)
 }
 
 func TestFilesystemListFileRevisionsWithWireMock(
@@ -221,33 +260,6 @@ func TestFilesystemListFileRevisionsWithWireMock(
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestFilesystemListFileRevisionsWithWireMock", "GET", "/v0/namespaces/namespace_id/filesystem/revisions", map[string]interface{}{"path": "path"}, 1)
-}
-
-func TestFilesystemStatPathWithWireMock(
-	t *testing.T,
-) {
-	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
-	if WireMockBaseURL == "" {
-		WireMockBaseURL = "http://localhost:8080"
-	}
-	client := client.NewClient(
-		option.WithBaseURL(WireMockBaseURL),
-		option.WithToken("test-token"),
-	)
-	request := &loonfs.StatPathRequest{
-		NamespaceID: "namespace_id",
-		Path:        "path",
-	}
-	_, invocationErr := client.Filesystem.StatPath(
-		context.TODO(),
-		request,
-		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestFilesystemStatPathWithWireMock"}},
-		),
-	)
-
-	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFilesystemStatPathWithWireMock", "GET", "/v0/namespaces/namespace_id/filesystem/stat", map[string]interface{}{"path": "path"}, 1)
 }
 
 func TestFilesystemListTrashWithWireMock(

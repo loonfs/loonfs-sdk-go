@@ -113,13 +113,16 @@ func (c *CommitRequest) MarshalJSON() ([]byte, error) {
 
 var (
 	beginDownloadRequestFieldNamespaceID = big.NewInt(1 << 0)
-	beginDownloadRequestFieldPath        = big.NewInt(1 << 1)
-	beginDownloadRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	beginDownloadRequestFieldSnapshotID  = big.NewInt(1 << 1)
+	beginDownloadRequestFieldPath        = big.NewInt(1 << 2)
+	beginDownloadRequestFieldRevisionNo  = big.NewInt(1 << 3)
 )
 
 type BeginDownloadRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
+	// Use the file revision captured by this snapshot
+	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
 	// Absolute path of the file to read.
 	Path AbsolutePath `json:"path" url:"-"`
 	// Revision to read, or `None` for the path's current revision.
@@ -141,6 +144,13 @@ func (b *BeginDownloadRequest) require(field *big.Int) {
 func (b *BeginDownloadRequest) SetNamespaceID(namespaceID string) {
 	b.NamespaceID = namespaceID
 	b.require(beginDownloadRequestFieldNamespaceID)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BeginDownloadRequest) SetSnapshotID(snapshotID *CheckpointID) {
+	b.SnapshotID = snapshotID
+	b.require(beginDownloadRequestFieldSnapshotID)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
@@ -182,6 +192,7 @@ var (
 	getFileBytesRequestFieldNamespaceID = big.NewInt(1 << 0)
 	getFileBytesRequestFieldPath        = big.NewInt(1 << 1)
 	getFileBytesRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	getFileBytesRequestFieldSnapshotID  = big.NewInt(1 << 3)
 )
 
 type GetFileBytesRequest struct {
@@ -189,8 +200,10 @@ type GetFileBytesRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// Absolute file path
 	Path string `json:"-" url:"path"`
-	// Optional prior revision number
+	// Optional prior revision number; cannot be combined with snapshot_id
 	RevisionNo *RevisionNo `json:"-" url:"revision_no,omitempty"`
+	// Use the file revision captured by this snapshot
+	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -224,10 +237,74 @@ func (g *GetFileBytesRequest) SetRevisionNo(revisionNo *RevisionNo) {
 	g.require(getFileBytesRequestFieldRevisionNo)
 }
 
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileBytesRequest) SetSnapshotID(snapshotID *CheckpointID) {
+	g.SnapshotID = snapshotID
+	g.require(getFileBytesRequestFieldSnapshotID)
+}
+
+var (
+	getPathEntryRequestFieldNamespaceID       = big.NewInt(1 << 0)
+	getPathEntryRequestFieldPath              = big.NewInt(1 << 1)
+	getPathEntryRequestFieldIncludeAttributes = big.NewInt(1 << 2)
+	getPathEntryRequestFieldSnapshotID        = big.NewInt(1 << 3)
+)
+
+type GetPathEntryRequest struct {
+	// Namespace id
+	NamespaceID string `json:"-" url:"-"`
+	// Absolute filesystem path
+	Path string `json:"-" url:"path"`
+	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
+	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
+	// Use the path state captured by this snapshot
+	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (g *GetPathEntryRequest) require(field *big.Int) {
+	if g.explicitFields == nil {
+		g.explicitFields = big.NewInt(0)
+	}
+	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetPathEntryRequest) SetNamespaceID(namespaceID string) {
+	g.NamespaceID = namespaceID
+	g.require(getPathEntryRequestFieldNamespaceID)
+}
+
+// SetPath sets the Path field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetPathEntryRequest) SetPath(path string) {
+	g.Path = path
+	g.require(getPathEntryRequestFieldPath)
+}
+
+// SetIncludeAttributes sets the IncludeAttributes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetPathEntryRequest) SetIncludeAttributes(includeAttributes *bool) {
+	g.IncludeAttributes = includeAttributes
+	g.require(getPathEntryRequestFieldIncludeAttributes)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *CheckpointID) {
+	g.SnapshotID = snapshotID
+	g.require(getPathEntryRequestFieldSnapshotID)
+}
+
 var (
 	listChangesRequestFieldNamespaceID = big.NewInt(1 << 0)
 	listChangesRequestFieldAfterSeq    = big.NewInt(1 << 1)
 	listChangesRequestFieldLimit       = big.NewInt(1 << 2)
+	listChangesRequestFieldSnapshotID  = big.NewInt(1 << 3)
 )
 
 type ListChangesRequest struct {
@@ -237,6 +314,8 @@ type ListChangesRequest struct {
 	AfterSeq ChangeSeq `json:"-" url:"after_seq"`
 	// Maximum page size
 	Limit *int `json:"-" url:"limit,omitempty"`
+	// End the feed at this snapshot's captured sequence
+	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -268,6 +347,13 @@ func (l *ListChangesRequest) SetAfterSeq(afterSeq ChangeSeq) {
 func (l *ListChangesRequest) SetLimit(limit *int) {
 	l.Limit = limit
 	l.require(listChangesRequestFieldLimit)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesRequest) SetSnapshotID(snapshotID *CheckpointID) {
+	l.SnapshotID = snapshotID
+	l.require(listChangesRequestFieldSnapshotID)
 }
 
 var (
@@ -332,6 +418,7 @@ var (
 	listPathEntriesRequestFieldLimit             = big.NewInt(1 << 2)
 	listPathEntriesRequestFieldCursor            = big.NewInt(1 << 3)
 	listPathEntriesRequestFieldIncludeAttributes = big.NewInt(1 << 4)
+	listPathEntriesRequestFieldSnapshotID        = big.NewInt(1 << 5)
 )
 
 type ListPathEntriesRequest struct {
@@ -345,6 +432,8 @@ type ListPathEntriesRequest struct {
 	Cursor *string `json:"-" url:"cursor,omitempty"`
 	// Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
+	// Use the directory state captured by this snapshot
+	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -392,6 +481,13 @@ func (l *ListPathEntriesRequest) SetIncludeAttributes(includeAttributes *bool) {
 	l.require(listPathEntriesRequestFieldIncludeAttributes)
 }
 
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListPathEntriesRequest) SetSnapshotID(snapshotID *CheckpointID) {
+	l.SnapshotID = snapshotID
+	l.require(listPathEntriesRequestFieldSnapshotID)
+}
+
 var (
 	listTrashRequestFieldNamespaceID = big.NewInt(1 << 0)
 	listTrashRequestFieldLimit       = big.NewInt(1 << 1)
@@ -436,52 +532,6 @@ func (l *ListTrashRequest) SetLimit(limit *int) {
 func (l *ListTrashRequest) SetCursor(cursor *string) {
 	l.Cursor = cursor
 	l.require(listTrashRequestFieldCursor)
-}
-
-var (
-	statPathRequestFieldNamespaceID       = big.NewInt(1 << 0)
-	statPathRequestFieldPath              = big.NewInt(1 << 1)
-	statPathRequestFieldIncludeAttributes = big.NewInt(1 << 2)
-)
-
-type StatPathRequest struct {
-	// Namespace id
-	NamespaceID string `json:"-" url:"-"`
-	// Absolute filesystem path
-	Path string `json:"-" url:"path"`
-	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
-	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-}
-
-func (s *StatPathRequest) require(field *big.Int) {
-	if s.explicitFields == nil {
-		s.explicitFields = big.NewInt(0)
-	}
-	s.explicitFields.Or(s.explicitFields, field)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StatPathRequest) SetNamespaceID(namespaceID string) {
-	s.NamespaceID = namespaceID
-	s.require(statPathRequestFieldNamespaceID)
-}
-
-// SetPath sets the Path field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StatPathRequest) SetPath(path string) {
-	s.Path = path
-	s.require(statPathRequestFieldPath)
-}
-
-// SetIncludeAttributes sets the IncludeAttributes field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StatPathRequest) SetIncludeAttributes(includeAttributes *bool) {
-	s.IncludeAttributes = includeAttributes
-	s.require(statPathRequestFieldIncludeAttributes)
 }
 
 // Validated name of one inode attribute.
@@ -665,178 +715,42 @@ func (b *BeginDownloadResponse) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
-// Change-feed response after a cursor.
-var (
-	changesResponseFieldAfterSeq     = big.NewInt(1 << 0)
-	changesResponseFieldChanges      = big.NewInt(1 << 1)
-	changesResponseFieldNamespaceID  = big.NewInt(1 << 2)
-	changesResponseFieldNextAfterSeq = big.NewInt(1 << 3)
-	changesResponseFieldThroughSeq   = big.NewInt(1 << 4)
-)
-
-type ChangesResponse struct {
-	// Exclusive cursor supplied by the caller, or the endpoint's initial position.
-	AfterSeq ChangeSeq `json:"after_seq" url:"after_seq"`
-	// Logical commits after `after_seq`, ordered by ascending namespace sequence.
-	Changes []*CommittedChange `json:"changes" url:"changes"`
-	// Namespace whose ordered commit stream was read.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Cursor to request when another page remains, or `None` at `through_seq`.
-	NextAfterSeq *ChangeSeq `json:"next_after_seq,omitempty" url:"next_after_seq,omitempty"`
-	// Snapshot head through which this page was evaluated.
-	ThroughSeq ChangeSeq `json:"through_seq" url:"through_seq"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *ChangesResponse) GetAfterSeq() ChangeSeq {
-	if c == nil {
-		return 0
-	}
-	return c.AfterSeq
-}
-
-func (c *ChangesResponse) GetChanges() []*CommittedChange {
-	if c == nil {
-		return nil
-	}
-	return c.Changes
-}
-
-func (c *ChangesResponse) GetNamespaceID() NamespaceID {
-	if c == nil {
-		return ""
-	}
-	return c.NamespaceID
-}
-
-func (c *ChangesResponse) GetNextAfterSeq() *ChangeSeq {
-	if c == nil {
-		return nil
-	}
-	return c.NextAfterSeq
-}
-
-func (c *ChangesResponse) GetThroughSeq() ChangeSeq {
-	if c == nil {
-		return 0
-	}
-	return c.ThroughSeq
-}
-
-func (c *ChangesResponse) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *ChangesResponse) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetAfterSeq sets the AfterSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ChangesResponse) SetAfterSeq(afterSeq ChangeSeq) {
-	c.AfterSeq = afterSeq
-	c.require(changesResponseFieldAfterSeq)
-}
-
-// SetChanges sets the Changes field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ChangesResponse) SetChanges(changes []*CommittedChange) {
-	c.Changes = changes
-	c.require(changesResponseFieldChanges)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ChangesResponse) SetNamespaceID(namespaceID NamespaceID) {
-	c.NamespaceID = namespaceID
-	c.require(changesResponseFieldNamespaceID)
-}
-
-// SetNextAfterSeq sets the NextAfterSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ChangesResponse) SetNextAfterSeq(nextAfterSeq *ChangeSeq) {
-	c.NextAfterSeq = nextAfterSeq
-	c.require(changesResponseFieldNextAfterSeq)
-}
-
-// SetThroughSeq sets the ThroughSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ChangesResponse) SetThroughSeq(throughSeq ChangeSeq) {
-	c.ThroughSeq = throughSeq
-	c.require(changesResponseFieldThroughSeq)
-}
-
-func (c *ChangesResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler ChangesResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = ChangesResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *ChangesResponse) MarshalJSON() ([]byte, error) {
-	type embed ChangesResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *ChangesResponse) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
 // Result of one commit.
 //
 // Every commit resolves to this envelope — path-oriented operations and
 // explicit commits, embedded or remote. The commit id is the caller's
 // reconciliation handle: resubmitting the same request with the same id
 // replays this result instead of committing twice.
+//
+// The response includes the same attribution and events as
+// [`CommittedChange`], including IDs created by the commit.
 var (
-	commitResponseFieldCommitID     = big.NewInt(1 << 0)
-	commitResponseFieldCommittedSeq = big.NewInt(1 << 1)
-	commitResponseFieldNamespaceID  = big.NewInt(1 << 2)
+	commitResponseFieldCommitID      = big.NewInt(1 << 0)
+	commitResponseFieldCommittedAtMs = big.NewInt(1 << 1)
+	commitResponseFieldCommittedBy   = big.NewInt(1 << 2)
+	commitResponseFieldCommittedSeq  = big.NewInt(1 << 3)
+	commitResponseFieldEvents        = big.NewInt(1 << 4)
+	commitResponseFieldMessage       = big.NewInt(1 << 5)
+	commitResponseFieldNamespaceID   = big.NewInt(1 << 6)
 )
 
 type CommitResponse struct {
 	// Idempotency key the commit landed under: caller-supplied, or
 	// generated on the caller's behalf when the request carried none.
 	CommitID CommitID `json:"commit_id" url:"commit_id"`
+	// Wall-clock stamp of the commit, in Unix milliseconds.
+	// Observational: `committed_seq` is the order.
+	CommittedAtMs int64 `json:"committed_at_ms" url:"committed_at_ms"`
+	// Actor responsible for the commit, as supplied by the application.
+	CommittedBy *ActorRef `json:"committed_by" url:"committed_by"`
 	// Sequence number where the commit became visible.
 	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
+	// Semantic filesystem events in commit order. This is omitted only when
+	// replaying a commit whose WAL history is no longer retained.
+	Events []*FilesystemChange `json:"events,omitempty" url:"events,omitempty"`
+	// Caller annotation, omitted when absent and carrying no filesystem
+	// semantics.
+	Message *string `json:"message,omitempty" url:"message,omitempty"`
 	// Namespace that changed.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 
@@ -854,11 +768,39 @@ func (c *CommitResponse) GetCommitID() CommitID {
 	return c.CommitID
 }
 
+func (c *CommitResponse) GetCommittedAtMs() int64 {
+	if c == nil {
+		return 0
+	}
+	return c.CommittedAtMs
+}
+
+func (c *CommitResponse) GetCommittedBy() *ActorRef {
+	if c == nil {
+		return nil
+	}
+	return c.CommittedBy
+}
+
 func (c *CommitResponse) GetCommittedSeq() ChangeSeq {
 	if c == nil {
 		return 0
 	}
 	return c.CommittedSeq
+}
+
+func (c *CommitResponse) GetEvents() []*FilesystemChange {
+	if c == nil {
+		return nil
+	}
+	return c.Events
+}
+
+func (c *CommitResponse) GetMessage() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Message
 }
 
 func (c *CommitResponse) GetNamespaceID() NamespaceID {
@@ -889,11 +831,39 @@ func (c *CommitResponse) SetCommitID(commitID CommitID) {
 	c.require(commitResponseFieldCommitID)
 }
 
+// SetCommittedAtMs sets the CommittedAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitResponse) SetCommittedAtMs(committedAtMs int64) {
+	c.CommittedAtMs = committedAtMs
+	c.require(commitResponseFieldCommittedAtMs)
+}
+
+// SetCommittedBy sets the CommittedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitResponse) SetCommittedBy(committedBy *ActorRef) {
+	c.CommittedBy = committedBy
+	c.require(commitResponseFieldCommittedBy)
+}
+
 // SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *CommitResponse) SetCommittedSeq(committedSeq ChangeSeq) {
 	c.CommittedSeq = committedSeq
 	c.require(commitResponseFieldCommittedSeq)
+}
+
+// SetEvents sets the Events field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitResponse) SetEvents(events []*FilesystemChange) {
+	c.Events = events
+	c.require(commitResponseFieldEvents)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitResponse) SetMessage(message *string) {
+	c.Message = message
+	c.require(commitResponseFieldMessage)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
@@ -1119,109 +1089,6 @@ func (c *CommittedChange) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Proof that a specific `content_ref` may be used in a later commit.
-var (
-	contentTokenFieldContentRef = big.NewInt(1 << 0)
-	contentTokenFieldToken      = big.NewInt(1 << 1)
-)
-
-type ContentToken struct {
-	// Content authorized by this token.
-	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// Opaque, server-signed token. Clients must not parse it.
-	Token string `json:"token" url:"token"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *ContentToken) GetContentRef() *ContentRef {
-	if c == nil {
-		return nil
-	}
-	return c.ContentRef
-}
-
-func (c *ContentToken) GetToken() string {
-	if c == nil {
-		return ""
-	}
-	return c.Token
-}
-
-func (c *ContentToken) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *ContentToken) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetContentRef sets the ContentRef field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContentToken) SetContentRef(contentRef *ContentRef) {
-	c.ContentRef = contentRef
-	c.require(contentTokenFieldContentRef)
-}
-
-// SetToken sets the Token field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContentToken) SetToken(token string) {
-	c.Token = token
-	c.require(contentTokenFieldToken)
-}
-
-func (c *ContentToken) UnmarshalJSON(data []byte) error {
-	type unmarshaler ContentToken
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = ContentToken(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *ContentToken) MarshalJSON() ([]byte, error) {
-	type embed ContentToken
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *ContentToken) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
 // Directory delete behavior for path-oriented deletes.
 type DeleteDirectoryBehavior string
 
@@ -1245,126 +1112,6 @@ func (d DeleteDirectoryBehavior) Ptr() *DeleteDirectoryBehavior {
 	return &d
 }
 
-// Directory entry removed by a delete operation.
-var (
-	deletedDirentryFieldDisplayName   = big.NewInt(1 << 0)
-	deletedDirentryFieldNameKey       = big.NewInt(1 << 1)
-	deletedDirentryFieldParentInodeID = big.NewInt(1 << 2)
-)
-
-type DeletedDirentry struct {
-	// Name shown to users.
-	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// Name used to look up the entry.
-	NameKey NameKey `json:"name_key" url:"name_key"`
-	// Stable inode ID within a namespace
-	ParentInodeID string `json:"parent_inode_id" url:"parent_inode_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (d *DeletedDirentry) GetDisplayName() DisplayName {
-	if d == nil {
-		return ""
-	}
-	return d.DisplayName
-}
-
-func (d *DeletedDirentry) GetNameKey() NameKey {
-	if d == nil {
-		return ""
-	}
-	return d.NameKey
-}
-
-func (d *DeletedDirentry) GetParentInodeID() string {
-	if d == nil {
-		return ""
-	}
-	return d.ParentInodeID
-}
-
-func (d *DeletedDirentry) GetExtraProperties() map[string]interface{} {
-	if d == nil {
-		return nil
-	}
-	return d.extraProperties
-}
-
-func (d *DeletedDirentry) require(field *big.Int) {
-	if d.explicitFields == nil {
-		d.explicitFields = big.NewInt(0)
-	}
-	d.explicitFields.Or(d.explicitFields, field)
-}
-
-// SetDisplayName sets the DisplayName field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedDirentry) SetDisplayName(displayName DisplayName) {
-	d.DisplayName = displayName
-	d.require(deletedDirentryFieldDisplayName)
-}
-
-// SetNameKey sets the NameKey field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedDirentry) SetNameKey(nameKey NameKey) {
-	d.NameKey = nameKey
-	d.require(deletedDirentryFieldNameKey)
-}
-
-// SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedDirentry) SetParentInodeID(parentInodeID string) {
-	d.ParentInodeID = parentInodeID
-	d.require(deletedDirentryFieldParentInodeID)
-}
-
-func (d *DeletedDirentry) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeletedDirentry
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*d = DeletedDirentry(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *d)
-	if err != nil {
-		return err
-	}
-	d.extraProperties = extraProperties
-	d.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (d *DeletedDirentry) MarshalJSON() ([]byte, error) {
-	type embed DeletedDirentry
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*d),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (d *DeletedDirentry) String() string {
-	if d == nil {
-		return "<nil>"
-	}
-	if len(d.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(d); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", d)
-}
-
 // Destination-conflict behavior for path-oriented puts, moves, and copies.
 type DestinationBehavior string
 
@@ -1386,6 +1133,126 @@ func NewDestinationBehaviorFromString(s string) (DestinationBehavior, error) {
 
 func (d DestinationBehavior) Ptr() *DestinationBehavior {
 	return &d
+}
+
+// A directory entry's parent and name.
+var (
+	directoryBindingFieldDisplayName   = big.NewInt(1 << 0)
+	directoryBindingFieldNameKey       = big.NewInt(1 << 1)
+	directoryBindingFieldParentInodeID = big.NewInt(1 << 2)
+)
+
+type DirectoryBinding struct {
+	// Name shown to users.
+	DisplayName DisplayName `json:"display_name" url:"display_name"`
+	// Name used to look up the entry.
+	NameKey NameKey `json:"name_key" url:"name_key"`
+	// Stable inode ID within a namespace
+	ParentInodeID string `json:"parent_inode_id" url:"parent_inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DirectoryBinding) GetDisplayName() DisplayName {
+	if d == nil {
+		return ""
+	}
+	return d.DisplayName
+}
+
+func (d *DirectoryBinding) GetNameKey() NameKey {
+	if d == nil {
+		return ""
+	}
+	return d.NameKey
+}
+
+func (d *DirectoryBinding) GetParentInodeID() string {
+	if d == nil {
+		return ""
+	}
+	return d.ParentInodeID
+}
+
+func (d *DirectoryBinding) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DirectoryBinding) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetDisplayName sets the DisplayName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DirectoryBinding) SetDisplayName(displayName DisplayName) {
+	d.DisplayName = displayName
+	d.require(directoryBindingFieldDisplayName)
+}
+
+// SetNameKey sets the NameKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DirectoryBinding) SetNameKey(nameKey NameKey) {
+	d.NameKey = nameKey
+	d.require(directoryBindingFieldNameKey)
+}
+
+// SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DirectoryBinding) SetParentInodeID(parentInodeID string) {
+	d.ParentInodeID = parentInodeID
+	d.require(directoryBindingFieldParentInodeID)
+}
+
+func (d *DirectoryBinding) UnmarshalJSON(data []byte) error {
+	type unmarshaler DirectoryBinding
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DirectoryBinding(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DirectoryBinding) MarshalJSON() ([]byte, error) {
+	type embed DirectoryBinding
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DirectoryBinding) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
 }
 
 // One semantic filesystem change inside a commit.
@@ -1890,14 +1757,14 @@ func (f *FilesystemChangeContentChanged) String() string {
 // A file or directory subtree was deleted. Use the enclosing change's
 // `committed_seq` as `deletion_seq` when restoring it.
 var (
-	filesystemChangeDeletedFieldDeletedDirentry = big.NewInt(1 << 0)
-	filesystemChangeDeletedFieldInodeID         = big.NewInt(1 << 1)
+	filesystemChangeDeletedFieldDeletedBinding = big.NewInt(1 << 0)
+	filesystemChangeDeletedFieldInodeID        = big.NewInt(1 << 1)
 )
 
 type FilesystemChangeDeleted struct {
 	// Directory binding removed by the deletion, when the delete
 	// recorded one.
-	DeletedDirentry *DeletedDirentry `json:"deleted_direntry,omitempty" url:"deleted_direntry,omitempty"`
+	DeletedBinding *DirectoryBinding `json:"deleted_binding,omitempty" url:"deleted_binding,omitempty"`
 	// Stable inode ID within a namespace
 	InodeID string `json:"inode_id" url:"inode_id"`
 
@@ -1908,11 +1775,11 @@ type FilesystemChangeDeleted struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeDeleted) GetDeletedDirentry() *DeletedDirentry {
+func (f *FilesystemChangeDeleted) GetDeletedBinding() *DirectoryBinding {
 	if f == nil {
 		return nil
 	}
-	return f.DeletedDirentry
+	return f.DeletedBinding
 }
 
 func (f *FilesystemChangeDeleted) GetInodeID() string {
@@ -1936,11 +1803,11 @@ func (f *FilesystemChangeDeleted) require(field *big.Int) {
 	f.explicitFields.Or(f.explicitFields, field)
 }
 
-// SetDeletedDirentry sets the DeletedDirentry field and marks it as non-optional;
+// SetDeletedBinding sets the DeletedBinding field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeDeleted) SetDeletedDirentry(deletedDirentry *DeletedDirentry) {
-	f.DeletedDirentry = deletedDirentry
-	f.require(filesystemChangeDeletedFieldDeletedDirentry)
+func (f *FilesystemChangeDeleted) SetDeletedBinding(deletedBinding *DirectoryBinding) {
+	f.DeletedBinding = deletedBinding
+	f.require(filesystemChangeDeletedFieldDeletedBinding)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
@@ -1994,12 +1861,15 @@ func (f *FilesystemChangeDeleted) String() string {
 
 // A directory was created.
 var (
-	filesystemChangeDirectoryCreatedFieldDisplayName   = big.NewInt(1 << 0)
-	filesystemChangeDirectoryCreatedFieldInodeID       = big.NewInt(1 << 1)
-	filesystemChangeDirectoryCreatedFieldParentInodeID = big.NewInt(1 << 2)
+	filesystemChangeDirectoryCreatedFieldBindingGeneration = big.NewInt(1 << 0)
+	filesystemChangeDirectoryCreatedFieldDisplayName       = big.NewInt(1 << 1)
+	filesystemChangeDirectoryCreatedFieldInodeID           = big.NewInt(1 << 2)
+	filesystemChangeDirectoryCreatedFieldParentInodeID     = big.NewInt(1 << 3)
 )
 
 type FilesystemChangeDirectoryCreated struct {
+	// Opaque identifier for the binding created by this event.
+	BindingGeneration string `json:"binding_generation" url:"binding_generation"`
 	// User-facing spelling of the new entry.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
 	// Stable inode ID within a namespace
@@ -2012,6 +1882,13 @@ type FilesystemChangeDirectoryCreated struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemChangeDirectoryCreated) GetBindingGeneration() string {
+	if f == nil {
+		return ""
+	}
+	return f.BindingGeneration
 }
 
 func (f *FilesystemChangeDirectoryCreated) GetDisplayName() DisplayName {
@@ -2047,6 +1924,13 @@ func (f *FilesystemChangeDirectoryCreated) require(field *big.Int) {
 		f.explicitFields = big.NewInt(0)
 	}
 	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemChangeDirectoryCreated) SetBindingGeneration(bindingGeneration string) {
+	f.BindingGeneration = bindingGeneration
+	f.require(filesystemChangeDirectoryCreatedFieldBindingGeneration)
 }
 
 // SetDisplayName sets the DisplayName field and marks it as non-optional;
@@ -2114,14 +1998,17 @@ func (f *FilesystemChangeDirectoryCreated) String() string {
 
 // A file and its first revision were created.
 var (
-	filesystemChangeFileCreatedFieldContentRef    = big.NewInt(1 << 0)
-	filesystemChangeFileCreatedFieldDisplayName   = big.NewInt(1 << 1)
-	filesystemChangeFileCreatedFieldInodeID       = big.NewInt(1 << 2)
-	filesystemChangeFileCreatedFieldParentInodeID = big.NewInt(1 << 3)
-	filesystemChangeFileCreatedFieldRevisionNo    = big.NewInt(1 << 4)
+	filesystemChangeFileCreatedFieldBindingGeneration = big.NewInt(1 << 0)
+	filesystemChangeFileCreatedFieldContentRef        = big.NewInt(1 << 1)
+	filesystemChangeFileCreatedFieldDisplayName       = big.NewInt(1 << 2)
+	filesystemChangeFileCreatedFieldInodeID           = big.NewInt(1 << 3)
+	filesystemChangeFileCreatedFieldParentInodeID     = big.NewInt(1 << 4)
+	filesystemChangeFileCreatedFieldRevisionNo        = big.NewInt(1 << 5)
 )
 
 type FilesystemChangeFileCreated struct {
+	// Opaque identifier for the binding created by this event.
+	BindingGeneration string `json:"binding_generation" url:"binding_generation"`
 	// Content of the first revision.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// User-facing spelling of the new entry.
@@ -2138,6 +2025,13 @@ type FilesystemChangeFileCreated struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemChangeFileCreated) GetBindingGeneration() string {
+	if f == nil {
+		return ""
+	}
+	return f.BindingGeneration
 }
 
 func (f *FilesystemChangeFileCreated) GetContentRef() *ContentRef {
@@ -2187,6 +2081,13 @@ func (f *FilesystemChangeFileCreated) require(field *big.Int) {
 		f.explicitFields = big.NewInt(0)
 	}
 	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemChangeFileCreated) SetBindingGeneration(bindingGeneration string) {
+	f.BindingGeneration = bindingGeneration
+	f.require(filesystemChangeFileCreatedFieldBindingGeneration)
 }
 
 // SetContentRef sets the ContentRef field and marks it as non-optional;
@@ -2268,14 +2169,17 @@ func (f *FilesystemChangeFileCreated) String() string {
 
 // An inode moved to a new parent directory or name.
 var (
-	filesystemChangeMovedFieldFromDisplayName   = big.NewInt(1 << 0)
-	filesystemChangeMovedFieldFromParentInodeID = big.NewInt(1 << 1)
-	filesystemChangeMovedFieldInodeID           = big.NewInt(1 << 2)
-	filesystemChangeMovedFieldToDisplayName     = big.NewInt(1 << 3)
-	filesystemChangeMovedFieldToParentInodeID   = big.NewInt(1 << 4)
+	filesystemChangeMovedFieldBindingGeneration = big.NewInt(1 << 0)
+	filesystemChangeMovedFieldFromDisplayName   = big.NewInt(1 << 1)
+	filesystemChangeMovedFieldFromParentInodeID = big.NewInt(1 << 2)
+	filesystemChangeMovedFieldInodeID           = big.NewInt(1 << 3)
+	filesystemChangeMovedFieldToDisplayName     = big.NewInt(1 << 4)
+	filesystemChangeMovedFieldToParentInodeID   = big.NewInt(1 << 5)
 )
 
 type FilesystemChangeMoved struct {
+	// Opaque identifier for the binding created by this event.
+	BindingGeneration string `json:"binding_generation" url:"binding_generation"`
 	// Spelling of the old binding.
 	FromDisplayName DisplayName `json:"from_display_name" url:"from_display_name"`
 	// Stable inode ID within a namespace
@@ -2292,6 +2196,13 @@ type FilesystemChangeMoved struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemChangeMoved) GetBindingGeneration() string {
+	if f == nil {
+		return ""
+	}
+	return f.BindingGeneration
 }
 
 func (f *FilesystemChangeMoved) GetFromDisplayName() DisplayName {
@@ -2341,6 +2252,13 @@ func (f *FilesystemChangeMoved) require(field *big.Int) {
 		f.explicitFields = big.NewInt(0)
 	}
 	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemChangeMoved) SetBindingGeneration(bindingGeneration string) {
+	f.BindingGeneration = bindingGeneration
+	f.require(filesystemChangeMovedFieldBindingGeneration)
 }
 
 // SetFromDisplayName sets the FromDisplayName field and marks it as non-optional;
@@ -2422,12 +2340,15 @@ func (f *FilesystemChangeMoved) String() string {
 
 // A deleted inode was recovered and re-bound.
 var (
-	filesystemChangeUndeletedFieldDisplayName   = big.NewInt(1 << 0)
-	filesystemChangeUndeletedFieldInodeID       = big.NewInt(1 << 1)
-	filesystemChangeUndeletedFieldParentInodeID = big.NewInt(1 << 2)
+	filesystemChangeUndeletedFieldBindingGeneration = big.NewInt(1 << 0)
+	filesystemChangeUndeletedFieldDisplayName       = big.NewInt(1 << 1)
+	filesystemChangeUndeletedFieldInodeID           = big.NewInt(1 << 2)
+	filesystemChangeUndeletedFieldParentInodeID     = big.NewInt(1 << 3)
 )
 
 type FilesystemChangeUndeleted struct {
+	// Opaque identifier for the binding created by this event.
+	BindingGeneration string `json:"binding_generation" url:"binding_generation"`
 	// Spelling of the recovered binding.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
 	// Stable inode ID within a namespace
@@ -2440,6 +2361,13 @@ type FilesystemChangeUndeleted struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemChangeUndeleted) GetBindingGeneration() string {
+	if f == nil {
+		return ""
+	}
+	return f.BindingGeneration
 }
 
 func (f *FilesystemChangeUndeleted) GetDisplayName() DisplayName {
@@ -2475,6 +2403,13 @@ func (f *FilesystemChangeUndeleted) require(field *big.Int) {
 		f.explicitFields = big.NewInt(0)
 	}
 	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemChangeUndeleted) SetBindingGeneration(bindingGeneration string) {
+	f.BindingGeneration = bindingGeneration
+	f.require(filesystemChangeUndeletedFieldBindingGeneration)
 }
 
 // SetDisplayName sets the DisplayName field and marks it as non-optional;
@@ -2540,22 +2475,25 @@ func (f *FilesystemChangeUndeleted) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// One path-oriented filesystem operation.
+// One filesystem operation.
 //
-// Unknown fields are rejected because concurrency guards are optional. A
-// misspelled guard must fail decoding instead of silently becoming `None`
-// and allowing an unguarded write. Any future fieldless variant must use
-// empty braces so serde also rejects unexpected fields for that variant.
+// Unknown fields are rejected so a misspelled concurrency guard cannot be ignored.
+// Fieldless variants must use empty braces so serde rejects unexpected fields.
 type FilesystemOperation struct {
-	Kind             string
-	CreateDirectory  *FsOpCreateDirectory
-	PutFile          *FsOpPutFile
-	DeletePath       *FsOpDeletePath
-	MovePath         *FsOpMovePath
-	CopyPath         *FsOpCopyPath
-	Undelete         *FsOpUndelete
-	RestoreRevision  *FsOpRestoreRevision
-	UpdateAttributes *FsOpUpdateAttributes
+	Kind                   string
+	CreateDirectory        *FilesystemOperationCreateDirectory
+	CreateDirectoryByInode *FilesystemOperationCreateDirectoryByInode
+	PutFile                *FilesystemOperationPutFile
+	PutFileByInode         *FilesystemOperationPutFileByInode
+	PutFileRevisionByInode *FilesystemOperationPutFileRevisionByInode
+	DeletePath             *FilesystemOperationDeletePath
+	DeleteByInode          *FilesystemOperationDeleteByInode
+	MovePath               *FilesystemOperationMovePath
+	MoveByInode            *FilesystemOperationMoveByInode
+	CopyPath               *FilesystemOperationCopyPath
+	Undelete               *FilesystemOperationUndelete
+	RestoreRevision        *FilesystemOperationRestoreRevision
+	UpdateAttributes       *FilesystemOperationUpdateAttributes
 
 	rawJSON json.RawMessage
 }
@@ -2567,56 +2505,91 @@ func (f *FilesystemOperation) GetKind() string {
 	return f.Kind
 }
 
-func (f *FilesystemOperation) GetCreateDirectory() *FsOpCreateDirectory {
+func (f *FilesystemOperation) GetCreateDirectory() *FilesystemOperationCreateDirectory {
 	if f == nil {
 		return nil
 	}
 	return f.CreateDirectory
 }
 
-func (f *FilesystemOperation) GetPutFile() *FsOpPutFile {
+func (f *FilesystemOperation) GetCreateDirectoryByInode() *FilesystemOperationCreateDirectoryByInode {
+	if f == nil {
+		return nil
+	}
+	return f.CreateDirectoryByInode
+}
+
+func (f *FilesystemOperation) GetPutFile() *FilesystemOperationPutFile {
 	if f == nil {
 		return nil
 	}
 	return f.PutFile
 }
 
-func (f *FilesystemOperation) GetDeletePath() *FsOpDeletePath {
+func (f *FilesystemOperation) GetPutFileByInode() *FilesystemOperationPutFileByInode {
+	if f == nil {
+		return nil
+	}
+	return f.PutFileByInode
+}
+
+func (f *FilesystemOperation) GetPutFileRevisionByInode() *FilesystemOperationPutFileRevisionByInode {
+	if f == nil {
+		return nil
+	}
+	return f.PutFileRevisionByInode
+}
+
+func (f *FilesystemOperation) GetDeletePath() *FilesystemOperationDeletePath {
 	if f == nil {
 		return nil
 	}
 	return f.DeletePath
 }
 
-func (f *FilesystemOperation) GetMovePath() *FsOpMovePath {
+func (f *FilesystemOperation) GetDeleteByInode() *FilesystemOperationDeleteByInode {
+	if f == nil {
+		return nil
+	}
+	return f.DeleteByInode
+}
+
+func (f *FilesystemOperation) GetMovePath() *FilesystemOperationMovePath {
 	if f == nil {
 		return nil
 	}
 	return f.MovePath
 }
 
-func (f *FilesystemOperation) GetCopyPath() *FsOpCopyPath {
+func (f *FilesystemOperation) GetMoveByInode() *FilesystemOperationMoveByInode {
+	if f == nil {
+		return nil
+	}
+	return f.MoveByInode
+}
+
+func (f *FilesystemOperation) GetCopyPath() *FilesystemOperationCopyPath {
 	if f == nil {
 		return nil
 	}
 	return f.CopyPath
 }
 
-func (f *FilesystemOperation) GetUndelete() *FsOpUndelete {
+func (f *FilesystemOperation) GetUndelete() *FilesystemOperationUndelete {
 	if f == nil {
 		return nil
 	}
 	return f.Undelete
 }
 
-func (f *FilesystemOperation) GetRestoreRevision() *FsOpRestoreRevision {
+func (f *FilesystemOperation) GetRestoreRevision() *FilesystemOperationRestoreRevision {
 	if f == nil {
 		return nil
 	}
 	return f.RestoreRevision
 }
 
-func (f *FilesystemOperation) GetUpdateAttributes() *FsOpUpdateAttributes {
+func (f *FilesystemOperation) GetUpdateAttributes() *FilesystemOperationUpdateAttributes {
 	if f == nil {
 		return nil
 	}
@@ -2636,49 +2609,79 @@ func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
 	}
 	switch unmarshaler.Kind {
 	case "create_directory":
-		value := new(FsOpCreateDirectory)
+		value := new(FilesystemOperationCreateDirectory)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.CreateDirectory = value
+	case "create_directory_by_inode":
+		value := new(FilesystemOperationCreateDirectoryByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.CreateDirectoryByInode = value
 	case "put_file":
-		value := new(FsOpPutFile)
+		value := new(FilesystemOperationPutFile)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.PutFile = value
+	case "put_file_by_inode":
+		value := new(FilesystemOperationPutFileByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.PutFileByInode = value
+	case "put_file_revision_by_inode":
+		value := new(FilesystemOperationPutFileRevisionByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.PutFileRevisionByInode = value
 	case "delete_path":
-		value := new(FsOpDeletePath)
+		value := new(FilesystemOperationDeletePath)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.DeletePath = value
+	case "delete_by_inode":
+		value := new(FilesystemOperationDeleteByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.DeleteByInode = value
 	case "move_path":
-		value := new(FsOpMovePath)
+		value := new(FilesystemOperationMovePath)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.MovePath = value
+	case "move_by_inode":
+		value := new(FilesystemOperationMoveByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.MoveByInode = value
 	case "copy_path":
-		value := new(FsOpCopyPath)
+		value := new(FilesystemOperationCopyPath)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.CopyPath = value
 	case "undelete":
-		value := new(FsOpUndelete)
+		value := new(FilesystemOperationUndelete)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.Undelete = value
 	case "restore_revision":
-		value := new(FsOpRestoreRevision)
+		value := new(FilesystemOperationRestoreRevision)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.RestoreRevision = value
 	case "update_attributes":
-		value := new(FsOpUpdateAttributes)
+		value := new(FilesystemOperationUpdateAttributes)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
@@ -2695,14 +2698,29 @@ func (f FilesystemOperation) MarshalJSON() ([]byte, error) {
 	if f.CreateDirectory != nil {
 		return internal.MarshalJSONWithExtraProperty(f.CreateDirectory, "kind", "create_directory")
 	}
+	if f.CreateDirectoryByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.CreateDirectoryByInode, "kind", "create_directory_by_inode")
+	}
 	if f.PutFile != nil {
 		return internal.MarshalJSONWithExtraProperty(f.PutFile, "kind", "put_file")
+	}
+	if f.PutFileByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.PutFileByInode, "kind", "put_file_by_inode")
+	}
+	if f.PutFileRevisionByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.PutFileRevisionByInode, "kind", "put_file_revision_by_inode")
 	}
 	if f.DeletePath != nil {
 		return internal.MarshalJSONWithExtraProperty(f.DeletePath, "kind", "delete_path")
 	}
+	if f.DeleteByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.DeleteByInode, "kind", "delete_by_inode")
+	}
 	if f.MovePath != nil {
 		return internal.MarshalJSONWithExtraProperty(f.MovePath, "kind", "move_path")
+	}
+	if f.MoveByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.MoveByInode, "kind", "move_by_inode")
 	}
 	if f.CopyPath != nil {
 		return internal.MarshalJSONWithExtraProperty(f.CopyPath, "kind", "copy_path")
@@ -2723,28 +2741,48 @@ func (f FilesystemOperation) MarshalJSON() ([]byte, error) {
 }
 
 type FilesystemOperationVisitor interface {
-	VisitCreateDirectory(*FsOpCreateDirectory) error
-	VisitPutFile(*FsOpPutFile) error
-	VisitDeletePath(*FsOpDeletePath) error
-	VisitMovePath(*FsOpMovePath) error
-	VisitCopyPath(*FsOpCopyPath) error
-	VisitUndelete(*FsOpUndelete) error
-	VisitRestoreRevision(*FsOpRestoreRevision) error
-	VisitUpdateAttributes(*FsOpUpdateAttributes) error
+	VisitCreateDirectory(*FilesystemOperationCreateDirectory) error
+	VisitCreateDirectoryByInode(*FilesystemOperationCreateDirectoryByInode) error
+	VisitPutFile(*FilesystemOperationPutFile) error
+	VisitPutFileByInode(*FilesystemOperationPutFileByInode) error
+	VisitPutFileRevisionByInode(*FilesystemOperationPutFileRevisionByInode) error
+	VisitDeletePath(*FilesystemOperationDeletePath) error
+	VisitDeleteByInode(*FilesystemOperationDeleteByInode) error
+	VisitMovePath(*FilesystemOperationMovePath) error
+	VisitMoveByInode(*FilesystemOperationMoveByInode) error
+	VisitCopyPath(*FilesystemOperationCopyPath) error
+	VisitUndelete(*FilesystemOperationUndelete) error
+	VisitRestoreRevision(*FilesystemOperationRestoreRevision) error
+	VisitUpdateAttributes(*FilesystemOperationUpdateAttributes) error
 }
 
 func (f *FilesystemOperation) Accept(visitor FilesystemOperationVisitor) error {
 	if f.CreateDirectory != nil {
 		return visitor.VisitCreateDirectory(f.CreateDirectory)
 	}
+	if f.CreateDirectoryByInode != nil {
+		return visitor.VisitCreateDirectoryByInode(f.CreateDirectoryByInode)
+	}
 	if f.PutFile != nil {
 		return visitor.VisitPutFile(f.PutFile)
+	}
+	if f.PutFileByInode != nil {
+		return visitor.VisitPutFileByInode(f.PutFileByInode)
+	}
+	if f.PutFileRevisionByInode != nil {
+		return visitor.VisitPutFileRevisionByInode(f.PutFileRevisionByInode)
 	}
 	if f.DeletePath != nil {
 		return visitor.VisitDeletePath(f.DeletePath)
 	}
+	if f.DeleteByInode != nil {
+		return visitor.VisitDeleteByInode(f.DeleteByInode)
+	}
 	if f.MovePath != nil {
 		return visitor.VisitMovePath(f.MovePath)
+	}
+	if f.MoveByInode != nil {
+		return visitor.VisitMoveByInode(f.MoveByInode)
 	}
 	if f.CopyPath != nil {
 		return visitor.VisitCopyPath(f.CopyPath)
@@ -2769,14 +2807,29 @@ func (f *FilesystemOperation) validate() error {
 	if f.CreateDirectory != nil {
 		fields = append(fields, "create_directory")
 	}
+	if f.CreateDirectoryByInode != nil {
+		fields = append(fields, "create_directory_by_inode")
+	}
 	if f.PutFile != nil {
 		fields = append(fields, "put_file")
+	}
+	if f.PutFileByInode != nil {
+		fields = append(fields, "put_file_by_inode")
+	}
+	if f.PutFileRevisionByInode != nil {
+		fields = append(fields, "put_file_revision_by_inode")
 	}
 	if f.DeletePath != nil {
 		fields = append(fields, "delete_path")
 	}
+	if f.DeleteByInode != nil {
+		fields = append(fields, "delete_by_inode")
+	}
 	if f.MovePath != nil {
 		fields = append(fields, "move_path")
+	}
+	if f.MoveByInode != nil {
+		fields = append(fields, "move_by_inode")
 	}
 	if f.CopyPath != nil {
 		fields = append(fields, "copy_path")
@@ -2818,12 +2871,12 @@ func (f *FilesystemOperation) validate() error {
 
 // Copy one file path to another path.
 var (
-	fsOpCopyPathFieldBehavior = big.NewInt(1 << 0)
-	fsOpCopyPathFieldFromPath = big.NewInt(1 << 1)
-	fsOpCopyPathFieldToPath   = big.NewInt(1 << 2)
+	filesystemOperationCopyPathFieldBehavior = big.NewInt(1 << 0)
+	filesystemOperationCopyPathFieldFromPath = big.NewInt(1 << 1)
+	filesystemOperationCopyPathFieldToPath   = big.NewInt(1 << 2)
 )
 
-type FsOpCopyPath struct {
+type FilesystemOperationCopyPath struct {
 	// Whether an existing destination file may receive a copied revision.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
 	// Absolute source path that must resolve to a visible file.
@@ -2838,35 +2891,35 @@ type FsOpCopyPath struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FsOpCopyPath) GetBehavior() *DestinationBehavior {
+func (f *FilesystemOperationCopyPath) GetBehavior() *DestinationBehavior {
 	if f == nil {
 		return nil
 	}
 	return f.Behavior
 }
 
-func (f *FsOpCopyPath) GetFromPath() AbsolutePath {
+func (f *FilesystemOperationCopyPath) GetFromPath() AbsolutePath {
 	if f == nil {
 		return ""
 	}
 	return f.FromPath
 }
 
-func (f *FsOpCopyPath) GetToPath() AbsolutePath {
+func (f *FilesystemOperationCopyPath) GetToPath() AbsolutePath {
 	if f == nil {
 		return ""
 	}
 	return f.ToPath
 }
 
-func (f *FsOpCopyPath) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemOperationCopyPath) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FsOpCopyPath) require(field *big.Int) {
+func (f *FilesystemOperationCopyPath) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -2875,32 +2928,32 @@ func (f *FsOpCopyPath) require(field *big.Int) {
 
 // SetBehavior sets the Behavior field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpCopyPath) SetBehavior(behavior *DestinationBehavior) {
+func (f *FilesystemOperationCopyPath) SetBehavior(behavior *DestinationBehavior) {
 	f.Behavior = behavior
-	f.require(fsOpCopyPathFieldBehavior)
+	f.require(filesystemOperationCopyPathFieldBehavior)
 }
 
 // SetFromPath sets the FromPath field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpCopyPath) SetFromPath(fromPath AbsolutePath) {
+func (f *FilesystemOperationCopyPath) SetFromPath(fromPath AbsolutePath) {
 	f.FromPath = fromPath
-	f.require(fsOpCopyPathFieldFromPath)
+	f.require(filesystemOperationCopyPathFieldFromPath)
 }
 
 // SetToPath sets the ToPath field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpCopyPath) SetToPath(toPath AbsolutePath) {
+func (f *FilesystemOperationCopyPath) SetToPath(toPath AbsolutePath) {
 	f.ToPath = toPath
-	f.require(fsOpCopyPathFieldToPath)
+	f.require(filesystemOperationCopyPathFieldToPath)
 }
 
-func (f *FsOpCopyPath) UnmarshalJSON(data []byte) error {
-	type unmarshaler FsOpCopyPath
+func (f *FilesystemOperationCopyPath) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationCopyPath
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FsOpCopyPath(value)
+	*f = FilesystemOperationCopyPath(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -2910,8 +2963,8 @@ func (f *FsOpCopyPath) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FsOpCopyPath) MarshalJSON() ([]byte, error) {
-	type embed FsOpCopyPath
+func (f *FilesystemOperationCopyPath) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationCopyPath
 	var marshaler = struct {
 		embed
 	}{
@@ -2921,7 +2974,7 @@ func (f *FsOpCopyPath) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FsOpCopyPath) String() string {
+func (f *FilesystemOperationCopyPath) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -2938,11 +2991,11 @@ func (f *FsOpCopyPath) String() string {
 
 // Create one directory.
 var (
-	fsOpCreateDirectoryFieldParents = big.NewInt(1 << 0)
-	fsOpCreateDirectoryFieldPath    = big.NewInt(1 << 1)
+	filesystemOperationCreateDirectoryFieldParents = big.NewInt(1 << 0)
+	filesystemOperationCreateDirectoryFieldPath    = big.NewInt(1 << 1)
 )
 
-type FsOpCreateDirectory struct {
+type FilesystemOperationCreateDirectory struct {
 	// Also create missing ancestor directories (the same auto-create
 	// `put_file` performs). The final component must still be new.
 	Parents *bool `json:"parents,omitempty" url:"parents,omitempty"`
@@ -2956,28 +3009,28 @@ type FsOpCreateDirectory struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FsOpCreateDirectory) GetParents() *bool {
+func (f *FilesystemOperationCreateDirectory) GetParents() *bool {
 	if f == nil {
 		return nil
 	}
 	return f.Parents
 }
 
-func (f *FsOpCreateDirectory) GetPath() AbsolutePath {
+func (f *FilesystemOperationCreateDirectory) GetPath() AbsolutePath {
 	if f == nil {
 		return ""
 	}
 	return f.Path
 }
 
-func (f *FsOpCreateDirectory) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemOperationCreateDirectory) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FsOpCreateDirectory) require(field *big.Int) {
+func (f *FilesystemOperationCreateDirectory) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -2986,25 +3039,25 @@ func (f *FsOpCreateDirectory) require(field *big.Int) {
 
 // SetParents sets the Parents field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpCreateDirectory) SetParents(parents *bool) {
+func (f *FilesystemOperationCreateDirectory) SetParents(parents *bool) {
 	f.Parents = parents
-	f.require(fsOpCreateDirectoryFieldParents)
+	f.require(filesystemOperationCreateDirectoryFieldParents)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpCreateDirectory) SetPath(path AbsolutePath) {
+func (f *FilesystemOperationCreateDirectory) SetPath(path AbsolutePath) {
 	f.Path = path
-	f.require(fsOpCreateDirectoryFieldPath)
+	f.require(filesystemOperationCreateDirectoryFieldPath)
 }
 
-func (f *FsOpCreateDirectory) UnmarshalJSON(data []byte) error {
-	type unmarshaler FsOpCreateDirectory
+func (f *FilesystemOperationCreateDirectory) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationCreateDirectory
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FsOpCreateDirectory(value)
+	*f = FilesystemOperationCreateDirectory(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -3014,8 +3067,8 @@ func (f *FsOpCreateDirectory) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FsOpCreateDirectory) MarshalJSON() ([]byte, error) {
-	type embed FsOpCreateDirectory
+func (f *FilesystemOperationCreateDirectory) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationCreateDirectory
 	var marshaler = struct {
 		embed
 	}{
@@ -3025,7 +3078,230 @@ func (f *FsOpCreateDirectory) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FsOpCreateDirectory) String() string {
+func (f *FilesystemOperationCreateDirectory) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Create a directory under an existing parent inode.
+var (
+	filesystemOperationCreateDirectoryByInodeFieldDisplayName   = big.NewInt(1 << 0)
+	filesystemOperationCreateDirectoryByInodeFieldParentInodeID = big.NewInt(1 << 1)
+)
+
+type FilesystemOperationCreateDirectoryByInode struct {
+	// New directory name.
+	DisplayName DisplayName `json:"display_name" url:"display_name"`
+	// Stable inode ID within a namespace
+	ParentInodeID string `json:"parent_inode_id" url:"parent_inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationCreateDirectoryByInode) GetDisplayName() DisplayName {
+	if f == nil {
+		return ""
+	}
+	return f.DisplayName
+}
+
+func (f *FilesystemOperationCreateDirectoryByInode) GetParentInodeID() string {
+	if f == nil {
+		return ""
+	}
+	return f.ParentInodeID
+}
+
+func (f *FilesystemOperationCreateDirectoryByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationCreateDirectoryByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetDisplayName sets the DisplayName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationCreateDirectoryByInode) SetDisplayName(displayName DisplayName) {
+	f.DisplayName = displayName
+	f.require(filesystemOperationCreateDirectoryByInodeFieldDisplayName)
+}
+
+// SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationCreateDirectoryByInode) SetParentInodeID(parentInodeID string) {
+	f.ParentInodeID = parentInodeID
+	f.require(filesystemOperationCreateDirectoryByInodeFieldParentInodeID)
+}
+
+func (f *FilesystemOperationCreateDirectoryByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationCreateDirectoryByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationCreateDirectoryByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationCreateDirectoryByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationCreateDirectoryByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationCreateDirectoryByInode) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Delete an inode if its current binding matches.
+var (
+	filesystemOperationDeleteByInodeFieldBehavior                  = big.NewInt(1 << 0)
+	filesystemOperationDeleteByInodeFieldExpectedBindingGeneration = big.NewInt(1 << 1)
+	filesystemOperationDeleteByInodeFieldInodeID                   = big.NewInt(1 << 2)
+)
+
+type FilesystemOperationDeleteByInode struct {
+	// Whether a non-empty directory may be tombstoned recursively.
+	Behavior *DeleteDirectoryBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
+	// Binding generation required for the delete.
+	ExpectedBindingGeneration string `json:"expected_binding_generation" url:"expected_binding_generation"`
+	// Stable inode ID within a namespace
+	InodeID string `json:"inode_id" url:"inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationDeleteByInode) GetBehavior() *DeleteDirectoryBehavior {
+	if f == nil {
+		return nil
+	}
+	return f.Behavior
+}
+
+func (f *FilesystemOperationDeleteByInode) GetExpectedBindingGeneration() string {
+	if f == nil {
+		return ""
+	}
+	return f.ExpectedBindingGeneration
+}
+
+func (f *FilesystemOperationDeleteByInode) GetInodeID() string {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemOperationDeleteByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationDeleteByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetBehavior sets the Behavior field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationDeleteByInode) SetBehavior(behavior *DeleteDirectoryBehavior) {
+	f.Behavior = behavior
+	f.require(filesystemOperationDeleteByInodeFieldBehavior)
+}
+
+// SetExpectedBindingGeneration sets the ExpectedBindingGeneration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationDeleteByInode) SetExpectedBindingGeneration(expectedBindingGeneration string) {
+	f.ExpectedBindingGeneration = expectedBindingGeneration
+	f.require(filesystemOperationDeleteByInodeFieldExpectedBindingGeneration)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationDeleteByInode) SetInodeID(inodeID string) {
+	f.InodeID = inodeID
+	f.require(filesystemOperationDeleteByInodeFieldInodeID)
+}
+
+func (f *FilesystemOperationDeleteByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationDeleteByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationDeleteByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationDeleteByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationDeleteByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationDeleteByInode) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3042,12 +3318,12 @@ func (f *FsOpCreateDirectory) String() string {
 
 // Delete one path.
 var (
-	fsOpDeletePathFieldBehavior        = big.NewInt(1 << 0)
-	fsOpDeletePathFieldExpectedInodeID = big.NewInt(1 << 1)
-	fsOpDeletePathFieldPath            = big.NewInt(1 << 2)
+	filesystemOperationDeletePathFieldBehavior        = big.NewInt(1 << 0)
+	filesystemOperationDeletePathFieldExpectedInodeID = big.NewInt(1 << 1)
+	filesystemOperationDeletePathFieldPath            = big.NewInt(1 << 2)
 )
 
-type FsOpDeletePath struct {
+type FilesystemOperationDeletePath struct {
 	// Whether a non-empty directory may be tombstoned recursively.
 	Behavior *DeleteDirectoryBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
 	// Stable inode ID within a namespace
@@ -3062,35 +3338,35 @@ type FsOpDeletePath struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FsOpDeletePath) GetBehavior() *DeleteDirectoryBehavior {
+func (f *FilesystemOperationDeletePath) GetBehavior() *DeleteDirectoryBehavior {
 	if f == nil {
 		return nil
 	}
 	return f.Behavior
 }
 
-func (f *FsOpDeletePath) GetExpectedInodeID() *string {
+func (f *FilesystemOperationDeletePath) GetExpectedInodeID() *string {
 	if f == nil {
 		return nil
 	}
 	return f.ExpectedInodeID
 }
 
-func (f *FsOpDeletePath) GetPath() AbsolutePath {
+func (f *FilesystemOperationDeletePath) GetPath() AbsolutePath {
 	if f == nil {
 		return ""
 	}
 	return f.Path
 }
 
-func (f *FsOpDeletePath) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemOperationDeletePath) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FsOpDeletePath) require(field *big.Int) {
+func (f *FilesystemOperationDeletePath) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -3099,32 +3375,32 @@ func (f *FsOpDeletePath) require(field *big.Int) {
 
 // SetBehavior sets the Behavior field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpDeletePath) SetBehavior(behavior *DeleteDirectoryBehavior) {
+func (f *FilesystemOperationDeletePath) SetBehavior(behavior *DeleteDirectoryBehavior) {
 	f.Behavior = behavior
-	f.require(fsOpDeletePathFieldBehavior)
+	f.require(filesystemOperationDeletePathFieldBehavior)
 }
 
 // SetExpectedInodeID sets the ExpectedInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpDeletePath) SetExpectedInodeID(expectedInodeID *string) {
+func (f *FilesystemOperationDeletePath) SetExpectedInodeID(expectedInodeID *string) {
 	f.ExpectedInodeID = expectedInodeID
-	f.require(fsOpDeletePathFieldExpectedInodeID)
+	f.require(filesystemOperationDeletePathFieldExpectedInodeID)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpDeletePath) SetPath(path AbsolutePath) {
+func (f *FilesystemOperationDeletePath) SetPath(path AbsolutePath) {
 	f.Path = path
-	f.require(fsOpDeletePathFieldPath)
+	f.require(filesystemOperationDeletePathFieldPath)
 }
 
-func (f *FsOpDeletePath) UnmarshalJSON(data []byte) error {
-	type unmarshaler FsOpDeletePath
+func (f *FilesystemOperationDeletePath) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationDeletePath
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FsOpDeletePath(value)
+	*f = FilesystemOperationDeletePath(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -3134,8 +3410,8 @@ func (f *FsOpDeletePath) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FsOpDeletePath) MarshalJSON() ([]byte, error) {
-	type embed FsOpDeletePath
+func (f *FilesystemOperationDeletePath) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationDeletePath
 	var marshaler = struct {
 		embed
 	}{
@@ -3145,7 +3421,161 @@ func (f *FsOpDeletePath) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FsOpDeletePath) String() string {
+func (f *FilesystemOperationDeletePath) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Move an inode if its current binding matches.
+var (
+	filesystemOperationMoveByInodeFieldBehavior                  = big.NewInt(1 << 0)
+	filesystemOperationMoveByInodeFieldExpectedBindingGeneration = big.NewInt(1 << 1)
+	filesystemOperationMoveByInodeFieldInodeID                   = big.NewInt(1 << 2)
+	filesystemOperationMoveByInodeFieldToDisplayName             = big.NewInt(1 << 3)
+	filesystemOperationMoveByInodeFieldToParentInodeID           = big.NewInt(1 << 4)
+)
+
+type FilesystemOperationMoveByInode struct {
+	// Whether an existing destination file may be replaced.
+	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
+	// Binding generation required for the move.
+	ExpectedBindingGeneration string `json:"expected_binding_generation" url:"expected_binding_generation"`
+	// Stable inode ID within a namespace
+	InodeID string `json:"inode_id" url:"inode_id"`
+	// New name.
+	ToDisplayName DisplayName `json:"to_display_name" url:"to_display_name"`
+	// Stable inode ID within a namespace
+	ToParentInodeID string `json:"to_parent_inode_id" url:"to_parent_inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationMoveByInode) GetBehavior() *DestinationBehavior {
+	if f == nil {
+		return nil
+	}
+	return f.Behavior
+}
+
+func (f *FilesystemOperationMoveByInode) GetExpectedBindingGeneration() string {
+	if f == nil {
+		return ""
+	}
+	return f.ExpectedBindingGeneration
+}
+
+func (f *FilesystemOperationMoveByInode) GetInodeID() string {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemOperationMoveByInode) GetToDisplayName() DisplayName {
+	if f == nil {
+		return ""
+	}
+	return f.ToDisplayName
+}
+
+func (f *FilesystemOperationMoveByInode) GetToParentInodeID() string {
+	if f == nil {
+		return ""
+	}
+	return f.ToParentInodeID
+}
+
+func (f *FilesystemOperationMoveByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationMoveByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetBehavior sets the Behavior field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationMoveByInode) SetBehavior(behavior *DestinationBehavior) {
+	f.Behavior = behavior
+	f.require(filesystemOperationMoveByInodeFieldBehavior)
+}
+
+// SetExpectedBindingGeneration sets the ExpectedBindingGeneration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationMoveByInode) SetExpectedBindingGeneration(expectedBindingGeneration string) {
+	f.ExpectedBindingGeneration = expectedBindingGeneration
+	f.require(filesystemOperationMoveByInodeFieldExpectedBindingGeneration)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationMoveByInode) SetInodeID(inodeID string) {
+	f.InodeID = inodeID
+	f.require(filesystemOperationMoveByInodeFieldInodeID)
+}
+
+// SetToDisplayName sets the ToDisplayName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationMoveByInode) SetToDisplayName(toDisplayName DisplayName) {
+	f.ToDisplayName = toDisplayName
+	f.require(filesystemOperationMoveByInodeFieldToDisplayName)
+}
+
+// SetToParentInodeID sets the ToParentInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationMoveByInode) SetToParentInodeID(toParentInodeID string) {
+	f.ToParentInodeID = toParentInodeID
+	f.require(filesystemOperationMoveByInodeFieldToParentInodeID)
+}
+
+func (f *FilesystemOperationMoveByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationMoveByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationMoveByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationMoveByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationMoveByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationMoveByInode) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3162,12 +3592,12 @@ func (f *FsOpDeletePath) String() string {
 
 // Move one path to another path.
 var (
-	fsOpMovePathFieldBehavior = big.NewInt(1 << 0)
-	fsOpMovePathFieldFromPath = big.NewInt(1 << 1)
-	fsOpMovePathFieldToPath   = big.NewInt(1 << 2)
+	filesystemOperationMovePathFieldBehavior = big.NewInt(1 << 0)
+	filesystemOperationMovePathFieldFromPath = big.NewInt(1 << 1)
+	filesystemOperationMovePathFieldToPath   = big.NewInt(1 << 2)
 )
 
-type FsOpMovePath struct {
+type FilesystemOperationMovePath struct {
 	// Whether an existing destination file may be replaced.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
 	// Absolute source path that must resolve to a visible inode.
@@ -3182,35 +3612,35 @@ type FsOpMovePath struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FsOpMovePath) GetBehavior() *DestinationBehavior {
+func (f *FilesystemOperationMovePath) GetBehavior() *DestinationBehavior {
 	if f == nil {
 		return nil
 	}
 	return f.Behavior
 }
 
-func (f *FsOpMovePath) GetFromPath() AbsolutePath {
+func (f *FilesystemOperationMovePath) GetFromPath() AbsolutePath {
 	if f == nil {
 		return ""
 	}
 	return f.FromPath
 }
 
-func (f *FsOpMovePath) GetToPath() AbsolutePath {
+func (f *FilesystemOperationMovePath) GetToPath() AbsolutePath {
 	if f == nil {
 		return ""
 	}
 	return f.ToPath
 }
 
-func (f *FsOpMovePath) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemOperationMovePath) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FsOpMovePath) require(field *big.Int) {
+func (f *FilesystemOperationMovePath) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -3219,32 +3649,32 @@ func (f *FsOpMovePath) require(field *big.Int) {
 
 // SetBehavior sets the Behavior field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpMovePath) SetBehavior(behavior *DestinationBehavior) {
+func (f *FilesystemOperationMovePath) SetBehavior(behavior *DestinationBehavior) {
 	f.Behavior = behavior
-	f.require(fsOpMovePathFieldBehavior)
+	f.require(filesystemOperationMovePathFieldBehavior)
 }
 
 // SetFromPath sets the FromPath field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpMovePath) SetFromPath(fromPath AbsolutePath) {
+func (f *FilesystemOperationMovePath) SetFromPath(fromPath AbsolutePath) {
 	f.FromPath = fromPath
-	f.require(fsOpMovePathFieldFromPath)
+	f.require(filesystemOperationMovePathFieldFromPath)
 }
 
 // SetToPath sets the ToPath field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpMovePath) SetToPath(toPath AbsolutePath) {
+func (f *FilesystemOperationMovePath) SetToPath(toPath AbsolutePath) {
 	f.ToPath = toPath
-	f.require(fsOpMovePathFieldToPath)
+	f.require(filesystemOperationMovePathFieldToPath)
 }
 
-func (f *FsOpMovePath) UnmarshalJSON(data []byte) error {
-	type unmarshaler FsOpMovePath
+func (f *FilesystemOperationMovePath) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationMovePath
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FsOpMovePath(value)
+	*f = FilesystemOperationMovePath(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -3254,8 +3684,8 @@ func (f *FsOpMovePath) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FsOpMovePath) MarshalJSON() ([]byte, error) {
-	type embed FsOpMovePath
+func (f *FilesystemOperationMovePath) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationMovePath
 	var marshaler = struct {
 		embed
 	}{
@@ -3265,7 +3695,7 @@ func (f *FsOpMovePath) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FsOpMovePath) String() string {
+func (f *FilesystemOperationMovePath) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3282,13 +3712,13 @@ func (f *FsOpMovePath) String() string {
 
 // Create or replace one file with an already-durable content ref.
 var (
-	fsOpPutFileFieldBehavior           = big.NewInt(1 << 0)
-	fsOpPutFileFieldContentRef         = big.NewInt(1 << 1)
-	fsOpPutFileFieldExpectedRevisionNo = big.NewInt(1 << 2)
-	fsOpPutFileFieldPath               = big.NewInt(1 << 3)
+	filesystemOperationPutFileFieldBehavior           = big.NewInt(1 << 0)
+	filesystemOperationPutFileFieldContentRef         = big.NewInt(1 << 1)
+	filesystemOperationPutFileFieldExpectedRevisionNo = big.NewInt(1 << 2)
+	filesystemOperationPutFileFieldPath               = big.NewInt(1 << 3)
 )
 
-type FsOpPutFile struct {
+type FilesystemOperationPutFile struct {
 	// Whether an existing file may receive a new revision instead of causing a conflict.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
 	// Immutable bytes that must be covered by a valid preparation proof.
@@ -3308,42 +3738,42 @@ type FsOpPutFile struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FsOpPutFile) GetBehavior() *DestinationBehavior {
+func (f *FilesystemOperationPutFile) GetBehavior() *DestinationBehavior {
 	if f == nil {
 		return nil
 	}
 	return f.Behavior
 }
 
-func (f *FsOpPutFile) GetContentRef() *ContentRef {
+func (f *FilesystemOperationPutFile) GetContentRef() *ContentRef {
 	if f == nil {
 		return nil
 	}
 	return f.ContentRef
 }
 
-func (f *FsOpPutFile) GetExpectedRevisionNo() *RevisionNo {
+func (f *FilesystemOperationPutFile) GetExpectedRevisionNo() *RevisionNo {
 	if f == nil {
 		return nil
 	}
 	return f.ExpectedRevisionNo
 }
 
-func (f *FsOpPutFile) GetPath() AbsolutePath {
+func (f *FilesystemOperationPutFile) GetPath() AbsolutePath {
 	if f == nil {
 		return ""
 	}
 	return f.Path
 }
 
-func (f *FsOpPutFile) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemOperationPutFile) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FsOpPutFile) require(field *big.Int) {
+func (f *FilesystemOperationPutFile) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -3352,39 +3782,39 @@ func (f *FsOpPutFile) require(field *big.Int) {
 
 // SetBehavior sets the Behavior field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpPutFile) SetBehavior(behavior *DestinationBehavior) {
+func (f *FilesystemOperationPutFile) SetBehavior(behavior *DestinationBehavior) {
 	f.Behavior = behavior
-	f.require(fsOpPutFileFieldBehavior)
+	f.require(filesystemOperationPutFileFieldBehavior)
 }
 
 // SetContentRef sets the ContentRef field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpPutFile) SetContentRef(contentRef *ContentRef) {
+func (f *FilesystemOperationPutFile) SetContentRef(contentRef *ContentRef) {
 	f.ContentRef = contentRef
-	f.require(fsOpPutFileFieldContentRef)
+	f.require(filesystemOperationPutFileFieldContentRef)
 }
 
 // SetExpectedRevisionNo sets the ExpectedRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpPutFile) SetExpectedRevisionNo(expectedRevisionNo *RevisionNo) {
+func (f *FilesystemOperationPutFile) SetExpectedRevisionNo(expectedRevisionNo *RevisionNo) {
 	f.ExpectedRevisionNo = expectedRevisionNo
-	f.require(fsOpPutFileFieldExpectedRevisionNo)
+	f.require(filesystemOperationPutFileFieldExpectedRevisionNo)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpPutFile) SetPath(path AbsolutePath) {
+func (f *FilesystemOperationPutFile) SetPath(path AbsolutePath) {
 	f.Path = path
-	f.require(fsOpPutFileFieldPath)
+	f.require(filesystemOperationPutFileFieldPath)
 }
 
-func (f *FsOpPutFile) UnmarshalJSON(data []byte) error {
-	type unmarshaler FsOpPutFile
+func (f *FilesystemOperationPutFile) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationPutFile
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FsOpPutFile(value)
+	*f = FilesystemOperationPutFile(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -3394,8 +3824,8 @@ func (f *FsOpPutFile) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FsOpPutFile) MarshalJSON() ([]byte, error) {
-	type embed FsOpPutFile
+func (f *FilesystemOperationPutFile) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationPutFile
 	var marshaler = struct {
 		embed
 	}{
@@ -3405,7 +3835,247 @@ func (f *FsOpPutFile) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FsOpPutFile) String() string {
+func (f *FilesystemOperationPutFile) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Create a file under an existing parent inode. The name must be unused.
+var (
+	filesystemOperationPutFileByInodeFieldContentRef    = big.NewInt(1 << 0)
+	filesystemOperationPutFileByInodeFieldDisplayName   = big.NewInt(1 << 1)
+	filesystemOperationPutFileByInodeFieldParentInodeID = big.NewInt(1 << 2)
+)
+
+type FilesystemOperationPutFileByInode struct {
+	// Immutable bytes that must be covered by a valid preparation proof.
+	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
+	// New file name.
+	DisplayName DisplayName `json:"display_name" url:"display_name"`
+	// Stable inode ID within a namespace
+	ParentInodeID string `json:"parent_inode_id" url:"parent_inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationPutFileByInode) GetContentRef() *ContentRef {
+	if f == nil {
+		return nil
+	}
+	return f.ContentRef
+}
+
+func (f *FilesystemOperationPutFileByInode) GetDisplayName() DisplayName {
+	if f == nil {
+		return ""
+	}
+	return f.DisplayName
+}
+
+func (f *FilesystemOperationPutFileByInode) GetParentInodeID() string {
+	if f == nil {
+		return ""
+	}
+	return f.ParentInodeID
+}
+
+func (f *FilesystemOperationPutFileByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationPutFileByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetContentRef sets the ContentRef field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationPutFileByInode) SetContentRef(contentRef *ContentRef) {
+	f.ContentRef = contentRef
+	f.require(filesystemOperationPutFileByInodeFieldContentRef)
+}
+
+// SetDisplayName sets the DisplayName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationPutFileByInode) SetDisplayName(displayName DisplayName) {
+	f.DisplayName = displayName
+	f.require(filesystemOperationPutFileByInodeFieldDisplayName)
+}
+
+// SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationPutFileByInode) SetParentInodeID(parentInodeID string) {
+	f.ParentInodeID = parentInodeID
+	f.require(filesystemOperationPutFileByInodeFieldParentInodeID)
+}
+
+func (f *FilesystemOperationPutFileByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationPutFileByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationPutFileByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationPutFileByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationPutFileByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationPutFileByInode) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Append a revision to a file inode if its current revision matches.
+var (
+	filesystemOperationPutFileRevisionByInodeFieldContentRef         = big.NewInt(1 << 0)
+	filesystemOperationPutFileRevisionByInodeFieldExpectedRevisionNo = big.NewInt(1 << 1)
+	filesystemOperationPutFileRevisionByInodeFieldInodeID            = big.NewInt(1 << 2)
+)
+
+type FilesystemOperationPutFileRevisionByInode struct {
+	// Immutable bytes that must be covered by a valid preparation proof.
+	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
+	// Current revision required for the write.
+	ExpectedRevisionNo RevisionNo `json:"expected_revision_no" url:"expected_revision_no"`
+	// Stable inode ID within a namespace
+	InodeID string `json:"inode_id" url:"inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationPutFileRevisionByInode) GetContentRef() *ContentRef {
+	if f == nil {
+		return nil
+	}
+	return f.ContentRef
+}
+
+func (f *FilesystemOperationPutFileRevisionByInode) GetExpectedRevisionNo() RevisionNo {
+	if f == nil {
+		return 0
+	}
+	return f.ExpectedRevisionNo
+}
+
+func (f *FilesystemOperationPutFileRevisionByInode) GetInodeID() string {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemOperationPutFileRevisionByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationPutFileRevisionByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetContentRef sets the ContentRef field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationPutFileRevisionByInode) SetContentRef(contentRef *ContentRef) {
+	f.ContentRef = contentRef
+	f.require(filesystemOperationPutFileRevisionByInodeFieldContentRef)
+}
+
+// SetExpectedRevisionNo sets the ExpectedRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationPutFileRevisionByInode) SetExpectedRevisionNo(expectedRevisionNo RevisionNo) {
+	f.ExpectedRevisionNo = expectedRevisionNo
+	f.require(filesystemOperationPutFileRevisionByInodeFieldExpectedRevisionNo)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationPutFileRevisionByInode) SetInodeID(inodeID string) {
+	f.InodeID = inodeID
+	f.require(filesystemOperationPutFileRevisionByInodeFieldInodeID)
+}
+
+func (f *FilesystemOperationPutFileRevisionByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationPutFileRevisionByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationPutFileRevisionByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationPutFileRevisionByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationPutFileRevisionByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationPutFileRevisionByInode) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3422,11 +4092,11 @@ func (f *FsOpPutFile) String() string {
 
 // Restore an older revision as the current revision for a path.
 var (
-	fsOpRestoreRevisionFieldPath             = big.NewInt(1 << 0)
-	fsOpRestoreRevisionFieldSourceRevisionNo = big.NewInt(1 << 1)
+	filesystemOperationRestoreRevisionFieldPath             = big.NewInt(1 << 0)
+	filesystemOperationRestoreRevisionFieldSourceRevisionNo = big.NewInt(1 << 1)
 )
 
-type FsOpRestoreRevision struct {
+type FilesystemOperationRestoreRevision struct {
 	// Absolute path that must resolve to a visible file.
 	Path AbsolutePath `json:"path" url:"path"`
 	// Existing historical revision whose content will be copied into a new current revision.
@@ -3439,28 +4109,28 @@ type FsOpRestoreRevision struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FsOpRestoreRevision) GetPath() AbsolutePath {
+func (f *FilesystemOperationRestoreRevision) GetPath() AbsolutePath {
 	if f == nil {
 		return ""
 	}
 	return f.Path
 }
 
-func (f *FsOpRestoreRevision) GetSourceRevisionNo() RevisionNo {
+func (f *FilesystemOperationRestoreRevision) GetSourceRevisionNo() RevisionNo {
 	if f == nil {
 		return 0
 	}
 	return f.SourceRevisionNo
 }
 
-func (f *FsOpRestoreRevision) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemOperationRestoreRevision) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FsOpRestoreRevision) require(field *big.Int) {
+func (f *FilesystemOperationRestoreRevision) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -3469,25 +4139,25 @@ func (f *FsOpRestoreRevision) require(field *big.Int) {
 
 // SetPath sets the Path field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpRestoreRevision) SetPath(path AbsolutePath) {
+func (f *FilesystemOperationRestoreRevision) SetPath(path AbsolutePath) {
 	f.Path = path
-	f.require(fsOpRestoreRevisionFieldPath)
+	f.require(filesystemOperationRestoreRevisionFieldPath)
 }
 
 // SetSourceRevisionNo sets the SourceRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpRestoreRevision) SetSourceRevisionNo(sourceRevisionNo RevisionNo) {
+func (f *FilesystemOperationRestoreRevision) SetSourceRevisionNo(sourceRevisionNo RevisionNo) {
 	f.SourceRevisionNo = sourceRevisionNo
-	f.require(fsOpRestoreRevisionFieldSourceRevisionNo)
+	f.require(filesystemOperationRestoreRevisionFieldSourceRevisionNo)
 }
 
-func (f *FsOpRestoreRevision) UnmarshalJSON(data []byte) error {
-	type unmarshaler FsOpRestoreRevision
+func (f *FilesystemOperationRestoreRevision) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationRestoreRevision
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FsOpRestoreRevision(value)
+	*f = FilesystemOperationRestoreRevision(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -3497,8 +4167,8 @@ func (f *FsOpRestoreRevision) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FsOpRestoreRevision) MarshalJSON() ([]byte, error) {
-	type embed FsOpRestoreRevision
+func (f *FilesystemOperationRestoreRevision) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationRestoreRevision
 	var marshaler = struct {
 		embed
 	}{
@@ -3508,7 +4178,7 @@ func (f *FsOpRestoreRevision) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FsOpRestoreRevision) String() string {
+func (f *FilesystemOperationRestoreRevision) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3528,12 +4198,12 @@ func (f *FsOpRestoreRevision) String() string {
 // `inode_id` and `deletion_seq` identify one exact deletion. A stale
 // sequence returns `not_deleted` and cannot undo a later deletion.
 var (
-	fsOpUndeleteFieldDeletionSeq = big.NewInt(1 << 0)
-	fsOpUndeleteFieldInodeID     = big.NewInt(1 << 1)
-	fsOpUndeleteFieldPath        = big.NewInt(1 << 2)
+	filesystemOperationUndeleteFieldDeletionSeq = big.NewInt(1 << 0)
+	filesystemOperationUndeleteFieldInodeID     = big.NewInt(1 << 1)
+	filesystemOperationUndeleteFieldPath        = big.NewInt(1 << 2)
 )
 
-type FsOpUndelete struct {
+type FilesystemOperationUndelete struct {
 	// Observed deletion sequence, which prevents cancelling a newer tombstone generation.
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
 	// Stable inode ID within a namespace
@@ -3553,35 +4223,35 @@ type FsOpUndelete struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FsOpUndelete) GetDeletionSeq() ChangeSeq {
+func (f *FilesystemOperationUndelete) GetDeletionSeq() ChangeSeq {
 	if f == nil {
 		return 0
 	}
 	return f.DeletionSeq
 }
 
-func (f *FsOpUndelete) GetInodeID() string {
+func (f *FilesystemOperationUndelete) GetInodeID() string {
 	if f == nil {
 		return ""
 	}
 	return f.InodeID
 }
 
-func (f *FsOpUndelete) GetPath() *AbsolutePath {
+func (f *FilesystemOperationUndelete) GetPath() *AbsolutePath {
 	if f == nil {
 		return nil
 	}
 	return f.Path
 }
 
-func (f *FsOpUndelete) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemOperationUndelete) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FsOpUndelete) require(field *big.Int) {
+func (f *FilesystemOperationUndelete) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -3590,32 +4260,32 @@ func (f *FsOpUndelete) require(field *big.Int) {
 
 // SetDeletionSeq sets the DeletionSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpUndelete) SetDeletionSeq(deletionSeq ChangeSeq) {
+func (f *FilesystemOperationUndelete) SetDeletionSeq(deletionSeq ChangeSeq) {
 	f.DeletionSeq = deletionSeq
-	f.require(fsOpUndeleteFieldDeletionSeq)
+	f.require(filesystemOperationUndeleteFieldDeletionSeq)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpUndelete) SetInodeID(inodeID string) {
+func (f *FilesystemOperationUndelete) SetInodeID(inodeID string) {
 	f.InodeID = inodeID
-	f.require(fsOpUndeleteFieldInodeID)
+	f.require(filesystemOperationUndeleteFieldInodeID)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpUndelete) SetPath(path *AbsolutePath) {
+func (f *FilesystemOperationUndelete) SetPath(path *AbsolutePath) {
 	f.Path = path
-	f.require(fsOpUndeleteFieldPath)
+	f.require(filesystemOperationUndeleteFieldPath)
 }
 
-func (f *FsOpUndelete) UnmarshalJSON(data []byte) error {
-	type unmarshaler FsOpUndelete
+func (f *FilesystemOperationUndelete) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationUndelete
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FsOpUndelete(value)
+	*f = FilesystemOperationUndelete(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -3625,8 +4295,8 @@ func (f *FsOpUndelete) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FsOpUndelete) MarshalJSON() ([]byte, error) {
-	type embed FsOpUndelete
+func (f *FilesystemOperationUndelete) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationUndelete
 	var marshaler = struct {
 		embed
 	}{
@@ -3636,7 +4306,7 @@ func (f *FsOpUndelete) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FsOpUndelete) String() string {
+func (f *FilesystemOperationUndelete) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3653,14 +4323,14 @@ func (f *FsOpUndelete) String() string {
 
 // Write and remove attributes on the inode one path resolves to.
 var (
-	fsOpUpdateAttributesFieldExpectedAttributesRevisionNo = big.NewInt(1 << 0)
-	fsOpUpdateAttributesFieldExpectedInodeID              = big.NewInt(1 << 1)
-	fsOpUpdateAttributesFieldPath                         = big.NewInt(1 << 2)
-	fsOpUpdateAttributesFieldRemove                       = big.NewInt(1 << 3)
-	fsOpUpdateAttributesFieldSet                          = big.NewInt(1 << 4)
+	filesystemOperationUpdateAttributesFieldExpectedAttributesRevisionNo = big.NewInt(1 << 0)
+	filesystemOperationUpdateAttributesFieldExpectedInodeID              = big.NewInt(1 << 1)
+	filesystemOperationUpdateAttributesFieldPath                         = big.NewInt(1 << 2)
+	filesystemOperationUpdateAttributesFieldRemove                       = big.NewInt(1 << 3)
+	filesystemOperationUpdateAttributesFieldSet                          = big.NewInt(1 << 4)
 )
 
-type FsOpUpdateAttributes struct {
+type FilesystemOperationUpdateAttributes struct {
 	// When set, the update applies only while the inode's attribute
 	// revision is still this one. Absent means the update is applied
 	// over whatever revision is current; either way the write carries
@@ -3688,49 +4358,49 @@ type FsOpUpdateAttributes struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FsOpUpdateAttributes) GetExpectedAttributesRevisionNo() *AttributeRevisionNo {
+func (f *FilesystemOperationUpdateAttributes) GetExpectedAttributesRevisionNo() *AttributeRevisionNo {
 	if f == nil {
 		return nil
 	}
 	return f.ExpectedAttributesRevisionNo
 }
 
-func (f *FsOpUpdateAttributes) GetExpectedInodeID() *string {
+func (f *FilesystemOperationUpdateAttributes) GetExpectedInodeID() *string {
 	if f == nil {
 		return nil
 	}
 	return f.ExpectedInodeID
 }
 
-func (f *FsOpUpdateAttributes) GetPath() AbsolutePath {
+func (f *FilesystemOperationUpdateAttributes) GetPath() AbsolutePath {
 	if f == nil {
 		return ""
 	}
 	return f.Path
 }
 
-func (f *FsOpUpdateAttributes) GetRemove() []AttributeKey {
+func (f *FilesystemOperationUpdateAttributes) GetRemove() []AttributeKey {
 	if f == nil {
 		return nil
 	}
 	return f.Remove
 }
 
-func (f *FsOpUpdateAttributes) GetSet() map[string]AttributeValue {
+func (f *FilesystemOperationUpdateAttributes) GetSet() map[string]AttributeValue {
 	if f == nil {
 		return nil
 	}
 	return f.Set
 }
 
-func (f *FsOpUpdateAttributes) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemOperationUpdateAttributes) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FsOpUpdateAttributes) require(field *big.Int) {
+func (f *FilesystemOperationUpdateAttributes) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -3739,46 +4409,46 @@ func (f *FsOpUpdateAttributes) require(field *big.Int) {
 
 // SetExpectedAttributesRevisionNo sets the ExpectedAttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpUpdateAttributes) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo *AttributeRevisionNo) {
+func (f *FilesystemOperationUpdateAttributes) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo *AttributeRevisionNo) {
 	f.ExpectedAttributesRevisionNo = expectedAttributesRevisionNo
-	f.require(fsOpUpdateAttributesFieldExpectedAttributesRevisionNo)
+	f.require(filesystemOperationUpdateAttributesFieldExpectedAttributesRevisionNo)
 }
 
 // SetExpectedInodeID sets the ExpectedInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpUpdateAttributes) SetExpectedInodeID(expectedInodeID *string) {
+func (f *FilesystemOperationUpdateAttributes) SetExpectedInodeID(expectedInodeID *string) {
 	f.ExpectedInodeID = expectedInodeID
-	f.require(fsOpUpdateAttributesFieldExpectedInodeID)
+	f.require(filesystemOperationUpdateAttributesFieldExpectedInodeID)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpUpdateAttributes) SetPath(path AbsolutePath) {
+func (f *FilesystemOperationUpdateAttributes) SetPath(path AbsolutePath) {
 	f.Path = path
-	f.require(fsOpUpdateAttributesFieldPath)
+	f.require(filesystemOperationUpdateAttributesFieldPath)
 }
 
 // SetRemove sets the Remove field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpUpdateAttributes) SetRemove(remove []AttributeKey) {
+func (f *FilesystemOperationUpdateAttributes) SetRemove(remove []AttributeKey) {
 	f.Remove = remove
-	f.require(fsOpUpdateAttributesFieldRemove)
+	f.require(filesystemOperationUpdateAttributesFieldRemove)
 }
 
 // SetSet sets the Set field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FsOpUpdateAttributes) SetSet(set map[string]AttributeValue) {
+func (f *FilesystemOperationUpdateAttributes) SetSet(set map[string]AttributeValue) {
 	f.Set = set
-	f.require(fsOpUpdateAttributesFieldSet)
+	f.require(filesystemOperationUpdateAttributesFieldSet)
 }
 
-func (f *FsOpUpdateAttributes) UnmarshalJSON(data []byte) error {
-	type unmarshaler FsOpUpdateAttributes
+func (f *FilesystemOperationUpdateAttributes) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationUpdateAttributes
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FsOpUpdateAttributes(value)
+	*f = FilesystemOperationUpdateAttributes(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -3788,8 +4458,8 @@ func (f *FsOpUpdateAttributes) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FsOpUpdateAttributes) MarshalJSON() ([]byte, error) {
-	type embed FsOpUpdateAttributes
+func (f *FilesystemOperationUpdateAttributes) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationUpdateAttributes
 	var marshaler = struct {
 		embed
 	}{
@@ -3799,7 +4469,7 @@ func (f *FsOpUpdateAttributes) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FsOpUpdateAttributes) String() string {
+func (f *FilesystemOperationUpdateAttributes) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3812,6 +4482,160 @@ func (f *FsOpUpdateAttributes) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", f)
+}
+
+// Change-feed response after a cursor.
+var (
+	listChangesResponseFieldAfterSeq     = big.NewInt(1 << 0)
+	listChangesResponseFieldChanges      = big.NewInt(1 << 1)
+	listChangesResponseFieldNamespaceID  = big.NewInt(1 << 2)
+	listChangesResponseFieldNextAfterSeq = big.NewInt(1 << 3)
+	listChangesResponseFieldThroughSeq   = big.NewInt(1 << 4)
+)
+
+type ListChangesResponse struct {
+	// Exclusive cursor supplied by the caller, or the endpoint's initial position.
+	AfterSeq ChangeSeq `json:"after_seq" url:"after_seq"`
+	// Logical commits after `after_seq`, ordered by ascending namespace sequence.
+	Changes []*CommittedChange `json:"changes" url:"changes"`
+	// Namespace whose ordered commit stream was read.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// Cursor to request when another page remains, or `None` at `through_seq`.
+	NextAfterSeq *ChangeSeq `json:"next_after_seq,omitempty" url:"next_after_seq,omitempty"`
+	// Snapshot head through which this page was evaluated.
+	ThroughSeq ChangeSeq `json:"through_seq" url:"through_seq"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *ListChangesResponse) GetAfterSeq() ChangeSeq {
+	if l == nil {
+		return 0
+	}
+	return l.AfterSeq
+}
+
+func (l *ListChangesResponse) GetChanges() []*CommittedChange {
+	if l == nil {
+		return nil
+	}
+	return l.Changes
+}
+
+func (l *ListChangesResponse) GetNamespaceID() NamespaceID {
+	if l == nil {
+		return ""
+	}
+	return l.NamespaceID
+}
+
+func (l *ListChangesResponse) GetNextAfterSeq() *ChangeSeq {
+	if l == nil {
+		return nil
+	}
+	return l.NextAfterSeq
+}
+
+func (l *ListChangesResponse) GetThroughSeq() ChangeSeq {
+	if l == nil {
+		return 0
+	}
+	return l.ThroughSeq
+}
+
+func (l *ListChangesResponse) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *ListChangesResponse) require(field *big.Int) {
+	if l.explicitFields == nil {
+		l.explicitFields = big.NewInt(0)
+	}
+	l.explicitFields.Or(l.explicitFields, field)
+}
+
+// SetAfterSeq sets the AfterSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesResponse) SetAfterSeq(afterSeq ChangeSeq) {
+	l.AfterSeq = afterSeq
+	l.require(listChangesResponseFieldAfterSeq)
+}
+
+// SetChanges sets the Changes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesResponse) SetChanges(changes []*CommittedChange) {
+	l.Changes = changes
+	l.require(listChangesResponseFieldChanges)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesResponse) SetNamespaceID(namespaceID NamespaceID) {
+	l.NamespaceID = namespaceID
+	l.require(listChangesResponseFieldNamespaceID)
+}
+
+// SetNextAfterSeq sets the NextAfterSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesResponse) SetNextAfterSeq(nextAfterSeq *ChangeSeq) {
+	l.NextAfterSeq = nextAfterSeq
+	l.require(listChangesResponseFieldNextAfterSeq)
+}
+
+// SetThroughSeq sets the ThroughSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesResponse) SetThroughSeq(throughSeq ChangeSeq) {
+	l.ThroughSeq = throughSeq
+	l.require(listChangesResponseFieldThroughSeq)
+}
+
+func (l *ListChangesResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListChangesResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = ListChangesResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *ListChangesResponse) MarshalJSON() ([]byte, error) {
+	type embed ListChangesResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *ListChangesResponse) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
 }
 
 // One directory listing and the namespace head it was answered at.
@@ -3832,7 +4656,7 @@ type ListPathEntriesResponse struct {
 	//
 	// Entries are returned in canonical name-key order. Higher-level display
 	// surfaces may sort entries separately for presentation.
-	Entries []*AuthoritativePathEntry `json:"entries" url:"entries"`
+	Entries []*PathEntry `json:"entries" url:"entries"`
 	// Namespace head sequence this listing was read from.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// Namespace that was read.
@@ -3849,7 +4673,7 @@ type ListPathEntriesResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (l *ListPathEntriesResponse) GetEntries() []*AuthoritativePathEntry {
+func (l *ListPathEntriesResponse) GetEntries() []*PathEntry {
 	if l == nil {
 		return nil
 	}
@@ -3900,7 +4724,7 @@ func (l *ListPathEntriesResponse) require(field *big.Int) {
 
 // SetEntries sets the Entries field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListPathEntriesResponse) SetEntries(entries []*AuthoritativePathEntry) {
+func (l *ListPathEntriesResponse) SetEntries(entries []*PathEntry) {
 	l.Entries = entries
 	l.require(listPathEntriesResponseFieldEntries)
 }
@@ -4120,33 +4944,27 @@ type NameKey = string
 
 // One deletion that can still be restored.
 //
-// `inode_id` and `deletion_seq` are sufficient to restore it. The original
-// parent and name are included when they were recorded.
+// `inode_id` and `deletion_seq` are sufficient to restore it. The removed
+// directory binding is included when available.
 var (
-	trashEntryFieldDeletedAtMs   = big.NewInt(1 << 0)
-	trashEntryFieldDeletedBy     = big.NewInt(1 << 1)
-	trashEntryFieldDeletionSeq   = big.NewInt(1 << 2)
-	trashEntryFieldDisplayName   = big.NewInt(1 << 3)
-	trashEntryFieldInodeID       = big.NewInt(1 << 4)
-	trashEntryFieldNameKey       = big.NewInt(1 << 5)
-	trashEntryFieldParentInodeID = big.NewInt(1 << 6)
+	trashEntryFieldDeletedAtMs    = big.NewInt(1 << 0)
+	trashEntryFieldDeletedBinding = big.NewInt(1 << 1)
+	trashEntryFieldDeletedBy      = big.NewInt(1 << 2)
+	trashEntryFieldDeletionSeq    = big.NewInt(1 << 3)
+	trashEntryFieldInodeID        = big.NewInt(1 << 4)
 )
 
 type TrashEntry struct {
 	// Time of the deletion, in Unix milliseconds.
 	DeletedAtMs int64 `json:"deleted_at_ms" url:"deleted_at_ms"`
+	// Directory binding removed by the deletion, when available.
+	DeletedBinding *DirectoryBinding `json:"deleted_binding,omitempty" url:"deleted_binding,omitempty"`
 	// Actor responsible for the deletion.
 	DeletedBy *ActorRef `json:"deleted_by" url:"deleted_by"`
 	// Commit sequence that identifies this deletion.
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
-	// User-facing spelling of the deleted binding, when recorded.
-	DisplayName *DisplayName `json:"display_name,omitempty" url:"display_name,omitempty"`
 	// Stable inode ID within a namespace
 	InodeID string `json:"inode_id" url:"inode_id"`
-	// Canonical key of the deleted binding, when recorded.
-	NameKey *NameKey `json:"name_key,omitempty" url:"name_key,omitempty"`
-	// Stable inode ID within a namespace
-	ParentInodeID *string `json:"parent_inode_id,omitempty" url:"parent_inode_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -4160,6 +4978,13 @@ func (t *TrashEntry) GetDeletedAtMs() int64 {
 		return 0
 	}
 	return t.DeletedAtMs
+}
+
+func (t *TrashEntry) GetDeletedBinding() *DirectoryBinding {
+	if t == nil {
+		return nil
+	}
+	return t.DeletedBinding
 }
 
 func (t *TrashEntry) GetDeletedBy() *ActorRef {
@@ -4176,32 +5001,11 @@ func (t *TrashEntry) GetDeletionSeq() ChangeSeq {
 	return t.DeletionSeq
 }
 
-func (t *TrashEntry) GetDisplayName() *DisplayName {
-	if t == nil {
-		return nil
-	}
-	return t.DisplayName
-}
-
 func (t *TrashEntry) GetInodeID() string {
 	if t == nil {
 		return ""
 	}
 	return t.InodeID
-}
-
-func (t *TrashEntry) GetNameKey() *NameKey {
-	if t == nil {
-		return nil
-	}
-	return t.NameKey
-}
-
-func (t *TrashEntry) GetParentInodeID() *string {
-	if t == nil {
-		return nil
-	}
-	return t.ParentInodeID
 }
 
 func (t *TrashEntry) GetExtraProperties() map[string]interface{} {
@@ -4225,6 +5029,13 @@ func (t *TrashEntry) SetDeletedAtMs(deletedAtMs int64) {
 	t.require(trashEntryFieldDeletedAtMs)
 }
 
+// SetDeletedBinding sets the DeletedBinding field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TrashEntry) SetDeletedBinding(deletedBinding *DirectoryBinding) {
+	t.DeletedBinding = deletedBinding
+	t.require(trashEntryFieldDeletedBinding)
+}
+
 // SetDeletedBy sets the DeletedBy field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (t *TrashEntry) SetDeletedBy(deletedBy *ActorRef) {
@@ -4239,32 +5050,11 @@ func (t *TrashEntry) SetDeletionSeq(deletionSeq ChangeSeq) {
 	t.require(trashEntryFieldDeletionSeq)
 }
 
-// SetDisplayName sets the DisplayName field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TrashEntry) SetDisplayName(displayName *DisplayName) {
-	t.DisplayName = displayName
-	t.require(trashEntryFieldDisplayName)
-}
-
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (t *TrashEntry) SetInodeID(inodeID string) {
 	t.InodeID = inodeID
 	t.require(trashEntryFieldInodeID)
-}
-
-// SetNameKey sets the NameKey field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TrashEntry) SetNameKey(nameKey *NameKey) {
-	t.NameKey = nameKey
-	t.require(trashEntryFieldNameKey)
-}
-
-// SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TrashEntry) SetParentInodeID(parentInodeID *string) {
-	t.ParentInodeID = parentInodeID
-	t.require(trashEntryFieldParentInodeID)
 }
 
 func (t *TrashEntry) UnmarshalJSON(data []byte) error {

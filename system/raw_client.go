@@ -33,7 +33,7 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 	}
 }
 
-func (r *RawClient) Health(
+func (r *RawClient) GetHealth(
 	ctx context.Context,
 	opts ...option.RequestOption,
 ) (*core.Response[string], error) {
@@ -115,7 +115,7 @@ func (r *RawClient) GetMetrics(
 	}, nil
 }
 
-func (r *RawClient) Readiness(
+func (r *RawClient) GetReadiness(
 	ctx context.Context,
 	opts ...option.RequestOption,
 ) (*core.Response[string], error) {
@@ -153,5 +153,46 @@ func (r *RawClient) Readiness(
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response.String(),
+	}, nil
+}
+
+func (r *RawClient) GetCapabilities(
+	ctx context.Context,
+	opts ...option.RequestOption,
+) (*core.Response[*loonfs.CapabilityDocument], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/v0/capabilities"
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	var response *loonfs.CapabilityDocument
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*loonfs.CapabilityDocument]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
 	}, nil
 }

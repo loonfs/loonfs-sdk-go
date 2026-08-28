@@ -183,7 +183,7 @@ func TestAdminGetNamespaceDiagnosticsWithWireMock(
 	VerifyRequestCount(t, "TestAdminGetNamespaceDiagnosticsWithWireMock", "GET", "/v0/admin/namespaces/namespace_id/diagnostics", nil, 1)
 }
 
-func TestAdminGetGrepIndexStatusWithWireMock(
+func TestAdminGetGrepIndexWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -194,19 +194,19 @@ func TestAdminGetGrepIndexStatusWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &loonfs.GetGrepIndexStatusRequest{
+	request := &loonfs.GetGrepIndexRequest{
 		NamespaceID: "namespace_id",
 	}
-	_, invocationErr := client.Admin.GetGrepIndexStatus(
+	_, invocationErr := client.Admin.GetGrepIndex(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestAdminGetGrepIndexStatusWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestAdminGetGrepIndexWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestAdminGetGrepIndexStatusWithWireMock", "GET", "/v0/admin/namespaces/namespace_id/grep/index", nil, 1)
+	VerifyRequestCount(t, "TestAdminGetGrepIndexWithWireMock", "GET", "/v0/admin/namespaces/namespace_id/grep/index", nil, 1)
 }
 
 func TestAdminDisableGrepIndexWithWireMock(
@@ -287,7 +287,7 @@ func TestAdminGcGrepIndexWithWireMock(
 	VerifyRequestCount(t, "TestAdminGcGrepIndexWithWireMock", "POST", "/v0/admin/namespaces/namespace_id/grep/index/gc", nil, 1)
 }
 
-func TestAdminMaintenanceStepWithWireMock(
+func TestAdminRunMaintenanceWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -301,16 +301,16 @@ func TestAdminMaintenanceStepWithWireMock(
 	request := &loonfs.MaintenanceStepRequest{
 		NamespaceID: "namespace_id",
 	}
-	_, invocationErr := client.Admin.MaintenanceStep(
+	_, invocationErr := client.Admin.RunMaintenance(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestAdminMaintenanceStepWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestAdminRunMaintenanceWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestAdminMaintenanceStepWithWireMock", "POST", "/v0/admin/namespaces/namespace_id/maintenance/step", nil, 1)
+	VerifyRequestCount(t, "TestAdminRunMaintenanceWithWireMock", "POST", "/v0/admin/namespaces/namespace_id/maintenance/run", nil, 1)
 }
 
 func TestAdminProbeStoreWithWireMock(
