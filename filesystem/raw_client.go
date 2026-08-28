@@ -38,7 +38,7 @@ func (r *RawClient) ListChanges(
 	ctx context.Context,
 	request *loonfs.ListChangesRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.ChangesResponse], error) {
+) (*core.Response[*loonfs.ListChangesResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -60,7 +60,7 @@ func (r *RawClient) ListChanges(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.ChangesResponse
+	var response *loonfs.ListChangesResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -79,14 +79,14 @@ func (r *RawClient) ListChanges(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.ChangesResponse]{
+	return &core.Response[*loonfs.ListChangesResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
 	}, nil
 }
 
-func (r *RawClient) ApplyCommit(
+func (r *RawClient) CreateCommit(
 	ctx context.Context,
 	request *loonfs.CommitRequest,
 	opts ...option.RequestOption,
@@ -185,7 +185,7 @@ func (r *RawClient) GetFileBytes(
 	}, nil
 }
 
-func (r *RawClient) BeginDownload(
+func (r *RawClient) CreateDownload(
 	ctx context.Context,
 	request *loonfs.BeginDownloadRequest,
 	opts ...option.RequestOption,
@@ -200,6 +200,13 @@ func (r *RawClient) BeginDownload(
 		baseURL+"/v0/namespaces/%v/filesystem/downloads",
 		request.NamespaceID,
 	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
@@ -232,11 +239,11 @@ func (r *RawClient) BeginDownload(
 	}, nil
 }
 
-func (r *RawClient) StatPath(
+func (r *RawClient) GetPathEntry(
 	ctx context.Context,
-	request *loonfs.StatPathRequest,
+	request *loonfs.GetPathEntryRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.AuthoritativePathEntry], error) {
+) (*core.Response[*loonfs.PathEntry], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -244,7 +251,7 @@ func (r *RawClient) StatPath(
 		"",
 	)
 	endpointURL := internal.EncodeURL(
-		baseURL+"/v0/namespaces/%v/filesystem/stat",
+		baseURL+"/v0/namespaces/%v/filesystem/entry",
 		request.NamespaceID,
 	)
 	queryParams, err := internal.QueryValues(request)
@@ -258,7 +265,7 @@ func (r *RawClient) StatPath(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.AuthoritativePathEntry
+	var response *loonfs.PathEntry
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -277,7 +284,7 @@ func (r *RawClient) StatPath(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.AuthoritativePathEntry]{
+	return &core.Response[*loonfs.PathEntry]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

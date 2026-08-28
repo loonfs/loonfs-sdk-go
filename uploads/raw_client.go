@@ -33,9 +33,9 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 	}
 }
 
-func (r *RawClient) BeginUpload(
+func (r *RawClient) CreateUpload(
 	ctx context.Context,
-	request *loonfs.BeginUploadBody,
+	request *loonfs.CreateUploadRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*loonfs.BeginUploadResponse], error) {
 	options := core.NewRequestOptions(opts...)
@@ -80,11 +80,11 @@ func (r *RawClient) BeginUpload(
 	}, nil
 }
 
-func (r *RawClient) GetUploadStatus(
+func (r *RawClient) GetUpload(
 	ctx context.Context,
-	request *loonfs.GetUploadStatusRequest,
+	request *loonfs.GetUploadRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.UploadSessionResponse], error) {
+) (*core.Response[*loonfs.UploadSession], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -100,7 +100,7 @@ func (r *RawClient) GetUploadStatus(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.UploadSessionResponse
+	var response *loonfs.UploadSession
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -119,7 +119,7 @@ func (r *RawClient) GetUploadStatus(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.UploadSessionResponse]{
+	return &core.Response[*loonfs.UploadSession]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -130,7 +130,7 @@ func (r *RawClient) AbortUpload(
 	ctx context.Context,
 	request *loonfs.AbortUploadRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.UploadSessionResponse], error) {
+) (*core.Response[*loonfs.UploadSession], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -146,7 +146,7 @@ func (r *RawClient) AbortUpload(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.UploadSessionResponse
+	var response *loonfs.UploadSession
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -165,7 +165,7 @@ func (r *RawClient) AbortUpload(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.UploadSessionResponse]{
+	return &core.Response[*loonfs.UploadSession]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -176,7 +176,7 @@ func (r *RawClient) CompleteUpload(
 	ctx context.Context,
 	request *loonfs.CompleteUploadBody,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.UploadSessionResponse], error) {
+) (*core.Response[*loonfs.UploadSession], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -193,7 +193,7 @@ func (r *RawClient) CompleteUpload(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *loonfs.UploadSessionResponse
+	var response *loonfs.UploadSession
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -213,14 +213,14 @@ func (r *RawClient) CompleteUpload(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.UploadSessionResponse]{
+	return &core.Response[*loonfs.UploadSession]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
 	}, nil
 }
 
-func (r *RawClient) UploadContent(
+func (r *RawClient) PutUploadContent(
 	ctx context.Context,
 	// Namespace id
 	namespaceID string,

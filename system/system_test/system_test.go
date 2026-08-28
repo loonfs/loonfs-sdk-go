@@ -76,7 +76,7 @@ func VerifyRequestCount(
 	require.Equal(t, expected, len(result.Requests))
 }
 
-func TestSystemHealthWithWireMock(
+func TestSystemGetHealthWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -87,15 +87,15 @@ func TestSystemHealthWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	_, invocationErr := client.System.Health(
+	_, invocationErr := client.System.GetHealth(
 		context.TODO(),
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestSystemHealthWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestSystemGetHealthWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestSystemHealthWithWireMock", "GET", "/health", nil, 1)
+	VerifyRequestCount(t, "TestSystemGetHealthWithWireMock", "GET", "/health", nil, 1)
 }
 
 func TestSystemGetMetricsWithWireMock(
@@ -120,7 +120,7 @@ func TestSystemGetMetricsWithWireMock(
 	VerifyRequestCount(t, "TestSystemGetMetricsWithWireMock", "GET", "/metrics", nil, 1)
 }
 
-func TestSystemReadinessWithWireMock(
+func TestSystemGetReadinessWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -131,13 +131,35 @@ func TestSystemReadinessWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	_, invocationErr := client.System.Readiness(
+	_, invocationErr := client.System.GetReadiness(
 		context.TODO(),
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestSystemReadinessWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestSystemGetReadinessWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestSystemReadinessWithWireMock", "GET", "/readiness", nil, 1)
+	VerifyRequestCount(t, "TestSystemGetReadinessWithWireMock", "GET", "/readiness", nil, 1)
+}
+
+func TestSystemGetCapabilitiesWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	_, invocationErr := client.System.GetCapabilities(
+		context.TODO(),
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestSystemGetCapabilitiesWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestSystemGetCapabilitiesWithWireMock", "GET", "/v0/capabilities", nil, 1)
 }

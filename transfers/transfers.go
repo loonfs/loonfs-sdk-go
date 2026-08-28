@@ -6,7 +6,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"hash/crc32"
 	"hash/crc64"
@@ -22,6 +21,7 @@ import (
 const (
 	multipartMinimumBytes = 8 * 1024 * 1024
 
+	featureDirectGet           = "core.downloads.direct_get"
 	featureDirectPut           = "core.uploads.direct_put"
 	featureDirectMultipart     = "core.uploads.direct_multipart"
 	limitUploadMaximumBytes    = "upload.max_content_bytes"
@@ -86,15 +86,15 @@ func PutFile(ctx context.Context, c *client.Client, in PutFileInput) (*PutFileRe
 		return nil, fmt.Errorf("transfers: actor is required")
 	}
 
-	capabilities, err := c.Capabilities(ctx)
+	capabilities, err := c.System.GetCapabilities(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("transfers: read capabilities: %w", err)
 	}
-	beginRequest, err := beginUploadRequest(capabilities, in.NamespaceID, int64(len(in.Bytes)))
+	createRequest, err := createUploadRequest(capabilities, in.NamespaceID, int64(len(in.Bytes)))
 	if err != nil {
 		return nil, err
 	}
-	begin, err := c.Uploads.BeginUpload(ctx, beginRequest)
+	begin, err := c.Uploads.CreateUpload(ctx, createRequest)
 	if err != nil {
 		return nil, fmt.Errorf("transfers: begin upload: %w", err)
 	}
@@ -119,7 +119,7 @@ func PutFile(ctx context.Context, c *client.Client, in PutFileInput) (*PutFileRe
 	if status.ContentToken != nil {
 		contentTokens = []*loonfs.ContentToken{status.ContentToken}
 	}
-	committed, err := c.Filesystem.ApplyCommit(ctx, &loonfs.CommitRequest{
+	committed, err := c.Filesystem.CreateCommit(ctx, &loonfs.CommitRequest{
 		NamespaceID:   string(in.NamespaceID),
 		Actor:         in.Actor,
 		CommitID:      in.CommitID,
@@ -127,7 +127,7 @@ func PutFile(ctx context.Context, c *client.Client, in PutFileInput) (*PutFileRe
 		Message:       in.Message,
 		Operations: []*loonfs.FilesystemOperation{
 			{
-				PutFile: &loonfs.FsOpPutFile{
+				PutFile: &loonfs.FilesystemOperationPutFile{
 					Behavior:           &behavior,
 					ContentRef:         status.ContentRef,
 					ExpectedRevisionNo: in.ExpectedRevisionNo,
@@ -152,7 +152,14 @@ func GetFile(ctx context.Context, c *client.Client, in GetFileInput) (*GetFileRe
 	if c == nil {
 		return nil, fmt.Errorf("transfers: client is nil")
 	}
-	grant, err := c.Filesystem.BeginDownload(ctx, &loonfs.BeginDownloadRequest{
+	capabilities, err := c.System.GetCapabilities(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("transfers: read capabilities: %w", err)
+	}
+	if capabilities == nil || !capabilities.Features[featureDirectGet] {
+		return getFileProxied(ctx, c, in)
+	}
+	grant, err := c.Filesystem.CreateDownload(ctx, &loonfs.BeginDownloadRequest{
 		NamespaceID: string(in.NamespaceID),
 		Path:        in.Path,
 		RevisionNo:  in.RevisionNo,
@@ -188,20 +195,106 @@ func GetFile(ctx context.Context, c *client.Client, in GetFileInput) (*GetFileRe
 	}, nil
 }
 
-func beginUploadRequest(
+// getFileProxied reads through LoonFS when direct reads are unavailable.
+// It loads the content reference first, then requests the exact revision so
+// the reference and returned bytes describe the same file version.
+func getFileProxied(ctx context.Context, c *client.Client, in GetFileInput) (*GetFileResult, error) {
+	revisionNo := in.RevisionNo
+	var claim *loonfs.ContentRef
+	if revisionNo == nil {
+		entry, err := c.Filesystem.GetPathEntry(ctx, &loonfs.GetPathEntryRequest{
+			NamespaceID: string(in.NamespaceID),
+			Path:        string(in.Path),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("transfers: stat path: %w", err)
+		}
+		file, err := fileProjection(entry)
+		if err != nil {
+			return nil, err
+		}
+		headRevision := file.RevisionNo
+		revisionNo = &headRevision
+		claim = file.ContentRef
+	} else {
+		page, err := c.Filesystem.ListFileRevisions(ctx, &loonfs.ListFileRevisionsRequest{
+			NamespaceID: string(in.NamespaceID),
+			Path:        string(in.Path),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("transfers: list file revisions: %w", err)
+		}
+		iterator := page.Iterator()
+		for iterator.Next(ctx) {
+			revision := iterator.Current()
+			if revision.RevisionNo == *revisionNo {
+				claim = revision.ContentRef
+				break
+			}
+		}
+		if claim == nil {
+			return nil, fmt.Errorf("transfers: revision %d not found for %s", *revisionNo, in.Path)
+		}
+	}
+	if claim == nil {
+		return nil, fmt.Errorf("transfers: revision has no content reference")
+	}
+
+	reader, err := c.Filesystem.GetFileBytes(ctx, &loonfs.GetFileBytesRequest{
+		NamespaceID: string(in.NamespaceID),
+		Path:        string(in.Path),
+		RevisionNo:  revisionNo,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("transfers: read content: %w", err)
+	}
+	payload, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("transfers: read content: %w", err)
+	}
+	if int64(len(payload)) != claim.SizeBytes {
+		return nil, fmt.Errorf(
+			"transfers: proxied read returned %d bytes, expected %d",
+			len(payload),
+			claim.SizeBytes,
+		)
+	}
+	if err := verifyChecksum(claim.Checksum, payload); err != nil {
+		return nil, fmt.Errorf("transfers: verify proxied read: %w", err)
+	}
+
+	return &GetFileResult{
+		Bytes:       payload,
+		NamespaceID: in.NamespaceID,
+		Path:        in.Path,
+		RevisionNo:  *revisionNo,
+		ContentRef:  claim,
+	}, nil
+}
+
+// fileProjection reads the file half of a path entry union.
+func fileProjection(entry *loonfs.PathEntry) (*loonfs.PathEntryFile, error) {
+	if entry == nil {
+		return nil, fmt.Errorf("transfers: path entry is nil")
+	}
+	if entry.File == nil {
+		return nil, fmt.Errorf("transfers: path is a %s, not a file", entry.InodeKind)
+	}
+	return entry.File, nil
+}
+
+func createUploadRequest(
 	capabilities *loonfs.CapabilityDocument,
 	namespaceID loonfs.NamespaceID,
 	sizeBytes int64,
-) (*loonfs.BeginUploadBody, error) {
+) (*loonfs.CreateUploadRequest, error) {
 	if capabilities == nil {
 		return nil, fmt.Errorf("transfers: capability response is nil")
 	}
 	request := &loonfs.BeginUploadRequest{}
 	worthCutting := sizeBytes >= multipartMinimumBytes
 	if worthCutting && capabilities.Features[featureDirectMultipart] {
-		request.DirectMultipart = &loonfs.BeginUploadDirectMultipart{
-			Multipart: &loonfs.DirectMultipartUploadOptions{},
-		}
+		request.DirectMultipart = &loonfs.BeginUploadDirectMultipart{}
 	} else {
 		proxyLimit, hasProxyLimit := capabilities.Limits[limitUploadMaximumBytes]
 		fitsProxy := !hasProxyLimit || sizeBytes <= proxyLimit
@@ -221,7 +314,7 @@ func beginUploadRequest(
 			)
 		}
 	}
-	return &loonfs.BeginUploadBody{
+	return &loonfs.CreateUploadRequest{
 		NamespaceID: string(namespaceID),
 		Body:        request,
 	}, nil
@@ -233,7 +326,7 @@ func transferAndComplete(
 	namespaceID loonfs.NamespaceID,
 	payload []byte,
 	begin *loonfs.BeginUploadResponse,
-) (*loonfs.UploadSessionResponse, error) {
+) (*loonfs.UploadSession, error) {
 	if begin == nil {
 		return nil, fmt.Errorf("transfers: begin upload response is nil")
 	}
@@ -255,16 +348,13 @@ func transferDirectPut(
 	namespaceID loonfs.NamespaceID,
 	payload []byte,
 	begin *loonfs.BeginUploadResponseDirectPut,
-) (*loonfs.UploadSessionResponse, error) {
-	if begin.DirectPut == nil {
-		return nil, fmt.Errorf("transfers: direct PUT response is incomplete")
-	}
-	checksum, err := computeChecksum(begin.DirectPut.ChecksumAlgorithm, payload)
+) (*loonfs.UploadSession, error) {
+	checksum, err := computeChecksum(begin.ChecksumAlgorithm, payload)
 	if err != nil {
 		abortUpload(ctx, c, namespaceID, begin.UploadID)
 		return nil, fmt.Errorf("transfers: direct PUT: %w", err)
 	}
-	if _, err := putPresigned(ctx, begin.DirectPut.Access, payload); err != nil {
+	if _, err := putPresigned(ctx, begin.Access, payload); err != nil {
 		abortUpload(ctx, c, namespaceID, begin.UploadID)
 		return nil, fmt.Errorf("transfers: direct PUT: %w", err)
 	}
@@ -291,14 +381,11 @@ func transferDirectMultipart(
 	namespaceID loonfs.NamespaceID,
 	payload []byte,
 	begin *loonfs.BeginUploadResponseDirectMultipart,
-) (*loonfs.UploadSessionResponse, error) {
-	if begin.DirectMultipart == nil {
-		return nil, fmt.Errorf("transfers: multipart response is incomplete")
-	}
-	partSizeBytes := begin.DirectMultipart.PartSizeBytes
+) (*loonfs.UploadSession, error) {
+	partSizeBytes := begin.PartSizeBytes
 	partSize := int(partSizeBytes)
 	if partSizeBytes <= 0 || int64(partSize) != partSizeBytes {
-		return nil, fmt.Errorf("transfers: invalid multipart part size %d", begin.DirectMultipart.PartSizeBytes)
+		return nil, fmt.Errorf("transfers: invalid multipart part size %d", partSizeBytes)
 	}
 	parts := splitParts(payload, partSize)
 	if len(parts) == 0 {
@@ -307,7 +394,7 @@ func transferDirectMultipart(
 	}
 	claims := make([]*loonfs.UploadPartChecksumClaim, len(parts))
 	for index, part := range parts {
-		checksum, checksumErr := computeChecksum(begin.DirectMultipart.ChecksumAlgorithm, part)
+		checksum, checksumErr := computeChecksum(begin.ChecksumAlgorithm, part)
 		if checksumErr != nil {
 			abortUpload(ctx, c, namespaceID, begin.UploadID)
 			return nil, fmt.Errorf("transfers: checksum part %d: %w", index+1, checksumErr)
@@ -358,7 +445,7 @@ func transferDirectMultipart(
 			PartNumber: partNumber,
 		})
 	}
-	wholeChecksum, err := computeChecksum(begin.DirectMultipart.ChecksumAlgorithm, payload)
+	wholeChecksum, err := computeChecksum(begin.ChecksumAlgorithm, payload)
 	if err != nil {
 		abortUpload(ctx, c, namespaceID, begin.UploadID)
 		return nil, fmt.Errorf("transfers: checksum multipart payload: %w", err)
@@ -388,8 +475,8 @@ func transferServiceProxied(
 	namespaceID loonfs.NamespaceID,
 	payload []byte,
 	begin *loonfs.BeginUploadResponseServiceProxied,
-) (*loonfs.UploadSessionResponse, error) {
-	if _, err := c.Uploads.UploadContent(
+) (*loonfs.UploadSession, error) {
+	if _, err := c.Uploads.PutUploadContent(
 		ctx,
 		string(namespaceID),
 		string(begin.UploadID),
@@ -419,22 +506,14 @@ func abortUpload(ctx context.Context, c *client.Client, namespaceID loonfs.Names
 	})
 }
 
-func completedUploadStatus(response *loonfs.UploadSessionResponse) (*loonfs.UploadSessionStatusCompleted, error) {
+func completedUploadStatus(response *loonfs.UploadSession) (*loonfs.UploadSessionStatusCompleted, error) {
 	if response == nil {
 		return nil, fmt.Errorf("transfers: upload session response is nil")
 	}
-	data, err := json.Marshal(response.GetExtraProperties())
-	if err != nil {
-		return nil, fmt.Errorf("transfers: encode upload session response: %w", err)
+	if response.Completed == nil || response.Completed.ContentRef == nil {
+		return nil, fmt.Errorf("transfers: upload is %s, not completed", response.Status)
 	}
-	var status loonfs.UploadSessionStatus
-	if err := json.Unmarshal(data, &status); err != nil {
-		return nil, fmt.Errorf("transfers: decode upload status: %w", err)
-	}
-	if status.Completed == nil || status.Completed.ContentRef == nil {
-		return nil, fmt.Errorf("transfers: upload did not complete")
-	}
-	return status.Completed, nil
+	return response.Completed, nil
 }
 
 func splitParts(payload []byte, partSize int) [][]byte {

@@ -36,13 +36,16 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Returns committed changes from the write-ahead log. Callers can use this feed to keep another projection synchronized with WAL history.
+// Returns committed changes after a sequence. A snapshot limits the feed to its captured sequence.
 //
 // Example:
 //
 //	request := &loonfs.ListChangesRequest{
 //	    NamespaceID: "namespace_id",
 //	    AfterSeq: int64(1000000),
+//	    SnapshotID: loonfs.String(
+//	        "chk_00000000000000000000000000000002",
+//	    ),
 //	}
 //	client.Filesystem.ListChanges(
 //	    context.TODO(),
@@ -52,7 +55,7 @@ func (c *Client) ListChanges(
 	ctx context.Context,
 	request *loonfs.ListChangesRequest,
 	opts ...option.RequestOption,
-) (*loonfs.ChangesResponse, error) {
+) (*loonfs.ListChangesResponse, error) {
 	response, err := c.WithRawResponse.ListChanges(
 		ctx,
 		request,
@@ -77,22 +80,22 @@ func (c *Client) ListChanges(
 //	    CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
 //	    Operations: []*loonfs.FilesystemOperation{
 //	        &loonfs.FilesystemOperation{
-//	            CreateDirectory: &loonfs.FsOpCreateDirectory{
+//	            CreateDirectory: &loonfs.FilesystemOperationCreateDirectory{
 //	                Path: "/docs/report.txt",
 //	            },
 //	        },
 //	    },
 //	}
-//	client.Filesystem.ApplyCommit(
+//	client.Filesystem.CreateCommit(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) ApplyCommit(
+func (c *Client) CreateCommit(
 	ctx context.Context,
 	request *loonfs.CommitRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.CommitResponse, error) {
-	response, err := c.WithRawResponse.ApplyCommit(
+	response, err := c.WithRawResponse.CreateCommit(
 		ctx,
 		request,
 		opts...,
@@ -103,7 +106,7 @@ func (c *Client) ApplyCommit(
 	return response.Body, nil
 }
 
-// Returns file bytes for the current revision at a path, or for a specific retained revision when `revision_no` is provided.
+// Returns the current file bytes, a retained revision, or the revision captured by a live snapshot.
 //
 // Example:
 //
@@ -137,18 +140,21 @@ func (c *Client) GetFileBytes(
 //
 //	request := &loonfs.BeginDownloadRequest{
 //	    NamespaceID: "namespace_id",
+//	    SnapshotID: loonfs.String(
+//	        "chk_00000000000000000000000000000002",
+//	    ),
 //	    Path: "/docs/report.txt",
 //	}
-//	client.Filesystem.BeginDownload(
+//	client.Filesystem.CreateDownload(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) BeginDownload(
+func (c *Client) CreateDownload(
 	ctx context.Context,
 	request *loonfs.BeginDownloadRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.BeginDownloadResponse, error) {
-	response, err := c.WithRawResponse.BeginDownload(
+	response, err := c.WithRawResponse.CreateDownload(
 		ctx,
 		request,
 		opts...,
@@ -159,13 +165,16 @@ func (c *Client) BeginDownload(
 	return response.Body, nil
 }
 
-// Lists a directory at the current namespace head.
+// Lists a directory from the current state or a live snapshot.
 //
 // Example:
 //
 //	request := &loonfs.ListPathEntriesRequest{
 //	    NamespaceID: "namespace_id",
 //	    Path: "path",
+//	    SnapshotID: loonfs.String(
+//	        "chk_00000000000000000000000000000002",
+//	    ),
 //	}
 //	client.Filesystem.ListPathEntries(
 //	    context.TODO(),
@@ -175,7 +184,7 @@ func (c *Client) ListPathEntries(
 	ctx context.Context,
 	request *loonfs.ListPathEntriesRequest,
 	opts ...option.RequestOption,
-) (*core.Page[*string, *loonfs.AuthoritativePathEntry, *loonfs.ListPathEntriesResponse], error) {
+) (*core.Page[*string, *loonfs.PathEntry, *loonfs.ListPathEntriesResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -183,7 +192,7 @@ func (c *Client) ListPathEntries(
 		"",
 	)
 	endpointURL := internal.EncodeURL(
-		baseURL+"/v0/namespaces/%v/filesystem/list",
+		baseURL+"/v0/namespaces/%v/filesystem/entries",
 		request.NamespaceID,
 	)
 	queryParams, err := internal.QueryValues(request)
@@ -215,11 +224,11 @@ func (c *Client) ListPathEntries(
 			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
 		}
 	}
-	readPageResponse := func(response *loonfs.ListPathEntriesResponse) *core.PageResponse[*string, *loonfs.AuthoritativePathEntry, *loonfs.ListPathEntriesResponse] {
+	readPageResponse := func(response *loonfs.ListPathEntriesResponse) *core.PageResponse[*string, *loonfs.PathEntry, *loonfs.ListPathEntriesResponse] {
 		var zeroValue *string
 		next := response.GetNextCursor()
 		results := response.GetEntries()
-		return &core.PageResponse[*string, *loonfs.AuthoritativePathEntry, *loonfs.ListPathEntriesResponse]{
+		return &core.PageResponse[*string, *loonfs.PathEntry, *loonfs.ListPathEntriesResponse]{
 			Results:  results,
 			Response: response,
 			Next:     next,
@@ -232,6 +241,37 @@ func (c *Client) ListPathEntries(
 		readPageResponse,
 	)
 	return pager.GetPage(ctx, request.Cursor)
+}
+
+// Returns path metadata from the current state or a live snapshot.
+//
+// Example:
+//
+//	request := &loonfs.GetPathEntryRequest{
+//	    NamespaceID: "namespace_id",
+//	    Path: "path",
+//	    SnapshotID: loonfs.String(
+//	        "chk_00000000000000000000000000000002",
+//	    ),
+//	}
+//	client.Filesystem.GetPathEntry(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) GetPathEntry(
+	ctx context.Context,
+	request *loonfs.GetPathEntryRequest,
+	opts ...option.RequestOption,
+) (*loonfs.PathEntry, error) {
+	response, err := c.WithRawResponse.GetPathEntry(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
 }
 
 // Resolves the current path to a file inode and returns revisions for that file. If the file could be renamed, use the inode revision API for stable identity.
@@ -307,34 +347,6 @@ func (c *Client) ListFileRevisions(
 		readPageResponse,
 	)
 	return pager.GetPage(ctx, request.Cursor)
-}
-
-// Returns the current metadata for a path, including inode identity, kind, display name, file content metadata, and the inode's attributes.
-//
-// Example:
-//
-//	request := &loonfs.StatPathRequest{
-//	    NamespaceID: "namespace_id",
-//	    Path: "path",
-//	}
-//	client.Filesystem.StatPath(
-//	    context.TODO(),
-//	    request,
-//	)
-func (c *Client) StatPath(
-	ctx context.Context,
-	request *loonfs.StatPathRequest,
-	opts ...option.RequestOption,
-) (*loonfs.AuthoritativePathEntry, error) {
-	response, err := c.WithRawResponse.StatPath(
-		ctx,
-		request,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
 }
 
 // Returns the namespace's recoverable deletions, oldest deletion first. Entries never age out at the retention floor; each carries the inode id and deletion sequence undelete needs, plus the deleted name when the delete recorded one.

@@ -77,7 +77,7 @@ func VerifyRequestCount(
 	require.Equal(t, expected, len(result.Requests))
 }
 
-func TestUploadsBeginUploadWithWireMock(
+func TestUploadsCreateUploadWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -88,25 +88,25 @@ func TestUploadsBeginUploadWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &loonfs.BeginUploadBody{
+	request := &loonfs.CreateUploadRequest{
 		NamespaceID: "namespace_id",
 		Body: &loonfs.BeginUploadRequest{
 			ServiceProxied: &loonfs.BeginUploadServiceProxied{},
 		},
 	}
-	_, invocationErr := client.Uploads.BeginUpload(
+	_, invocationErr := client.Uploads.CreateUpload(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestUploadsBeginUploadWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestUploadsCreateUploadWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestUploadsBeginUploadWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads", nil, 1)
+	VerifyRequestCount(t, "TestUploadsCreateUploadWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads", nil, 1)
 }
 
-func TestUploadsGetUploadStatusWithWireMock(
+func TestUploadsGetUploadWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -117,20 +117,20 @@ func TestUploadsGetUploadStatusWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &loonfs.GetUploadStatusRequest{
+	request := &loonfs.GetUploadRequest{
 		NamespaceID: "namespace_id",
 		UploadID:    "upload_id",
 	}
-	_, invocationErr := client.Uploads.GetUploadStatus(
+	_, invocationErr := client.Uploads.GetUpload(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestUploadsGetUploadStatusWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestUploadsGetUploadWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestUploadsGetUploadStatusWithWireMock", "GET", "/v0/namespaces/namespace_id/uploads/upload_id", nil, 1)
+	VerifyRequestCount(t, "TestUploadsGetUploadWithWireMock", "GET", "/v0/namespaces/namespace_id/uploads/upload_id", nil, 1)
 }
 
 func TestUploadsAbortUploadWithWireMock(

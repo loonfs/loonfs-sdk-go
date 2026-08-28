@@ -77,7 +77,7 @@ func VerifyRequestCount(
 	require.Equal(t, expected, len(result.Requests))
 }
 
-func TestInodesStatInodeWithWireMock(
+func TestInodesGetInodeWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -88,20 +88,47 @@ func TestInodesStatInodeWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &loonfs.StatInodeRequest{
+	request := &loonfs.GetInodeRequest{
 		NamespaceID: "namespace_id",
 		InodeID:     "ino_123",
 	}
-	_, invocationErr := client.Inodes.StatInode(
+	_, invocationErr := client.Inodes.GetInode(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestInodesStatInodeWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestInodesGetInodeWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestInodesStatInodeWithWireMock", "GET", "/v0/namespaces/namespace_id/inodes/ino_123", nil, 1)
+	VerifyRequestCount(t, "TestInodesGetInodeWithWireMock", "GET", "/v0/namespaces/namespace_id/inodes/ino_123", nil, 1)
+}
+
+func TestInodesListInodeChildrenWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &loonfs.ListInodeChildrenRequest{
+		NamespaceID: "namespace_id",
+		InodeID:     "ino_123",
+	}
+	_, invocationErr := client.Inodes.ListInodeChildren(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestInodesListInodeChildrenWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestInodesListInodeChildrenWithWireMock", "GET", "/v0/namespaces/namespace_id/inodes/ino_123/children", nil, 1)
 }
 
 func TestInodesListFileRevisionsByInodeWithWireMock(
@@ -131,7 +158,7 @@ func TestInodesListFileRevisionsByInodeWithWireMock(
 	VerifyRequestCount(t, "TestInodesListFileRevisionsByInodeWithWireMock", "GET", "/v0/namespaces/namespace_id/inodes/ino_123/revisions", nil, 1)
 }
 
-func TestInodesBeginDownloadByInodeWithWireMock(
+func TestInodesCreateDownloadByInodeWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -142,7 +169,7 @@ func TestInodesBeginDownloadByInodeWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &loonfs.BeginDownloadByInodeBody{
+	request := &loonfs.CreateDownloadByInodeRequest{
 		NamespaceID: "namespace_id",
 		InodeID:     "ino_123",
 		RevisionNo:  int64(1000000),
@@ -150,14 +177,14 @@ func TestInodesBeginDownloadByInodeWithWireMock(
 			"key": "value",
 		},
 	}
-	_, invocationErr := client.Inodes.BeginDownloadByInode(
+	_, invocationErr := client.Inodes.CreateDownloadByInode(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestInodesBeginDownloadByInodeWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestInodesCreateDownloadByInodeWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestInodesBeginDownloadByInodeWithWireMock", "POST", "/v0/namespaces/namespace_id/inodes/ino_123/revisions/1000000/downloads", nil, 1)
+	VerifyRequestCount(t, "TestInodesCreateDownloadByInodeWithWireMock", "POST", "/v0/namespaces/namespace_id/inodes/ino_123/revisions/1000000/downloads", nil, 1)
 }

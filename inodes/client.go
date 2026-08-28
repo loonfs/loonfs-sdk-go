@@ -40,20 +40,20 @@ func NewClient(options *core.RequestOptions) *Client {
 //
 // Example:
 //
-//	request := &loonfs.StatInodeRequest{
+//	request := &loonfs.GetInodeRequest{
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
 //	}
-//	client.Inodes.StatInode(
+//	client.Inodes.GetInode(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) StatInode(
+func (c *Client) GetInode(
 	ctx context.Context,
-	request *loonfs.StatInodeRequest,
+	request *loonfs.GetInodeRequest,
 	opts ...option.RequestOption,
-) (*loonfs.AuthoritativePathEntry, error) {
-	response, err := c.WithRawResponse.StatInode(
+) (*loonfs.PathEntry, error) {
+	response, err := c.WithRawResponse.GetInode(
 		ctx,
 		request,
 		opts...,
@@ -62,6 +62,82 @@ func (c *Client) StatInode(
 		return nil, err
 	}
 	return response.Body, nil
+}
+
+// Lists one page of a directory's children addressed by parent inode ID, in canonical name-key order. Inode addressing keeps a listing and its resumption on the same directory across concurrent renames or moves of the parent.
+//
+// Example:
+//
+//	request := &loonfs.ListInodeChildrenRequest{
+//	    NamespaceID: "namespace_id",
+//	    InodeID: "ino_123",
+//	}
+//	client.Inodes.ListInodeChildren(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) ListInodeChildren(
+	ctx context.Context,
+	request *loonfs.ListInodeChildrenRequest,
+	opts ...option.RequestOption,
+) (*core.Page[*string, *loonfs.PathEntry, *loonfs.ListInodeChildrenResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/namespaces/%v/inodes/%v/children",
+		request.NamespaceID,
+		request.InodeID,
+	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	headers := internal.MergeHeaders(
+		c.options.ToHeader(),
+		options.ToHeader(),
+	)
+	prepareCall := func(pageRequest *core.PageRequest[*string]) *internal.CallParams {
+		if pageRequest.Cursor != nil {
+			queryParams.Set("cursor", *pageRequest.Cursor)
+		}
+		nextURL := endpointURL
+		if len(queryParams) > 0 {
+			nextURL += "?" + queryParams.Encode()
+		}
+		return &internal.CallParams{
+			URL:             nextURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        pageRequest.Response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		}
+	}
+	readPageResponse := func(response *loonfs.ListInodeChildrenResponse) *core.PageResponse[*string, *loonfs.PathEntry, *loonfs.ListInodeChildrenResponse] {
+		var zeroValue *string
+		next := response.GetNextCursor()
+		results := response.GetEntries()
+		return &core.PageResponse[*string, *loonfs.PathEntry, *loonfs.ListInodeChildrenResponse]{
+			Results:  results,
+			Response: response,
+			Next:     next,
+			Done:     next == zeroValue || *next == "",
+		}
+	}
+	pager := internal.NewCursorPager(
+		c.caller,
+		prepareCall,
+		readPageResponse,
+	)
+	return pager.GetPage(ctx, request.Cursor)
 }
 
 // Returns retained revisions for a file inode without requiring a current path.
@@ -173,7 +249,7 @@ func (c *Client) GetFileRevisionBytesByInode(
 //
 // Example:
 //
-//	request := &loonfs.BeginDownloadByInodeBody{
+//	request := &loonfs.CreateDownloadByInodeRequest{
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
 //	    RevisionNo: int64(1000000),
@@ -181,16 +257,16 @@ func (c *Client) GetFileRevisionBytesByInode(
 //	        "key": "value",
 //	    },
 //	}
-//	client.Inodes.BeginDownloadByInode(
+//	client.Inodes.CreateDownloadByInode(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) BeginDownloadByInode(
+func (c *Client) CreateDownloadByInode(
 	ctx context.Context,
-	request *loonfs.BeginDownloadByInodeBody,
+	request *loonfs.CreateDownloadByInodeRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.BeginDownloadByInodeResponse, error) {
-	response, err := c.WithRawResponse.BeginDownloadByInode(
+	response, err := c.WithRawResponse.CreateDownloadByInode(
 		ctx,
 		request,
 		opts...,
