@@ -1,7 +1,7 @@
 {
   "mappings": [
     {
-      "id": "561248bc-08d8-4e52-9a81-0e4c973cf483",
+      "id": "d7af6efa-2a6f-4be6-9d7c-66863c8614c4",
       "name": "Check health - default",
       "request": {
         "urlPathTemplate": "/health",
@@ -19,7 +19,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "561248bc-08d8-4e52-9a81-0e4c973cf483",
+      "uuid": "d7af6efa-2a6f-4be6-9d7c-66863c8614c4",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -65,7 +65,7 @@
       "postServeActions": []
     },
     {
-      "id": "5ca06406-5814-42ad-97a8-940e1385aed6",
+      "id": "1e7ae02b-292b-4523-a53a-0867ced85388",
       "name": "Check readiness - default",
       "request": {
         "urlPathTemplate": "/readiness",
@@ -83,7 +83,39 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "5ca06406-5814-42ad-97a8-940e1385aed6",
+      "uuid": "1e7ae02b-292b-4523-a53a-0867ced85388",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "35667109-b457-4c0f-b92d-ae0aac6bb080",
+      "name": "Get capabilities - default",
+      "request": {
+        "urlPathTemplate": "/v0/capabilities",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"features\": {\n    \"key\": true\n  },\n  \"limits\": {\n    \"key\": 1000000\n  },\n  \"profiles\": [\n    \"profiles\"\n  ],\n  \"protocol_version\": \"protocol_version\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "35667109-b457-4c0f-b92d-ae0aac6bb080",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -115,7 +147,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"checkpoints\": [\n    {\n      \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n      \"checkpoint_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"manifest_id\": 1000000,\n      \"owner\": {\n        \"name\": \"name\",\n        \"kind\": \"user\"\n      }\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "body": "{\n  \"checkpoints\": [\n    {\n      \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n      \"checkpoint_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"manifest_no\": 1000000,\n      \"namespace_id\": \"demo\",\n      \"owner\": {\n        \"name\": \"name\",\n        \"kind\": \"user\"\n      }\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -151,7 +183,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n  \"checkpoint_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_id\": 1000000,\n  \"owner\": {\n    \"name\": \"name\",\n    \"kind\": \"user\"\n  },\n  \"namespace_id\": \"demo\"\n}",
+        "body": "{\n  \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n  \"checkpoint_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_no\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"owner\": {\n    \"name\": \"name\",\n    \"kind\": \"user\"\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -226,7 +258,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"current_manifest_id\": 1000000,\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_segments\": 1000000\n}",
+        "body": "{\n  \"current_manifest_no\": 1000000,\n  \"head_seq\": 1000000,\n  \"live_checkpoints\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_segments\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -244,7 +276,7 @@
       }
     },
     {
-      "id": "8a94e010-392c-409d-af5f-e931a45e16b1",
+      "id": "fe92025b-4d61-43ce-92e9-9442b4236814",
       "name": "Get grep index status - default",
       "request": {
         "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index",
@@ -262,12 +294,12 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_ordinal\": 1000000,\n  \"reorganize_pending\": true\n}",
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"disabled\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
-      "uuid": "8a94e010-392c-409d-af5f-e931a45e16b1",
+      "uuid": "fe92025b-4d61-43ce-92e9-9442b4236814",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -298,7 +330,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_ordinal\": 1000000,\n  \"reorganize_pending\": true\n}",
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"disabled\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -334,7 +366,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_ordinal\": 1000000,\n  \"reorganize_pending\": true\n}",
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"disabled\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -388,10 +420,10 @@
       }
     },
     {
-      "id": "07bc44d3-841d-4be3-8708-f2c419cb30ff",
+      "id": "8ff76c28-2889-48d0-816f-f3d80c08c874",
       "name": "Run maintenance step - default",
       "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/maintenance/step",
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/maintenance/run",
         "method": "POST",
         "headers": {
           "Authorization": {
@@ -406,12 +438,12 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"gc\": {\n    \"budget_exhausted\": true,\n    \"content_reclamation_deferred\": true,\n    \"degraded_retention\": true,\n    \"deleted_checkpoint_records\": 1000000,\n    \"deleted_content_objects\": 1000000,\n    \"deleted_manifests\": 1000000,\n    \"deleted_metadata_tables\": 1000000,\n    \"deleted_upload_sessions\": 1000000,\n    \"deleted_wal_segments\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"next_cursor\": \"next_cursor\",\n    \"next_reclamation_at_ms\": 1000000,\n    \"released_expired_checkpoints\": 1000000,\n    \"released_fork_checkpoints\": 1000000,\n    \"released_missing_basis_checkpoints\": 1000000,\n    \"retained\": {\n      \"checkpoint_not_releasable\": 1000000,\n      \"content_scan_deferred\": 1000000,\n      \"degraded_roots\": 1000000,\n      \"grace_window\": 1000000,\n      \"no_provider_timestamp\": 1000000,\n      \"no_reference_manifest\": 1000000,\n      \"referenced\": 1000000,\n      \"unrecognized_key\": 1000000,\n      \"upload_session_undecided\": 1000000,\n      \"upload_session_window\": 1000000\n    },\n    \"retained_candidates\": 1000000\n  },\n  \"metadata\": {\n    \"reorganize\": {\n      \"outcome\": \"not_needed\"\n    },\n    \"wal_flush\": {\n      \"outcome\": \"not_needed\"\n    }\n  },\n  \"namespace_id\": \"demo\",\n  \"retention\": {\n    \"retention_floor_seq\": 1000000\n  },\n  \"status_before\": {\n    \"current_manifest_id\": 1000000,\n    \"head_seq\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"retention_floor_seq\": 1000000,\n    \"wal_tail_segments\": 1000000\n  }\n}",
+        "body": "{\n  \"gc\": {\n    \"budget_exhausted\": true,\n    \"content_reclamation_deferred\": true,\n    \"deleted\": {\n      \"checkpoint_records\": 1000000,\n      \"content_objects\": 1000000,\n      \"manifests\": 1000000,\n      \"metadata_segments\": 1000000,\n      \"upload_sessions\": 1000000,\n      \"wal_segments\": 1000000\n    },\n    \"namespace_id\": \"demo\",\n    \"next_cursor\": \"next_cursor\",\n    \"next_reclamation_at_ms\": 1000000,\n    \"released_checkpoints\": {\n      \"expired\": 1000000,\n      \"fork\": 1000000,\n      \"missing_basis\": 1000000,\n      \"snapshot\": 1000000\n    },\n    \"retained\": {\n      \"checkpoint_not_releasable\": 1000000,\n      \"content_scan_deferred\": 1000000,\n      \"degraded_roots\": 1000000,\n      \"no_provider_timestamp\": 1000000,\n      \"no_reference_manifest\": 1000000,\n      \"referenced\": 1000000,\n      \"unrecognized_key\": 1000000,\n      \"upload_session_undecided\": 1000000,\n      \"upload_session_window\": 1000000,\n      \"within_grace_window\": 1000000\n    },\n    \"retained_candidates\": 1000000,\n    \"retention_degraded\": true\n  },\n  \"metadata_maintenance\": {\n    \"reorganize\": {\n      \"outcome\": \"not_needed\"\n    },\n    \"wal_flush\": {\n      \"outcome\": \"not_needed\"\n    }\n  },\n  \"namespace_id\": \"demo\",\n  \"retention\": {\n    \"retention_floor_seq\": 1000000\n  },\n  \"status_before\": {\n    \"current_manifest_no\": 1000000,\n    \"head_seq\": 1000000,\n    \"live_checkpoints\": 1000000,\n    \"live_snapshots\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"retention_floor_seq\": 1000000,\n    \"wal_tail_segments\": 1000000\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
-      "uuid": "07bc44d3-841d-4be3-8708-f2c419cb30ff",
+      "uuid": "8ff76c28-2889-48d0-816f-f3d80c08c874",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -594,6 +626,156 @@
       }
     },
     {
+      "id": "fd050aaa-2cdc-4b52-b85f-2077be18c193",
+      "name": "List snapshots - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"snapshots\": [\n    {\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"head_seq\": 1000000,\n      \"name\": \"name\",\n      \"namespace_id\": \"demo\",\n      \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "fd050aaa-2cdc-4b52-b85f-2077be18c193",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "90db7f34-a7d7-402d-a065-8491c28153f7",
+      "name": "Create snapshot - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"head_seq\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "90db7f34-a7d7-402d-a065-8491c28153f7",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "0045c27c-f692-47fa-90bb-5eefe4bc95a0",
+      "name": "Extend snapshot - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots/{snapshot_id}/extend",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "snapshot_id": {
+            "equalTo": "snapshot_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"head_seq\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "0045c27c-f692-47fa-90bb-5eefe4bc95a0",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3f235ec8-4b1e-47c6-ae05-00629775cf7f",
+      "name": "Release snapshot - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots/{snapshot_id}/release",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "snapshot_id": {
+            "equalTo": "snapshot_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3f235ec8-4b1e-47c6-ae05-00629775cf7f",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "24098507-e183-46fd-919d-34af2cc92a26",
       "name": "List changes after a sequence - default",
       "request": {
@@ -612,12 +794,15 @@
         "queryParameters": {
           "after_seq": {
             "equalTo": "1000000"
+          },
+          "snapshot_id": {
+            "equalTo": "chk_00000000000000000000000000000002"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"display_name\": \"report.txt\",\n          \"inode_id\": \"ino_123\",\n          \"parent_inode_id\": \"ino_123\",\n          \"kind\": \"directory_created\"\n        }\n      ],\n      \"message\": \"message\"\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"through_seq\": 1000000\n}",
+        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"binding_generation\": \"binding_generation\",\n          \"display_name\": \"report.txt\",\n          \"inode_id\": \"ino_123\",\n          \"parent_inode_id\": \"ino_123\",\n          \"kind\": \"directory_created\"\n        }\n      ],\n      \"message\": \"message\"\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"through_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -635,7 +820,7 @@
       }
     },
     {
-      "id": "3ebc5e14-363d-4cf4-a079-7823e08f6899",
+      "id": "62f477b6-e96a-4415-a733-8e9dad845430",
       "name": "Apply a commit - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/commits",
@@ -653,12 +838,12 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n  \"committed_seq\": 1000000,\n  \"namespace_id\": \"demo\"\n}",
+        "body": "{\n  \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n  \"committed_at_ms\": 1000000,\n  \"committed_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"committed_seq\": 1000000,\n  \"events\": [\n    {\n      \"binding_generation\": \"binding_generation\",\n      \"display_name\": \"report.txt\",\n      \"inode_id\": \"ino_123\",\n      \"parent_inode_id\": \"ino_123\",\n      \"kind\": \"directory_created\"\n    }\n  ],\n  \"message\": \"message\",\n  \"namespace_id\": \"demo\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
-      "uuid": "3ebc5e14-363d-4cf4-a079-7823e08f6899",
+      "uuid": "62f477b6-e96a-4415-a733-8e9dad845430",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -712,7 +897,7 @@
       }
     },
     {
-      "id": "31e224c3-c783-4278-b47b-e2ffd3998804",
+      "id": "9542a97d-1e1e-4d9e-97b9-a93792b19b08",
       "name": "Begin download - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/downloads",
@@ -726,6 +911,11 @@
           "namespace_id": {
             "equalTo": "namespace_id"
           }
+        },
+        "queryParameters": {
+          "snapshot_id": {
+            "equalTo": "chk_00000000000000000000000000000002"
+          }
         }
       },
       "response": {
@@ -735,7 +925,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "31e224c3-c783-4278-b47b-e2ffd3998804",
+      "uuid": "9542a97d-1e1e-4d9e-97b9-a93792b19b08",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -748,10 +938,10 @@
       }
     },
     {
-      "id": "3d4ab25b-267d-4769-b900-43fd20f7ad28",
+      "id": "c54b381e-3784-458c-9cb3-bb85a71109a4",
       "name": "List directory - default",
       "request": {
-        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/list",
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/entries",
         "method": "GET",
         "headers": {
           "Authorization": {
@@ -766,17 +956,64 @@
         "queryParameters": {
           "path": {
             "equalTo": "path"
+          },
+          "snapshot_id": {
+            "equalTo": "chk_00000000000000000000000000000002"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"created_at_ms\": 1000000,\n      \"created_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"path\": \"/docs/report.txt\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"binding_generation\": \"binding_generation\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"path\": \"/docs/report.txt\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
-      "uuid": "3d4ab25b-267d-4769-b900-43fd20f7ad28",
+      "uuid": "c54b381e-3784-458c-9cb3-bb85a71109a4",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "14aa9d23-158b-4e43-b148-fe00c3cc06ed",
+      "name": "Stat path - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/entry",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "path": {
+            "equalTo": "path"
+          },
+          "snapshot_id": {
+            "equalTo": "chk_00000000000000000000000000000002"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"binding_generation\": \"binding_generation\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "14aa9d23-158b-4e43-b148-fe00c3cc06ed",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -830,47 +1067,6 @@
       }
     },
     {
-      "id": "3a3722ed-cf9b-43db-aea9-37d8512eeba4",
-      "name": "Stat path - default",
-      "request": {
-        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/stat",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        },
-        "queryParameters": {
-          "path": {
-            "equalTo": "path"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "3a3722ed-cf9b-43db-aea9-37d8512eeba4",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
       "id": "9f6e3ea5-9d8d-4d87-b938-00d85085d5c5",
       "name": "List recoverable deletions - default",
       "request": {
@@ -889,7 +1085,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"deletion_seq\": 1000000,\n      \"display_name\": \"report.txt\",\n      \"inode_id\": \"ino_123\",\n      \"name_key\": \"report.txt\",\n      \"parent_inode_id\": \"ino_123\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_binding\": {\n        \"display_name\": \"report.txt\",\n        \"name_key\": \"report.txt\",\n        \"parent_inode_id\": \"ino_123\"\n      },\n      \"deleted_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"deletion_seq\": 1000000,\n      \"inode_id\": \"ino_123\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -907,7 +1103,48 @@
       }
     },
     {
-      "id": "50d0bf66-b44e-4a32-9dd8-8c7295dca019",
+      "id": "8167a8f2-34c8-4520-a704-2587b31acd92",
+      "name": "Content search - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/grep",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "pattern": {
+            "equalTo": "pattern"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"built_through_seq\": 1000000,\n  \"head_seq\": 1000000,\n  \"matches\": [\n    {\n      \"byte_offset\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"line\": \"line\",\n      \"line_number\": 1000000,\n      \"line_truncated\": true,\n      \"path\": \"/docs/report.txt\",\n      \"revision_no\": 1000000\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"tail_scanned\": true\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "8167a8f2-34c8-4520-a704-2587b31acd92",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "fffe47de-0c82-4fa0-b61e-1c0c6e8b4413",
       "name": "Stat inode - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}",
@@ -928,12 +1165,51 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\"\n}",
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"binding_generation\": \"binding_generation\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
-      "uuid": "50d0bf66-b44e-4a32-9dd8-8c7295dca019",
+      "uuid": "fffe47de-0c82-4fa0-b61e-1c0c6e8b4413",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "9089b722-240e-43c4-a589-53c169bc0b81",
+      "name": "List directory children by inode - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/children",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "inode_id": {
+            "equalTo": "ino_123"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"binding_generation\": \"binding_generation\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"parent_inode_id\": \"ino_123\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "9089b722-240e-43c4-a589-53c169bc0b81",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1027,7 +1303,7 @@
       }
     },
     {
-      "id": "c830fbf0-efdd-4d82-b605-956b1f77b185",
+      "id": "ebb5a30a-ff9c-4681-8de1-f634d73582e5",
       "name": "Begin download by inode - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/revisions/{revision_no}/downloads",
@@ -1056,7 +1332,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "c830fbf0-efdd-4d82-b605-956b1f77b185",
+      "uuid": "ebb5a30a-ff9c-4681-8de1-f634d73582e5",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1069,48 +1345,7 @@
       }
     },
     {
-      "id": "1cc47dd9-635f-45e1-a279-81bffdeb5b20",
-      "name": "Content search - default",
-      "request": {
-        "urlPathTemplate": "/v0/namespaces/{namespace_id}/query/grep",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        },
-        "queryParameters": {
-          "pattern": {
-            "equalTo": "pattern"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"built_through_seq\": 1000000,\n  \"head_seq\": 1000000,\n  \"matches\": [\n    {\n      \"byte_offset\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"line\": \"line\",\n      \"line_number\": 1000000,\n      \"line_truncated\": true,\n      \"path\": \"/docs/report.txt\",\n      \"revision_no\": 1000000\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"tail_scanned\": true\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "1cc47dd9-635f-45e1-a279-81bffdeb5b20",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "d370adfa-03b8-401a-ba77-313b606dc673",
+      "id": "3dc50bec-eb23-41e7-a1b6-7ddf984e3499",
       "name": "Begin upload - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads",
@@ -1133,7 +1368,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "d370adfa-03b8-401a-ba77-313b606dc673",
+      "uuid": "3dc50bec-eb23-41e7-a1b6-7ddf984e3499",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1146,7 +1381,7 @@
       }
     },
     {
-      "id": "64d57b65-44ce-452f-9852-21bd884edd8f",
+      "id": "5d4535b5-f1aa-433b-be01-f2891d6a6d66",
       "name": "Get upload session - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads/{upload_id}",
@@ -1167,12 +1402,12 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\"\n}",
+        "body": "{\n  \"expires_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"status\": \"open\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
-      "uuid": "64d57b65-44ce-452f-9852-21bd884edd8f",
+      "uuid": "5d4535b5-f1aa-433b-be01-f2891d6a6d66",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1206,7 +1441,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\"\n}",
+        "body": "{\n  \"expires_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"status\": \"open\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1245,7 +1480,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\"\n}",
+        "body": "{\n  \"expires_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"status\": \"open\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1300,41 +1535,9 @@
           }
         }
       }
-    },
-    {
-      "id": "26e9b720-ea90-4f37-8f3e-3ac09b0ec48a",
-      "name": "Get capabilities - default",
-      "request": {
-        "urlPathTemplate": "/v0/capabilities",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"features\": {\n    \"key\": true\n  },\n  \"limits\": {\n    \"key\": 1000000\n  },\n  \"profiles\": [\n    \"profiles\"\n  ],\n  \"protocol_version\": \"protocol_version\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "26e9b720-ea90-4f37-8f3e-3ac09b0ec48a",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      },
-      "postServeActions": []
     }
   ],
   "meta": {
-    "total": 36
+    "total": 41
   }
 }

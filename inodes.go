@@ -10,12 +10,12 @@ import (
 )
 
 var (
-	beginDownloadByInodeBodyFieldNamespaceID = big.NewInt(1 << 0)
-	beginDownloadByInodeBodyFieldInodeID     = big.NewInt(1 << 1)
-	beginDownloadByInodeBodyFieldRevisionNo  = big.NewInt(1 << 2)
+	createDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
+	createDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
+	createDownloadByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
 )
 
-type BeginDownloadByInodeBody struct {
+type CreateDownloadByInodeRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// File inode ID
@@ -28,45 +28,45 @@ type BeginDownloadByInodeBody struct {
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (b *BeginDownloadByInodeBody) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
+func (c *CreateDownloadByInodeRequest) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
 	}
-	b.explicitFields.Or(b.explicitFields, field)
+	c.explicitFields.Or(c.explicitFields, field)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadByInodeBody) SetNamespaceID(namespaceID string) {
-	b.NamespaceID = namespaceID
-	b.require(beginDownloadByInodeBodyFieldNamespaceID)
+func (c *CreateDownloadByInodeRequest) SetNamespaceID(namespaceID string) {
+	c.NamespaceID = namespaceID
+	c.require(createDownloadByInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadByInodeBody) SetInodeID(inodeID string) {
-	b.InodeID = inodeID
-	b.require(beginDownloadByInodeBodyFieldInodeID)
+func (c *CreateDownloadByInodeRequest) SetInodeID(inodeID string) {
+	c.InodeID = inodeID
+	c.require(createDownloadByInodeRequestFieldInodeID)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadByInodeBody) SetRevisionNo(revisionNo RevisionNo) {
-	b.RevisionNo = revisionNo
-	b.require(beginDownloadByInodeBodyFieldRevisionNo)
+func (c *CreateDownloadByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
+	c.RevisionNo = revisionNo
+	c.require(createDownloadByInodeRequestFieldRevisionNo)
 }
 
-func (b *BeginDownloadByInodeBody) UnmarshalJSON(data []byte) error {
+func (c *CreateDownloadByInodeRequest) UnmarshalJSON(data []byte) error {
 	var body BeginDownloadByInodeRequest
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
-	b.Body = body
+	c.Body = body
 	return nil
 }
 
-func (b *BeginDownloadByInodeBody) MarshalJSON() ([]byte, error) {
-	return json.Marshal(b.Body)
+func (c *CreateDownloadByInodeRequest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Body)
 }
 
 var (
@@ -113,6 +113,52 @@ func (g *GetFileRevisionBytesByInodeRequest) SetInodeID(inodeID string) {
 func (g *GetFileRevisionBytesByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
 	g.RevisionNo = revisionNo
 	g.require(getFileRevisionBytesByInodeRequestFieldRevisionNo)
+}
+
+var (
+	getInodeRequestFieldNamespaceID       = big.NewInt(1 << 0)
+	getInodeRequestFieldInodeID           = big.NewInt(1 << 1)
+	getInodeRequestFieldIncludeAttributes = big.NewInt(1 << 2)
+)
+
+type GetInodeRequest struct {
+	// Namespace id
+	NamespaceID string `json:"-" url:"-"`
+	// Inode ID
+	InodeID string `json:"-" url:"-"`
+	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
+	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (g *GetInodeRequest) require(field *big.Int) {
+	if g.explicitFields == nil {
+		g.explicitFields = big.NewInt(0)
+	}
+	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetInodeRequest) SetNamespaceID(namespaceID string) {
+	g.NamespaceID = namespaceID
+	g.require(getInodeRequestFieldNamespaceID)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetInodeRequest) SetInodeID(inodeID string) {
+	g.InodeID = inodeID
+	g.require(getInodeRequestFieldInodeID)
+}
+
+// SetIncludeAttributes sets the IncludeAttributes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetInodeRequest) SetIncludeAttributes(includeAttributes *bool) {
+	g.IncludeAttributes = includeAttributes
+	g.require(getInodeRequestFieldIncludeAttributes)
 }
 
 var (
@@ -172,49 +218,69 @@ func (l *ListFileRevisionsByInodeRequest) SetCursor(cursor *string) {
 }
 
 var (
-	statInodeRequestFieldNamespaceID       = big.NewInt(1 << 0)
-	statInodeRequestFieldInodeID           = big.NewInt(1 << 1)
-	statInodeRequestFieldIncludeAttributes = big.NewInt(1 << 2)
+	listInodeChildrenRequestFieldNamespaceID       = big.NewInt(1 << 0)
+	listInodeChildrenRequestFieldInodeID           = big.NewInt(1 << 1)
+	listInodeChildrenRequestFieldLimit             = big.NewInt(1 << 2)
+	listInodeChildrenRequestFieldCursor            = big.NewInt(1 << 3)
+	listInodeChildrenRequestFieldIncludeAttributes = big.NewInt(1 << 4)
 )
 
-type StatInodeRequest struct {
+type ListInodeChildrenRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
-	// Inode ID
+	// Directory inode ID
 	InodeID string `json:"-" url:"-"`
-	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
+	// Maximum page size
+	Limit *int `json:"-" url:"limit,omitempty"`
+	// Opaque directory page cursor
+	Cursor *string `json:"-" url:"cursor,omitempty"`
+	// Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (s *StatInodeRequest) require(field *big.Int) {
-	if s.explicitFields == nil {
-		s.explicitFields = big.NewInt(0)
+func (l *ListInodeChildrenRequest) require(field *big.Int) {
+	if l.explicitFields == nil {
+		l.explicitFields = big.NewInt(0)
 	}
-	s.explicitFields.Or(s.explicitFields, field)
+	l.explicitFields.Or(l.explicitFields, field)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StatInodeRequest) SetNamespaceID(namespaceID string) {
-	s.NamespaceID = namespaceID
-	s.require(statInodeRequestFieldNamespaceID)
+func (l *ListInodeChildrenRequest) SetNamespaceID(namespaceID string) {
+	l.NamespaceID = namespaceID
+	l.require(listInodeChildrenRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StatInodeRequest) SetInodeID(inodeID string) {
-	s.InodeID = inodeID
-	s.require(statInodeRequestFieldInodeID)
+func (l *ListInodeChildrenRequest) SetInodeID(inodeID string) {
+	l.InodeID = inodeID
+	l.require(listInodeChildrenRequestFieldInodeID)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenRequest) SetLimit(limit *int) {
+	l.Limit = limit
+	l.require(listInodeChildrenRequestFieldLimit)
+}
+
+// SetCursor sets the Cursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenRequest) SetCursor(cursor *string) {
+	l.Cursor = cursor
+	l.require(listInodeChildrenRequestFieldCursor)
 }
 
 // SetIncludeAttributes sets the IncludeAttributes field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StatInodeRequest) SetIncludeAttributes(includeAttributes *bool) {
-	s.IncludeAttributes = includeAttributes
-	s.require(statInodeRequestFieldIncludeAttributes)
+func (l *ListInodeChildrenRequest) SetIncludeAttributes(includeAttributes *bool) {
+	l.IncludeAttributes = includeAttributes
+	l.require(listInodeChildrenRequestFieldIncludeAttributes)
 }
 
 // Empty request for an inode-addressed download.
@@ -372,4 +438,166 @@ func (b *BeginDownloadByInodeResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", b)
+}
+
+// One directory listing addressed by parent inode, and the namespace head
+// it was answered at.
+//
+// The envelope names the parent by its stable inode identity rather than a
+// path, so a page and its resumption always describe the same directory
+// even when the parent is concurrently renamed or moved.
+var (
+	listInodeChildrenResponseFieldEntries       = big.NewInt(1 << 0)
+	listInodeChildrenResponseFieldHeadSeq       = big.NewInt(1 << 1)
+	listInodeChildrenResponseFieldNamespaceID   = big.NewInt(1 << 2)
+	listInodeChildrenResponseFieldNextCursor    = big.NewInt(1 << 3)
+	listInodeChildrenResponseFieldParentInodeID = big.NewInt(1 << 4)
+)
+
+type ListInodeChildrenResponse struct {
+	// Directory entries for this page.
+	//
+	// Entries are returned in canonical name-key order. Higher-level display
+	// surfaces may sort entries separately for presentation.
+	Entries []*PathEntry `json:"entries" url:"entries"`
+	// Namespace head sequence this listing was read from.
+	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
+	// Namespace that was read.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// Cursor for the next page, if more entries remain.
+	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
+	// Stable inode ID within a namespace
+	ParentInodeID string `json:"parent_inode_id" url:"parent_inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *ListInodeChildrenResponse) GetEntries() []*PathEntry {
+	if l == nil {
+		return nil
+	}
+	return l.Entries
+}
+
+func (l *ListInodeChildrenResponse) GetHeadSeq() ChangeSeq {
+	if l == nil {
+		return 0
+	}
+	return l.HeadSeq
+}
+
+func (l *ListInodeChildrenResponse) GetNamespaceID() NamespaceID {
+	if l == nil {
+		return ""
+	}
+	return l.NamespaceID
+}
+
+func (l *ListInodeChildrenResponse) GetNextCursor() *string {
+	if l == nil {
+		return nil
+	}
+	return l.NextCursor
+}
+
+func (l *ListInodeChildrenResponse) GetParentInodeID() string {
+	if l == nil {
+		return ""
+	}
+	return l.ParentInodeID
+}
+
+func (l *ListInodeChildrenResponse) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *ListInodeChildrenResponse) require(field *big.Int) {
+	if l.explicitFields == nil {
+		l.explicitFields = big.NewInt(0)
+	}
+	l.explicitFields.Or(l.explicitFields, field)
+}
+
+// SetEntries sets the Entries field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenResponse) SetEntries(entries []*PathEntry) {
+	l.Entries = entries
+	l.require(listInodeChildrenResponseFieldEntries)
+}
+
+// SetHeadSeq sets the HeadSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenResponse) SetHeadSeq(headSeq ChangeSeq) {
+	l.HeadSeq = headSeq
+	l.require(listInodeChildrenResponseFieldHeadSeq)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenResponse) SetNamespaceID(namespaceID NamespaceID) {
+	l.NamespaceID = namespaceID
+	l.require(listInodeChildrenResponseFieldNamespaceID)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenResponse) SetNextCursor(nextCursor *string) {
+	l.NextCursor = nextCursor
+	l.require(listInodeChildrenResponseFieldNextCursor)
+}
+
+// SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenResponse) SetParentInodeID(parentInodeID string) {
+	l.ParentInodeID = parentInodeID
+	l.require(listInodeChildrenResponseFieldParentInodeID)
+}
+
+func (l *ListInodeChildrenResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListInodeChildrenResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = ListInodeChildrenResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *ListInodeChildrenResponse) MarshalJSON() ([]byte, error) {
+	type embed ListInodeChildrenResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *ListInodeChildrenResponse) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
 }

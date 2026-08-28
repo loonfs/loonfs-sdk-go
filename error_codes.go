@@ -8,18 +8,13 @@ import (
 )
 
 var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
-	408: func(apiError *core.APIError) error {
-		return &RequestTimeoutError{
+	503: func(apiError *core.APIError) error {
+		return &ServiceUnavailableError{
 			APIError: apiError,
 		}
 	},
 	401: func(apiError *core.APIError) error {
 		return &UnauthorizedError{
-			APIError: apiError,
-		}
-	},
-	503: func(apiError *core.APIError) error {
-		return &ServiceUnavailableError{
 			APIError: apiError,
 		}
 	},
@@ -35,11 +30,6 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 	},
 	410: func(apiError *core.APIError) error {
 		return &GoneError{
-			APIError: apiError,
-		}
-	},
-	403: func(apiError *core.APIError) error {
-		return &ForbiddenError{
 			APIError: apiError,
 		}
 	},

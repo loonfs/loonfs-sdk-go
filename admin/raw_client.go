@@ -36,7 +36,7 @@ func (r *RawClient) CreateCheckpoint(
 	ctx context.Context,
 	request *loonfs.CreateCheckpointRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.CreateCheckpointResponse], error) {
+) (*core.Response[*loonfs.Checkpoint], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -52,7 +52,7 @@ func (r *RawClient) CreateCheckpoint(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *loonfs.CreateCheckpointResponse
+	var response *loonfs.Checkpoint
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -72,7 +72,7 @@ func (r *RawClient) CreateCheckpoint(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.CreateCheckpointResponse]{
+	return &core.Response[*loonfs.Checkpoint]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -170,11 +170,11 @@ func (r *RawClient) GetNamespaceDiagnostics(
 	}, nil
 }
 
-func (r *RawClient) GetGrepIndexStatus(
+func (r *RawClient) GetGrepIndex(
 	ctx context.Context,
-	request *loonfs.GetGrepIndexStatusRequest,
+	request *loonfs.GetGrepIndexRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.GrepIndexStatusResponse], error) {
+) (*core.Response[*loonfs.GrepIndex], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -189,7 +189,7 @@ func (r *RawClient) GetGrepIndexStatus(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.GrepIndexStatusResponse
+	var response *loonfs.GrepIndex
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -208,7 +208,7 @@ func (r *RawClient) GetGrepIndexStatus(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.GrepIndexStatusResponse]{
+	return &core.Response[*loonfs.GrepIndex]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -219,7 +219,7 @@ func (r *RawClient) DisableGrepIndex(
 	ctx context.Context,
 	request *loonfs.DisableGrepIndexRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.GrepIndexStatusResponse], error) {
+) (*core.Response[*loonfs.GrepIndex], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -234,7 +234,7 @@ func (r *RawClient) DisableGrepIndex(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.GrepIndexStatusResponse
+	var response *loonfs.GrepIndex
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -253,7 +253,7 @@ func (r *RawClient) DisableGrepIndex(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.GrepIndexStatusResponse]{
+	return &core.Response[*loonfs.GrepIndex]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -264,7 +264,7 @@ func (r *RawClient) EnableGrepIndex(
 	ctx context.Context,
 	request *loonfs.EnableGrepIndexRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.GrepIndexStatusResponse], error) {
+) (*core.Response[*loonfs.GrepIndex], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -279,7 +279,7 @@ func (r *RawClient) EnableGrepIndex(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.GrepIndexStatusResponse
+	var response *loonfs.GrepIndex
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -298,7 +298,7 @@ func (r *RawClient) EnableGrepIndex(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.GrepIndexStatusResponse]{
+	return &core.Response[*loonfs.GrepIndex]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -352,7 +352,7 @@ func (r *RawClient) GcGrepIndex(
 	}, nil
 }
 
-func (r *RawClient) MaintenanceStep(
+func (r *RawClient) RunMaintenance(
 	ctx context.Context,
 	request *loonfs.MaintenanceStepRequest,
 	opts ...option.RequestOption,
@@ -364,7 +364,7 @@ func (r *RawClient) MaintenanceStep(
 		"",
 	)
 	endpointURL := internal.EncodeURL(
-		baseURL+"/v0/admin/namespaces/%v/maintenance/step",
+		baseURL+"/v0/admin/namespaces/%v/maintenance/run",
 		request.NamespaceID,
 	)
 	headers := internal.MergeHeaders(

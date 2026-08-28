@@ -59,7 +59,7 @@ func (c *Client) Grep(
 		"",
 	)
 	endpointURL := internal.EncodeURL(
-		baseURL+"/v0/namespaces/%v/query/grep",
+		baseURL+"/v0/namespaces/%v/grep",
 		request.NamespaceID,
 	)
 	queryParams, err := internal.QueryValues(request)

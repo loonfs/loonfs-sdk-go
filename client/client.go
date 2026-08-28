@@ -3,9 +3,6 @@
 package client
 
 import (
-	context "context"
-
-	loonfs "github.com/loonfs/loonfs-sdk-go"
 	admin "github.com/loonfs/loonfs-sdk-go/admin"
 	core "github.com/loonfs/loonfs-sdk-go/core"
 	filesystem "github.com/loonfs/loonfs-sdk-go/filesystem"
@@ -19,14 +16,13 @@ import (
 )
 
 type Client struct {
-	WithRawResponse *RawClient
-	System          *system.Client
-	Admin           *admin.Client
-	Namespaces      *namespaces.Client
-	Filesystem      *filesystem.Client
-	Inodes          *inodes.Client
-	Query           *query.Client
-	Uploads         *uploads.Client
+	System     *system.Client
+	Admin      *admin.Client
+	Namespaces *namespaces.Client
+	Filesystem *filesystem.Client
+	Query      *query.Client
+	Inodes     *inodes.Client
+	Uploads    *uploads.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -36,16 +32,15 @@ type Client struct {
 func NewClient(opts ...option.RequestOption) *Client {
 	options := core.NewRequestOptions(opts...)
 	return &Client{
-		System:          system.NewClient(options),
-		Admin:           admin.NewClient(options),
-		Namespaces:      namespaces.NewClient(options),
-		Filesystem:      filesystem.NewClient(options),
-		Inodes:          inodes.NewClient(options),
-		Query:           query.NewClient(options),
-		Uploads:         uploads.NewClient(options),
-		WithRawResponse: NewRawClient(options),
-		options:         options,
-		baseURL:         options.BaseURL,
+		System:     system.NewClient(options),
+		Admin:      admin.NewClient(options),
+		Namespaces: namespaces.NewClient(options),
+		Filesystem: filesystem.NewClient(options),
+		Query:      query.NewClient(options),
+		Inodes:     inodes.NewClient(options),
+		Uploads:    uploads.NewClient(options),
+		options:    options,
+		baseURL:    options.BaseURL,
 		caller: internal.NewCaller(
 			&internal.CallerParams{
 				Client:         options.HTTPClient,
@@ -54,25 +49,4 @@ func NewClient(opts ...option.RequestOption) *Client {
 			},
 		),
 	}
-}
-
-// Returns a summary of supported features and limits.
-//
-// Example:
-//
-//	client.Capabilities(
-//	    context.TODO(),
-//	)
-func (c *Client) Capabilities(
-	ctx context.Context,
-	opts ...option.RequestOption,
-) (*loonfs.CapabilityDocument, error) {
-	response, err := c.WithRawResponse.Capabilities(
-		ctx,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
 }

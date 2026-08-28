@@ -125,7 +125,7 @@ func (c *Client) CreateCheckpoint(
 	ctx context.Context,
 	request *loonfs.CreateCheckpointRequest,
 	opts ...option.RequestOption,
-) (*loonfs.CreateCheckpointResponse, error) {
+) (*loonfs.Checkpoint, error) {
 	response, err := c.WithRawResponse.CreateCheckpoint(
 		ctx,
 		request,
@@ -196,19 +196,19 @@ func (c *Client) GetNamespaceDiagnostics(
 //
 // Example:
 //
-//	request := &loonfs.GetGrepIndexStatusRequest{
+//	request := &loonfs.GetGrepIndexRequest{
 //	    NamespaceID: "namespace_id",
 //	}
-//	client.Admin.GetGrepIndexStatus(
+//	client.Admin.GetGrepIndex(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) GetGrepIndexStatus(
+func (c *Client) GetGrepIndex(
 	ctx context.Context,
-	request *loonfs.GetGrepIndexStatusRequest,
+	request *loonfs.GetGrepIndexRequest,
 	opts ...option.RequestOption,
-) (*loonfs.GrepIndexStatusResponse, error) {
-	response, err := c.WithRawResponse.GetGrepIndexStatus(
+) (*loonfs.GrepIndex, error) {
+	response, err := c.WithRawResponse.GetGrepIndex(
 		ctx,
 		request,
 		opts...,
@@ -234,7 +234,7 @@ func (c *Client) DisableGrepIndex(
 	ctx context.Context,
 	request *loonfs.DisableGrepIndexRequest,
 	opts ...option.RequestOption,
-) (*loonfs.GrepIndexStatusResponse, error) {
+) (*loonfs.GrepIndex, error) {
 	response, err := c.WithRawResponse.DisableGrepIndex(
 		ctx,
 		request,
@@ -261,7 +261,7 @@ func (c *Client) EnableGrepIndex(
 	ctx context.Context,
 	request *loonfs.EnableGrepIndexRequest,
 	opts ...option.RequestOption,
-) (*loonfs.GrepIndexStatusResponse, error) {
+) (*loonfs.GrepIndex, error) {
 	response, err := c.WithRawResponse.EnableGrepIndex(
 		ctx,
 		request,
@@ -300,23 +300,23 @@ func (c *Client) GcGrepIndex(
 	return response.Body, nil
 }
 
-// Runs one bounded maintenance step. The body selects the actions by naming them: `metadata` folds the WAL tail once it reaches the threshold and merges one bounded reorganization unit, `advance_retention: true` advances the retention floor, and `gc` runs one bounded garbage-collection pass. Selected actions run in that order, each reports separately, and an absent report means the body did not select that action. A body that selects nothing is rejected. Nothing surrenders replay history or sweeps objects unless the body asked for it. A deleted namespace accepts a step that selects `gc` alone, which is how its reclaimable state is collected; any other selection is refused. Step-driven GC defaults to 1024 candidates and returns its cursor for a later step rather than looping internally. Losing the root race is an outcome, not an error.
+// Runs one bounded maintenance step. Include `metadata_maintenance`, `retention`, or `gc` to select actions. Each selector is an options object, and an empty object uses server defaults. Actions run in that order, and only selected actions appear in the response. At least one action is required. A deleted namespace accepts only `gc`. GC processes up to 1024 candidates by default and returns a cursor when more work remains. A lost root update race is reported as an outcome.
 //
 // Example:
 //
 //	request := &loonfs.MaintenanceStepRequest{
 //	    NamespaceID: "namespace_id",
 //	}
-//	client.Admin.MaintenanceStep(
+//	client.Admin.RunMaintenance(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) MaintenanceStep(
+func (c *Client) RunMaintenance(
 	ctx context.Context,
 	request *loonfs.MaintenanceStepRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.MaintenanceStepResponse, error) {
-	response, err := c.WithRawResponse.MaintenanceStep(
+	response, err := c.WithRawResponse.RunMaintenance(
 		ctx,
 		request,
 		opts...,

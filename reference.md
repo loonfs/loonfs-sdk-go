@@ -1,47 +1,6 @@
 # Reference
-<details><summary><code>client.Capabilities() -> *loonfs.CapabilityDocument</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Returns a summary of supported features and limits.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-client.Capabilities(
-    context.TODO(),
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
 ## system
-<details><summary><code>client.System.Health() -> string</code></summary>
+<details><summary><code>client.System.GetHealth() -> string</code></summary>
 <dl>
 <dd>
 
@@ -68,7 +27,7 @@ Returns `ok` when the server is running and can accept requests.
 <dd>
 
 ```go
-client.System.Health(
+client.System.GetHealth(
     context.TODO(),
 )
 ```
@@ -123,7 +82,7 @@ client.System.GetMetrics(
 </dl>
 </details>
 
-<details><summary><code>client.System.Readiness() -> string</code></summary>
+<details><summary><code>client.System.GetReadiness() -> string</code></summary>
 <dl>
 <dd>
 
@@ -150,7 +109,48 @@ Returns `ready` while the server admits new work. Once shutdown begins and publi
 <dd>
 
 ```go
-client.System.Readiness(
+client.System.GetReadiness(
+    context.TODO(),
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.System.GetCapabilities() -> *loonfs.CapabilityDocument</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Returns a summary of supported features and limits.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+client.System.GetCapabilities(
     context.TODO(),
 )
 ```
@@ -241,7 +241,7 @@ client.Admin.ListCheckpoints(
 </dl>
 </details>
 
-<details><summary><code>client.Admin.CreateCheckpoint(NamespaceID, request) -> *loonfs.CreateCheckpointResponse</code></summary>
+<details><summary><code>client.Admin.CreateCheckpoint(NamespaceID, request) -> *loonfs.Checkpoint</code></summary>
 <dl>
 <dd>
 
@@ -453,7 +453,7 @@ client.Admin.GetNamespaceDiagnostics(
 </dl>
 </details>
 
-<details><summary><code>client.Admin.GetGrepIndexStatus(NamespaceID) -> *loonfs.GrepIndexStatusResponse</code></summary>
+<details><summary><code>client.Admin.GetGrepIndex(NamespaceID) -> *loonfs.GrepIndex</code></summary>
 <dl>
 <dd>
 
@@ -480,10 +480,10 @@ Returns whether the namespace's grep index is `disabled`, `backfilling`, or `act
 <dd>
 
 ```go
-request := &loonfs.GetGrepIndexStatusRequest{
+request := &loonfs.GetGrepIndexRequest{
     NamespaceID: "namespace_id",
 }
-client.Admin.GetGrepIndexStatus(
+client.Admin.GetGrepIndex(
     context.TODO(),
     request,
 )
@@ -513,7 +513,7 @@ client.Admin.GetGrepIndexStatus(
 </dl>
 </details>
 
-<details><summary><code>client.Admin.DisableGrepIndex(NamespaceID) -> *loonfs.GrepIndexStatusResponse</code></summary>
+<details><summary><code>client.Admin.DisableGrepIndex(NamespaceID) -> *loonfs.GrepIndex</code></summary>
 <dl>
 <dd>
 
@@ -573,7 +573,7 @@ client.Admin.DisableGrepIndex(
 </dl>
 </details>
 
-<details><summary><code>client.Admin.EnableGrepIndex(NamespaceID) -> *loonfs.GrepIndexStatusResponse</code></summary>
+<details><summary><code>client.Admin.EnableGrepIndex(NamespaceID) -> *loonfs.GrepIndex</code></summary>
 <dl>
 <dd>
 
@@ -716,7 +716,7 @@ takes.
 </dl>
 </details>
 
-<details><summary><code>client.Admin.MaintenanceStep(NamespaceID, request) -> *loonfs.MaintenanceStepResponse</code></summary>
+<details><summary><code>client.Admin.RunMaintenance(NamespaceID, request) -> *loonfs.MaintenanceStepResponse</code></summary>
 <dl>
 <dd>
 
@@ -728,7 +728,7 @@ takes.
 <dl>
 <dd>
 
-Runs one bounded maintenance step. The body selects the actions by naming them: `metadata` folds the WAL tail once it reaches the threshold and merges one bounded reorganization unit, `advance_retention: true` advances the retention floor, and `gc` runs one bounded garbage-collection pass. Selected actions run in that order, each reports separately, and an absent report means the body did not select that action. A body that selects nothing is rejected. Nothing surrenders replay history or sweeps objects unless the body asked for it. A deleted namespace accepts a step that selects `gc` alone, which is how its reclaimable state is collected; any other selection is refused. Step-driven GC defaults to 1024 candidates and returns its cursor for a later step rather than looping internally. Losing the root race is an outcome, not an error.
+Runs one bounded maintenance step. Include `metadata_maintenance`, `retention`, or `gc` to select actions. Each selector is an options object, and an empty object uses server defaults. Actions run in that order, and only selected actions appear in the response. At least one action is required. A deleted namespace accepts only `gc`. GC processes up to 1024 candidates by default and returns a cursor when more work remains. A lost root update race is reported as an outcome.
 </dd>
 </dl>
 </dd>
@@ -746,7 +746,7 @@ Runs one bounded maintenance step. The body selects the actions by naming them: 
 request := &loonfs.MaintenanceStepRequest{
     NamespaceID: "namespace_id",
 }
-client.Admin.MaintenanceStep(
+client.Admin.RunMaintenance(
     context.TODO(),
     request,
 )
@@ -772,21 +772,10 @@ client.Admin.MaintenanceStep(
 <dl>
 <dd>
 
-**advanceRetention:** `*bool` 
-
-Advance the retention floor to the flushed manifest head. Nothing
-surrenders replay history unless this is true.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
 **gc:** `*loonfs.GcRequest` 
 
-Run one bounded mark-and-sweep garbage-collection pass. Nothing
-sweeps unless this is present.
+Run one bounded mark-and-sweep garbage-collection pass. Omit this
+field to skip garbage collection.
     
 </dd>
 </dl>
@@ -794,10 +783,21 @@ sweeps unless this is present.
 <dl>
 <dd>
 
-**metadata:** `*loonfs.MetadataMaintenanceRequest` 
+**metadataMaintenance:** `*loonfs.MetadataMaintenanceRequest` 
 
-Flush the visible WAL tail into metadata tables, then run one bounded
+Flush the visible WAL tail into metadata segments, then run one bounded
 reorganization step.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**retention:** `*loonfs.AdvanceRetentionRequest` 
+
+Advance the retention floor to the flushed manifest head. Include this
+field to select the action.
     
 </dd>
 </dl>
@@ -1127,8 +1127,7 @@ client.Namespaces.ForkNamespace(
 </dl>
 </details>
 
-## filesystem
-<details><summary><code>client.Filesystem.ListChanges(NamespaceID) -> *loonfs.ChangesResponse</code></summary>
+<details><summary><code>client.Namespaces.ListSnapshots(NamespaceID) -> *loonfs.ListSnapshotsResponse</code></summary>
 <dl>
 <dd>
 
@@ -1140,7 +1139,309 @@ client.Namespaces.ForkNamespace(
 <dl>
 <dd>
 
-Returns committed changes from the write-ahead log. Callers can use this feed to keep another projection synchronized with WAL history.
+Lists live snapshots in snapshot-id order. Released and expired snapshots are omitted.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ListSnapshotsRequest{
+    NamespaceID: "namespace_id",
+}
+client.Namespaces.ListSnapshots(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Maximum page size
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — Opaque snapshot-list page cursor
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Namespaces.CreateSnapshot(NamespaceID, request) -> *loonfs.SnapshotSummary</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a snapshot of the current namespace state. Every call creates a new snapshot.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.CreateSnapshotRequest{
+    NamespaceID: "namespace_id",
+    Name: "name",
+    TTLMs: int64(1000000),
+}
+client.Namespaces.CreateSnapshot(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `string` — A label that does not need to be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ttlMs:** `int64` — Snapshot lifetime from the current server time, in milliseconds.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Namespaces.ExtendSnapshot(NamespaceID, SnapshotID, request) -> *loonfs.SnapshotSummary</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Extends a live snapshot without passing its lifetime limit. Repeating the request has the same result.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ExtendSnapshotRequest{
+    NamespaceID: "namespace_id",
+    SnapshotID: "snapshot_id",
+    TTLMs: int64(1000000),
+}
+client.Namespaces.ExtendSnapshot(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `string` — Snapshot id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ttlMs:** `int64` — Requested lifetime from the server's current time, in milliseconds.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Namespaces.ReleaseSnapshot(NamespaceID, SnapshotID) -> *loonfs.ReleaseSnapshotResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Releases a snapshot by id. Repeated releases succeed.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ReleaseSnapshotRequest{
+    NamespaceID: "namespace_id",
+    SnapshotID: "snapshot_id",
+}
+client.Namespaces.ReleaseSnapshot(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `string` — Snapshot id
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## filesystem
+<details><summary><code>client.Filesystem.ListChanges(NamespaceID) -> *loonfs.ListChangesResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Returns committed changes after a sequence. A snapshot limits the feed to its captured sequence.
 </dd>
 </dl>
 </dd>
@@ -1158,6 +1459,9 @@ Returns committed changes from the write-ahead log. Callers can use this feed to
 request := &loonfs.ListChangesRequest{
     NamespaceID: "namespace_id",
     AfterSeq: int64(1000000),
+    SnapshotID: loonfs.String(
+        "chk_00000000000000000000000000000002",
+    ),
 }
 client.Filesystem.ListChanges(
     context.TODO(),
@@ -1197,6 +1501,14 @@ client.Filesystem.ListChanges(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.CheckpointID` — End the feed at this snapshot's captured sequence
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -1205,7 +1517,7 @@ client.Filesystem.ListChanges(
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.ApplyCommit(NamespaceID, request) -> *loonfs.CommitResponse</code></summary>
+<details><summary><code>client.Filesystem.CreateCommit(NamespaceID, request) -> *loonfs.CommitResponse</code></summary>
 <dl>
 <dd>
 
@@ -1241,13 +1553,13 @@ request := &loonfs.CommitRequest{
     CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
     Operations: []*loonfs.FilesystemOperation{
         &loonfs.FilesystemOperation{
-            CreateDirectory: &loonfs.FsOpCreateDirectory{
+            CreateDirectory: &loonfs.FilesystemOperationCreateDirectory{
                 Path: "/docs/report.txt",
             },
         },
     },
 }
-client.Filesystem.ApplyCommit(
+client.Filesystem.CreateCommit(
     context.TODO(),
     request,
 )
@@ -1340,7 +1652,7 @@ together or not at all.
 <dl>
 <dd>
 
-Returns file bytes for the current revision at a path, or for a specific retained revision when `revision_no` is provided.
+Returns the current file bytes, a retained revision, or the revision captured by a live snapshot.
 </dd>
 </dl>
 </dd>
@@ -1393,7 +1705,15 @@ client.Filesystem.GetFileBytes(
 <dl>
 <dd>
 
-**revisionNo:** `*loonfs.RevisionNo` — Optional prior revision number
+**revisionNo:** `*loonfs.RevisionNo` — Optional prior revision number; cannot be combined with snapshot_id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.CheckpointID` — Use the file revision captured by this snapshot
     
 </dd>
 </dl>
@@ -1405,7 +1725,7 @@ client.Filesystem.GetFileBytes(
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.BeginDownload(NamespaceID, request) -> *loonfs.BeginDownloadResponse</code></summary>
+<details><summary><code>client.Filesystem.CreateDownload(NamespaceID, request) -> *loonfs.BeginDownloadResponse</code></summary>
 <dl>
 <dd>
 
@@ -1434,9 +1754,12 @@ Authorizes one direct read of a file's content object and returns a short-lived 
 ```go
 request := &loonfs.BeginDownloadRequest{
     NamespaceID: "namespace_id",
+    SnapshotID: loonfs.String(
+        "chk_00000000000000000000000000000002",
+    ),
     Path: "/docs/report.txt",
 }
-client.Filesystem.BeginDownload(
+client.Filesystem.CreateDownload(
     context.TODO(),
     request,
 )
@@ -1455,6 +1778,14 @@ client.Filesystem.BeginDownload(
 <dd>
 
 **namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.CheckpointID` — Use the file revision captured by this snapshot
     
 </dd>
 </dl>
@@ -1494,7 +1825,7 @@ client.Filesystem.BeginDownload(
 <dl>
 <dd>
 
-Lists a directory at the current namespace head.
+Lists a directory from the current state or a live snapshot.
 </dd>
 </dl>
 </dd>
@@ -1512,6 +1843,9 @@ Lists a directory at the current namespace head.
 request := &loonfs.ListPathEntriesRequest{
     NamespaceID: "namespace_id",
     Path: "path",
+    SnapshotID: loonfs.String(
+        "chk_00000000000000000000000000000002",
+    ),
 }
 client.Filesystem.ListPathEntries(
     context.TODO(),
@@ -1564,6 +1898,102 @@ client.Filesystem.ListPathEntries(
 <dd>
 
 **includeAttributes:** `*bool` — Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.CheckpointID` — Use the directory state captured by this snapshot
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Filesystem.GetPathEntry(NamespaceID) -> *loonfs.PathEntry</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Returns path metadata from the current state or a live snapshot.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.GetPathEntryRequest{
+    NamespaceID: "namespace_id",
+    Path: "path",
+    SnapshotID: loonfs.String(
+        "chk_00000000000000000000000000000002",
+    ),
+}
+client.Filesystem.GetPathEntry(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**path:** `string` — Absolute filesystem path
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**includeAttributes:** `*bool` — Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.CheckpointID` — Use the path state captured by this snapshot
     
 </dd>
 </dl>
@@ -1660,83 +2090,6 @@ client.Filesystem.ListFileRevisions(
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.StatPath(NamespaceID) -> *loonfs.AuthoritativePathEntry</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Returns the current metadata for a path, including inode identity, kind, display name, file content metadata, and the inode's attributes.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.StatPathRequest{
-    NamespaceID: "namespace_id",
-    Path: "path",
-}
-client.Filesystem.StatPath(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**path:** `string` — Absolute filesystem path
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**includeAttributes:** `*bool` — Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
 <details><summary><code>client.Filesystem.ListTrash(NamespaceID) -> *loonfs.ListTrashResponse</code></summary>
 <dl>
 <dd>
@@ -1813,8 +2166,126 @@ client.Filesystem.ListTrash(
 </dl>
 </details>
 
+## query
+<details><summary><code>client.Query.Grep(NamespaceID) -> *loonfs.GrepResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Searches file content with a regular expression, accelerated by the namespace's grep index. Matches are verified against the real pattern and returned in ascending `(inode_id, byte_offset)` order; revisions committed after the index watermark are scanned exhaustively unless `allow_stale` skips them. Requires this deployment to serve grep and the namespace to carry a materialized active grep root.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.GrepRequest{
+    NamespaceID: "namespace_id",
+    Pattern: "pattern",
+}
+client.Query.Grep(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**pattern:** `string` — Pattern in the Rust `regex` crate's dialect. Its UTF-8 encoding must be at most 1024 bytes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**caseInsensitive:** `*bool` — Match case-insensitively (`true` or `false`). Defaults to `false`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**pathPrefix:** `*string` — Complete absolute path used to restrict matches.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**allowScan:** `*bool` — Permit a capped exhaustive scan when the pattern has no required grams (`true` or `false`). Defaults to `false`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**allowStale:** `*bool` — Return indexed-only results when the unindexed tail exceeds the scan budget (`true` or `false`). Defaults to `false`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Maximum matches per page
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — Opaque grep page cursor
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## inodes
-<details><summary><code>client.Inodes.StatInode(NamespaceID, InodeID) -> *loonfs.AuthoritativePathEntry</code></summary>
+<details><summary><code>client.Inodes.GetInode(NamespaceID, InodeID) -> *loonfs.PathEntry</code></summary>
 <dl>
 <dd>
 
@@ -1841,11 +2312,11 @@ Returns the current path entry for a visible inode. Unknown or hidden inodes ans
 <dd>
 
 ```go
-request := &loonfs.StatInodeRequest{
+request := &loonfs.GetInodeRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_123",
 }
-client.Inodes.StatInode(
+client.Inodes.GetInode(
     context.TODO(),
     request,
 )
@@ -1880,6 +2351,99 @@ client.Inodes.StatInode(
 <dd>
 
 **includeAttributes:** `*bool` — Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Inodes.ListInodeChildren(NamespaceID, InodeID) -> *loonfs.ListInodeChildrenResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists one page of a directory's children addressed by parent inode ID, in canonical name-key order. Inode addressing keeps a listing and its resumption on the same directory across concurrent renames or moves of the parent.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ListInodeChildrenRequest{
+    NamespaceID: "namespace_id",
+    InodeID: "ino_123",
+}
+client.Inodes.ListInodeChildren(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**inodeID:** `string` — Directory inode ID
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Maximum page size
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — Opaque directory page cursor
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**includeAttributes:** `*bool` — Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
     
 </dd>
 </dl>
@@ -2054,7 +2618,7 @@ client.Inodes.GetFileRevisionBytesByInode(
 </dl>
 </details>
 
-<details><summary><code>client.Inodes.BeginDownloadByInode(NamespaceID, InodeID, RevisionNo, request) -> *loonfs.BeginDownloadByInodeResponse</code></summary>
+<details><summary><code>client.Inodes.CreateDownloadByInode(NamespaceID, InodeID, RevisionNo, request) -> *loonfs.BeginDownloadByInodeResponse</code></summary>
 <dl>
 <dd>
 
@@ -2081,7 +2645,7 @@ Authorizes a direct read of one retained inode revision. The request body is `{}
 <dd>
 
 ```go
-request := &loonfs.BeginDownloadByInodeBody{
+request := &loonfs.CreateDownloadByInodeRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_123",
     RevisionNo: int64(1000000),
@@ -2089,7 +2653,7 @@ request := &loonfs.BeginDownloadByInodeBody{
         "key": "value",
     },
 }
-client.Inodes.BeginDownloadByInode(
+client.Inodes.CreateDownloadByInode(
     context.TODO(),
     request,
 )
@@ -2143,126 +2707,8 @@ client.Inodes.BeginDownloadByInode(
 </dl>
 </details>
 
-## query
-<details><summary><code>client.Query.Grep(NamespaceID) -> *loonfs.GrepResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Searches file content with a regular expression, accelerated by the namespace's grep index. Matches are verified against the real pattern and returned in ascending `(inode_id, byte_offset)` order; revisions committed after the index watermark are scanned exhaustively unless `allow_stale` skips them. Requires this deployment to serve grep and the namespace to carry a materialized active grep root.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.GrepRequest{
-    NamespaceID: "namespace_id",
-    Pattern: "pattern",
-}
-client.Query.Grep(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**pattern:** `string` — Pattern in the Rust `regex` crate's dialect. Its UTF-8 encoding must be at most 1024 bytes.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**caseInsensitive:** `*bool` — Match case-insensitively (`true` or `false`). Defaults to `false`.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**pathPrefix:** `*string` — Complete absolute path used to restrict matches.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**allowScan:** `*bool` — Permit a capped exhaustive scan when the pattern has no required grams (`true` or `false`). Defaults to `false`.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**allowStale:** `*bool` — Return indexed-only results when the unindexed tail exceeds the scan budget (`true` or `false`). Defaults to `false`.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**limit:** `*int` — Maximum matches per page
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**cursor:** `*string` — Opaque grep page cursor
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
 ## uploads
-<details><summary><code>client.Uploads.BeginUpload(NamespaceID, request) -> *loonfs.BeginUploadResponse</code></summary>
+<details><summary><code>client.Uploads.CreateUpload(NamespaceID, request) -> *loonfs.BeginUploadResponse</code></summary>
 <dl>
 <dd>
 
@@ -2289,13 +2735,13 @@ Starts an upload session for content that may later be attached to a file. Servi
 <dd>
 
 ```go
-request := &loonfs.BeginUploadBody{
+request := &loonfs.CreateUploadRequest{
     NamespaceID: "namespace_id",
     Body: &loonfs.BeginUploadRequest{
         ServiceProxied: &loonfs.BeginUploadServiceProxied{},
     },
 }
-client.Uploads.BeginUpload(
+client.Uploads.CreateUpload(
     context.TODO(),
     request,
 )
@@ -2333,7 +2779,7 @@ client.Uploads.BeginUpload(
 </dl>
 </details>
 
-<details><summary><code>client.Uploads.GetUploadStatus(NamespaceID, UploadID) -> *loonfs.UploadSessionResponse</code></summary>
+<details><summary><code>client.Uploads.GetUpload(NamespaceID, UploadID) -> *loonfs.UploadSession</code></summary>
 <dl>
 <dd>
 
@@ -2360,11 +2806,11 @@ Returns an upload session. A completed session includes a new content token so t
 <dd>
 
 ```go
-request := &loonfs.GetUploadStatusRequest{
+request := &loonfs.GetUploadRequest{
     NamespaceID: "namespace_id",
     UploadID: "upload_id",
 }
-client.Uploads.GetUploadStatus(
+client.Uploads.GetUpload(
     context.TODO(),
     request,
 )
@@ -2402,7 +2848,7 @@ client.Uploads.GetUploadStatus(
 </dl>
 </details>
 
-<details><summary><code>client.Uploads.AbortUpload(NamespaceID, UploadID) -> *loonfs.UploadSessionResponse</code></summary>
+<details><summary><code>client.Uploads.AbortUpload(NamespaceID, UploadID) -> *loonfs.UploadSession</code></summary>
 <dl>
 <dd>
 
@@ -2471,7 +2917,7 @@ client.Uploads.AbortUpload(
 </dl>
 </details>
 
-<details><summary><code>client.Uploads.CompleteUpload(NamespaceID, UploadID, request) -> *loonfs.UploadSessionResponse</code></summary>
+<details><summary><code>client.Uploads.CompleteUpload(NamespaceID, UploadID, request) -> *loonfs.UploadSession</code></summary>
 <dl>
 <dd>
 
