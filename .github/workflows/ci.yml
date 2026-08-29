@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+      - run: go vet ./...
+      - name: Start the WireMock test server
+        run: docker compose -f wiremock/docker-compose.test.yml up -d --wait
+      - name: Run tests
+        run: |
+          PORT=$(docker compose -f wiremock/docker-compose.test.yml port wiremock 8080 | cut -d: -f2)
+          WIREMOCK_URL="http://localhost:$PORT" go test ./...
