@@ -10,8 +10,8 @@ import (
 	os "os"
 	testing "testing"
 
-	client "github.com/loonfs/loonfs-sdk-go/client"
 	option "github.com/loonfs/loonfs-sdk-go/option"
+	server "github.com/loonfs/loonfs-sdk-go/server"
 	require "github.com/stretchr/testify/require"
 )
 
@@ -83,7 +83,7 @@ func TestSystemGetHealthWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -105,7 +105,7 @@ func TestSystemGetMetricsWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -127,7 +127,7 @@ func TestSystemGetReadinessWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -149,7 +149,7 @@ func TestSystemGetCapabilitiesWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)

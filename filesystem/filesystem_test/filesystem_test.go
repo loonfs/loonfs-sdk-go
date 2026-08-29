@@ -11,8 +11,8 @@ import (
 	testing "testing"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
-	client "github.com/loonfs/loonfs-sdk-go/client"
 	option "github.com/loonfs/loonfs-sdk-go/option"
+	server "github.com/loonfs/loonfs-sdk-go/server"
 	require "github.com/stretchr/testify/require"
 )
 
@@ -84,7 +84,7 @@ func TestFilesystemListChangesWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -114,7 +114,7 @@ func TestFilesystemCreateCommitWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -152,7 +152,7 @@ func TestFilesystemCreateDownloadWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -182,7 +182,7 @@ func TestFilesystemListPathEntriesWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -212,7 +212,7 @@ func TestFilesystemGetPathEntryWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -242,7 +242,7 @@ func TestFilesystemListFileRevisionsWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -269,7 +269,7 @@ func TestFilesystemListTrashWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)

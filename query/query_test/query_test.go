@@ -11,8 +11,8 @@ import (
 	testing "testing"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
-	client "github.com/loonfs/loonfs-sdk-go/client"
 	option "github.com/loonfs/loonfs-sdk-go/option"
+	server "github.com/loonfs/loonfs-sdk-go/server"
 	require "github.com/stretchr/testify/require"
 )
 
@@ -84,7 +84,7 @@ func TestQueryGrepWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
