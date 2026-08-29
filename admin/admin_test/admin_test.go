@@ -11,8 +11,8 @@ import (
 	testing "testing"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
-	client "github.com/loonfs/loonfs-sdk-go/client"
 	option "github.com/loonfs/loonfs-sdk-go/option"
+	server "github.com/loonfs/loonfs-sdk-go/server"
 	require "github.com/stretchr/testify/require"
 )
 
@@ -84,7 +84,7 @@ func TestAdminListCheckpointsWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -110,7 +110,7 @@ func TestAdminCreateCheckpointWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -137,7 +137,7 @@ func TestAdminReleaseCheckpointWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -164,7 +164,7 @@ func TestAdminGetNamespaceDiagnosticsWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -190,7 +190,7 @@ func TestAdminGetGrepIndexWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -216,7 +216,7 @@ func TestAdminDisableGrepIndexWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -242,7 +242,7 @@ func TestAdminEnableGrepIndexWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -268,7 +268,7 @@ func TestAdminGcGrepIndexWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -294,7 +294,7 @@ func TestAdminRunMaintenanceWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
@@ -320,7 +320,7 @@ func TestAdminProbeStoreWithWireMock(
 	if WireMockBaseURL == "" {
 		WireMockBaseURL = "http://localhost:8080"
 	}
-	client := client.NewClient(
+	client := server.NewClient(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
