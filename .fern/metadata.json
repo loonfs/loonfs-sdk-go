@@ -6,9 +6,10 @@
     "module": {
       "path": "github.com/loonfs/loonfs-sdk-go"
     },
-    "packageName": "loonfs"
+    "packageName": "loonfs",
+    "maxRetries": 0
   },
-  "originGitCommit": "ec5a8af6a22f27cbfad8875c46dbc6033ae170cc",
+  "originGitCommit": "1ee76ef6c5e6c70a795255d12772aacf2cd87a48",
   "originGitCommitIsDirty": true,
   "invokedBy": "manual"
 }
