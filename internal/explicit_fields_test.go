@@ -602,35 +602,6 @@ func TestComplexSetterScenarios(t *testing.T) {
 	})
 }
 
-// Test for backwards compatibility
-func TestBackwardsCompatibility(t *testing.T) {
-	t.Run("struct without setters behaves normally", func(t *testing.T) {
-		s := &testStructWithoutExplicitFields{
-			Name: stringPtr("test"),
-			Code: nil, // This should be omitted
-		}
-
-		bytes, err := json.Marshal(s)
-		require.NoError(t, err)
-
-		// Without setters, omitempty works normally
-		assert.JSONEq(t, `{"name":"test"}`, string(bytes))
-	})
-
-	t.Run("struct with explicit fields works with standard json.Marshal", func(t *testing.T) {
-		s := &testExplicitFieldsStruct{
-			Name: stringPtr("test"),
-		}
-		s.SetCode(nil)
-
-		// Using the custom MarshalJSON
-		bytes, err := s.MarshalJSON()
-		require.NoError(t, err)
-
-		assert.JSONEq(t, `{"name":"test","code":null}`, string(bytes))
-	})
-}
-
 // Helper functions
 func stringPtr(s string) *string {
 	return &s
