@@ -1,103 +1,7 @@
 {
   "mappings": [
     {
-      "id": "d7af6efa-2a6f-4be6-9d7c-66863c8614c4",
-      "name": "Check health - default",
-      "request": {
-        "urlPathTemplate": "/health",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "\"string\"",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "d7af6efa-2a6f-4be6-9d7c-66863c8614c4",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      },
-      "postServeActions": []
-    },
-    {
-      "id": "edfcce05-8ddb-441f-9a5e-bd6cae3e80f0",
-      "name": "Scrape metrics - default",
-      "request": {
-        "urlPathTemplate": "/metrics",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "\"string\"",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "edfcce05-8ddb-441f-9a5e-bd6cae3e80f0",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      },
-      "postServeActions": []
-    },
-    {
-      "id": "1e7ae02b-292b-4523-a53a-0867ced85388",
-      "name": "Check readiness - default",
-      "request": {
-        "urlPathTemplate": "/readiness",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "\"string\"",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "1e7ae02b-292b-4523-a53a-0867ced85388",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      },
-      "postServeActions": []
-    },
-    {
-      "id": "35667109-b457-4c0f-b92d-ae0aac6bb080",
+      "id": "89b283b5-90b9-41e7-b95f-82fa18774831",
       "name": "Get capabilities - default",
       "request": {
         "urlPathTemplate": "/v0/capabilities",
@@ -115,7 +19,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "35667109-b457-4c0f-b92d-ae0aac6bb080",
+      "uuid": "89b283b5-90b9-41e7-b95f-82fa18774831",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -129,365 +33,7 @@
       "postServeActions": []
     },
     {
-      "id": "217ee7ed-117d-4bfe-80cd-38c672e5f426",
-      "name": "List checkpoints - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/checkpoints",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"checkpoints\": [\n    {\n      \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n      \"checkpoint_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"manifest_no\": 1000000,\n      \"namespace_id\": \"demo\",\n      \"owner\": {\n        \"name\": \"name\",\n        \"kind\": \"user\"\n      }\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "217ee7ed-117d-4bfe-80cd-38c672e5f426",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "f329e1eb-4031-4b89-83b0-c297f0a67fe2",
-      "name": "Create checkpoint - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/checkpoints",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n  \"checkpoint_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_no\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"owner\": {\n    \"name\": \"name\",\n    \"kind\": \"user\"\n  }\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "f329e1eb-4031-4b89-83b0-c297f0a67fe2",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "1a156511-4a6f-4bb9-b26f-2c5f6f170f72",
-      "name": "Release checkpoint - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/checkpoints/{checkpoint_id}/release",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          },
-          "checkpoint_id": {
-            "equalTo": "checkpoint_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n  \"namespace_id\": \"demo\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "1a156511-4a6f-4bb9-b26f-2c5f6f170f72",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "179798af-3fdc-4c47-b0b1-2bbbe5fed684",
-      "name": "Get namespace diagnostics - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/diagnostics",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"current_manifest_no\": 1000000,\n  \"head_seq\": 1000000,\n  \"live_checkpoints\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_segments\": 1000000\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "179798af-3fdc-4c47-b0b1-2bbbe5fed684",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "fe92025b-4d61-43ce-92e9-9442b4236814",
-      "name": "Get grep index status - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"disabled\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "fe92025b-4d61-43ce-92e9-9442b4236814",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "c9a8f9d0-ef0c-42c2-97e1-aace6b4e52a1",
-      "name": "Disable the grep index - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index/disable",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"disabled\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "c9a8f9d0-ef0c-42c2-97e1-aace6b4e52a1",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "c2d90a6a-0de0-45f1-b914-69eac2c69103",
-      "name": "Enable the grep index - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index/enable",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"disabled\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "c2d90a6a-0de0-45f1-b914-69eac2c69103",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "bb7fa2ab-4ee2-4709-a2d1-1aa719c0dc7b",
-      "name": "Collect grep-index garbage - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index/gc",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"deleted_other_objects\": 1000000,\n  \"deleted_segments\": 1000000,\n  \"namespace_degraded\": true,\n  \"namespace_id\": \"demo\",\n  \"namespace_reaped\": true,\n  \"next_cursor\": \"next_cursor\",\n  \"retained_candidates\": 1000000\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "bb7fa2ab-4ee2-4709-a2d1-1aa719c0dc7b",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "8ff76c28-2889-48d0-816f-f3d80c08c874",
-      "name": "Run maintenance step - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/maintenance/run",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"gc\": {\n    \"budget_exhausted\": true,\n    \"content_reclamation_deferred\": true,\n    \"deleted\": {\n      \"checkpoint_records\": 1000000,\n      \"content_objects\": 1000000,\n      \"manifests\": 1000000,\n      \"metadata_segments\": 1000000,\n      \"upload_sessions\": 1000000,\n      \"wal_segments\": 1000000\n    },\n    \"namespace_id\": \"demo\",\n    \"next_cursor\": \"next_cursor\",\n    \"next_reclamation_at_ms\": 1000000,\n    \"released_checkpoints\": {\n      \"expired\": 1000000,\n      \"fork\": 1000000,\n      \"missing_basis\": 1000000,\n      \"snapshot\": 1000000\n    },\n    \"retained\": {\n      \"checkpoint_not_releasable\": 1000000,\n      \"content_scan_deferred\": 1000000,\n      \"degraded_roots\": 1000000,\n      \"no_provider_timestamp\": 1000000,\n      \"no_reference_manifest\": 1000000,\n      \"referenced\": 1000000,\n      \"unrecognized_key\": 1000000,\n      \"upload_session_undecided\": 1000000,\n      \"upload_session_window\": 1000000,\n      \"within_grace_window\": 1000000\n    },\n    \"retained_candidates\": 1000000,\n    \"retention_degraded\": true\n  },\n  \"metadata_maintenance\": {\n    \"reorganize\": {\n      \"outcome\": \"not_needed\"\n    },\n    \"wal_flush\": {\n      \"outcome\": \"not_needed\"\n    }\n  },\n  \"namespace_id\": \"demo\",\n  \"retention\": {\n    \"retention_floor_seq\": 1000000\n  },\n  \"status_before\": {\n    \"current_manifest_no\": 1000000,\n    \"head_seq\": 1000000,\n    \"live_checkpoints\": 1000000,\n    \"live_snapshots\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"retention_floor_seq\": 1000000,\n    \"wal_tail_segments\": 1000000\n  }\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "8ff76c28-2889-48d0-816f-f3d80c08c874",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "1f01604c-e619-4954-a8d8-ac4fe5b7b18b",
-      "name": "Probe the store contract - default",
-      "request": {
-        "urlPathTemplate": "/v0/admin/store/probe",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"checks\": [\n    {\n      \"message\": \"message\",\n      \"name\": \"name\",\n      \"outcome\": \"passed\"\n    }\n  ],\n  \"run_id\": \"run_id\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "1f01604c-e619-4954-a8d8-ac4fe5b7b18b",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "11d088d4-b602-40d1-9cfb-65f6cc8739b3",
+      "id": "7d3d4c1c-f81d-4621-8724-6a4eef4e149e",
       "name": "Create namespace - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces",
@@ -505,7 +51,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "11d088d4-b602-40d1-9cfb-65f6cc8739b3",
+      "uuid": "7d3d4c1c-f81d-4621-8724-6a4eef4e149e",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -518,7 +64,7 @@
       }
     },
     {
-      "id": "8013608d-56e3-4304-a694-af2756d4f6aa",
+      "id": "3d1eacb5-a823-4d5c-a42a-145f5b42c970",
       "name": "Get namespace - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}",
@@ -541,7 +87,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "8013608d-56e3-4304-a694-af2756d4f6aa",
+      "uuid": "3d1eacb5-a823-4d5c-a42a-145f5b42c970",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -554,7 +100,7 @@
       }
     },
     {
-      "id": "5ef6ca5c-079c-42b5-81ac-e16ca1eb7888",
+      "id": "0614e08c-6122-411f-80d7-2511cb7e98f4",
       "name": "Delete namespace - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}",
@@ -577,7 +123,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "5ef6ca5c-079c-42b5-81ac-e16ca1eb7888",
+      "uuid": "0614e08c-6122-411f-80d7-2511cb7e98f4",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -590,7 +136,7 @@
       }
     },
     {
-      "id": "6fdf419b-8efd-4225-ab34-5479eb876956",
+      "id": "9f1e0b87-2f2e-408e-8d4d-952f6278d629",
       "name": "Fork namespace - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/forks",
@@ -613,7 +159,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "6fdf419b-8efd-4225-ab34-5479eb876956",
+      "uuid": "9f1e0b87-2f2e-408e-8d4d-952f6278d629",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -626,157 +172,7 @@
       }
     },
     {
-      "id": "fd050aaa-2cdc-4b52-b85f-2077be18c193",
-      "name": "List snapshots - default",
-      "request": {
-        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"snapshots\": [\n    {\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"head_seq\": 1000000,\n      \"name\": \"name\",\n      \"namespace_id\": \"demo\",\n      \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n    }\n  ]\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "fd050aaa-2cdc-4b52-b85f-2077be18c193",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "90db7f34-a7d7-402d-a065-8491c28153f7",
-      "name": "Create snapshot - default",
-      "request": {
-        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"head_seq\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "90db7f34-a7d7-402d-a065-8491c28153f7",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "0045c27c-f692-47fa-90bb-5eefe4bc95a0",
-      "name": "Extend snapshot - default",
-      "request": {
-        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots/{snapshot_id}/extend",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          },
-          "snapshot_id": {
-            "equalTo": "snapshot_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"head_seq\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "0045c27c-f692-47fa-90bb-5eefe4bc95a0",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "3f235ec8-4b1e-47c6-ae05-00629775cf7f",
-      "name": "Release snapshot - default",
-      "request": {
-        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots/{snapshot_id}/release",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          },
-          "snapshot_id": {
-            "equalTo": "snapshot_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "3f235ec8-4b1e-47c6-ae05-00629775cf7f",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "24098507-e183-46fd-919d-34af2cc92a26",
+      "id": "9c245582-6805-40a0-adfc-ceb34f39a415",
       "name": "List changes after a sequence - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/changes",
@@ -807,7 +203,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "24098507-e183-46fd-919d-34af2cc92a26",
+      "uuid": "9c245582-6805-40a0-adfc-ceb34f39a415",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -820,7 +216,7 @@
       }
     },
     {
-      "id": "62f477b6-e96a-4415-a733-8e9dad845430",
+      "id": "e29cdb45-d445-448b-a75f-e2cb54da52e6",
       "name": "Apply a commit - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/commits",
@@ -843,7 +239,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "62f477b6-e96a-4415-a733-8e9dad845430",
+      "uuid": "e29cdb45-d445-448b-a75f-e2cb54da52e6",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -856,7 +252,7 @@
       }
     },
     {
-      "id": "ded053c1-294d-4346-99bb-8c76db80ffa9",
+      "id": "0e2b5b33-5501-4380-ba0e-1c2471314de7",
       "name": "Read file - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/content",
@@ -884,7 +280,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "ded053c1-294d-4346-99bb-8c76db80ffa9",
+      "uuid": "0e2b5b33-5501-4380-ba0e-1c2471314de7",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -897,7 +293,7 @@
       }
     },
     {
-      "id": "9542a97d-1e1e-4d9e-97b9-a93792b19b08",
+      "id": "3d69c3bb-f108-432e-8d29-e473c0d50f91",
       "name": "Begin download - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/downloads",
@@ -925,7 +321,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "9542a97d-1e1e-4d9e-97b9-a93792b19b08",
+      "uuid": "3d69c3bb-f108-432e-8d29-e473c0d50f91",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -938,7 +334,7 @@
       }
     },
     {
-      "id": "c54b381e-3784-458c-9cb3-bb85a71109a4",
+      "id": "5da85e72-9d0f-41ca-9167-4e088e6909a6",
       "name": "List directory - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/entries",
@@ -969,7 +365,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "c54b381e-3784-458c-9cb3-bb85a71109a4",
+      "uuid": "5da85e72-9d0f-41ca-9167-4e088e6909a6",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -982,7 +378,7 @@
       }
     },
     {
-      "id": "14aa9d23-158b-4e43-b148-fe00c3cc06ed",
+      "id": "db647b05-7cf5-4d76-8b47-8b5f0fbec5fe",
       "name": "Stat path - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/entry",
@@ -1013,7 +409,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "14aa9d23-158b-4e43-b148-fe00c3cc06ed",
+      "uuid": "db647b05-7cf5-4d76-8b47-8b5f0fbec5fe",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1026,7 +422,7 @@
       }
     },
     {
-      "id": "f2bc7806-d55b-4e0d-a1a4-bbe38815ba18",
+      "id": "c98dc2c5-ea2e-430d-a392-4f8d90a6ce24",
       "name": "List file revisions - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/revisions",
@@ -1054,7 +450,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "f2bc7806-d55b-4e0d-a1a4-bbe38815ba18",
+      "uuid": "c98dc2c5-ea2e-430d-a392-4f8d90a6ce24",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1067,43 +463,7 @@
       }
     },
     {
-      "id": "9f6e3ea5-9d8d-4d87-b938-00d85085d5c5",
-      "name": "List recoverable deletions - default",
-      "request": {
-        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/trash",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_binding\": {\n        \"display_name\": \"report.txt\",\n        \"name_key\": \"report.txt\",\n        \"parent_inode_id\": \"ino_123\"\n      },\n      \"deleted_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"deletion_seq\": 1000000,\n      \"inode_id\": \"ino_123\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "9f6e3ea5-9d8d-4d87-b938-00d85085d5c5",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "8167a8f2-34c8-4520-a704-2587b31acd92",
+      "id": "a6d1a962-abeb-4f66-abd9-790a77b3989f",
       "name": "Content search - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/grep",
@@ -1131,7 +491,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "8167a8f2-34c8-4520-a704-2587b31acd92",
+      "uuid": "a6d1a962-abeb-4f66-abd9-790a77b3989f",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1144,7 +504,43 @@
       }
     },
     {
-      "id": "fffe47de-0c82-4fa0-b61e-1c0c6e8b4413",
+      "id": "e7e98cd8-6955-4c21-8fbe-e303014f2194",
+      "name": "List recoverable deletions - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/filesystem/trash",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_binding\": {\n        \"display_name\": \"report.txt\",\n        \"name_key\": \"report.txt\",\n        \"parent_inode_id\": \"ino_123\"\n      },\n      \"deleted_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"deletion_seq\": 1000000,\n      \"inode_id\": \"ino_123\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e7e98cd8-6955-4c21-8fbe-e303014f2194",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "2ae60bb8-452d-4504-8746-029a35d95d90",
       "name": "Stat inode - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}",
@@ -1170,7 +566,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "fffe47de-0c82-4fa0-b61e-1c0c6e8b4413",
+      "uuid": "2ae60bb8-452d-4504-8746-029a35d95d90",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1183,7 +579,7 @@
       }
     },
     {
-      "id": "9089b722-240e-43c4-a589-53c169bc0b81",
+      "id": "59fc1f03-64dd-415a-b021-90cd7fc7abd4",
       "name": "List directory children by inode - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/children",
@@ -1209,7 +605,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "9089b722-240e-43c4-a589-53c169bc0b81",
+      "uuid": "59fc1f03-64dd-415a-b021-90cd7fc7abd4",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1222,7 +618,7 @@
       }
     },
     {
-      "id": "b0f58d8b-c117-446f-bdef-9e37e85c67ce",
+      "id": "0a8ca058-8bb5-4ea5-942a-aa055e9e701c",
       "name": "List file revisions by inode - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/revisions",
@@ -1248,7 +644,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "b0f58d8b-c117-446f-bdef-9e37e85c67ce",
+      "uuid": "0a8ca058-8bb5-4ea5-942a-aa055e9e701c",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1261,7 +657,7 @@
       }
     },
     {
-      "id": "20461b01-f88d-4031-9dfd-bb986c327218",
+      "id": "6fd5fdb1-d998-4857-8ab1-5931e200329c",
       "name": "Read file revision by inode - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/revisions/{revision_no}/content",
@@ -1290,7 +686,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "20461b01-f88d-4031-9dfd-bb986c327218",
+      "uuid": "6fd5fdb1-d998-4857-8ab1-5931e200329c",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1303,7 +699,7 @@
       }
     },
     {
-      "id": "ebb5a30a-ff9c-4681-8de1-f634d73582e5",
+      "id": "ff61abb4-cd80-4544-9bfe-99b5d0a113ec",
       "name": "Begin download by inode - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/revisions/{revision_no}/downloads",
@@ -1332,7 +728,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "ebb5a30a-ff9c-4681-8de1-f634d73582e5",
+      "uuid": "ff61abb4-cd80-4544-9bfe-99b5d0a113ec",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1345,7 +741,157 @@
       }
     },
     {
-      "id": "3dc50bec-eb23-41e7-a1b6-7ddf984e3499",
+      "id": "00d4cd6c-0594-4479-a695-d39c695726af",
+      "name": "List snapshots - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"snapshots\": [\n    {\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"head_seq\": 1000000,\n      \"name\": \"name\",\n      \"namespace_id\": \"demo\",\n      \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "00d4cd6c-0594-4479-a695-d39c695726af",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "811dbace-b683-418e-aaad-af9af3cf40fc",
+      "name": "Create snapshot - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"head_seq\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "811dbace-b683-418e-aaad-af9af3cf40fc",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "42695787-5df8-4366-8155-7b842baabd41",
+      "name": "Extend snapshot - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots/{snapshot_id}/extend",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "snapshot_id": {
+            "equalTo": "snapshot_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"head_seq\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "42695787-5df8-4366-8155-7b842baabd41",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ef1c4696-806a-458f-a497-418189c7ac0d",
+      "name": "Release snapshot - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots/{snapshot_id}/release",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "snapshot_id": {
+            "equalTo": "snapshot_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"chk_00000000000000000000000000000002\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ef1c4696-806a-458f-a497-418189c7ac0d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "0e8b2713-a7ff-4ae7-84c6-352bd0b6ee26",
       "name": "Begin upload - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads",
@@ -1368,7 +914,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "3dc50bec-eb23-41e7-a1b6-7ddf984e3499",
+      "uuid": "0e8b2713-a7ff-4ae7-84c6-352bd0b6ee26",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1381,7 +927,7 @@
       }
     },
     {
-      "id": "5d4535b5-f1aa-433b-be01-f2891d6a6d66",
+      "id": "16269cb3-277a-4660-9fef-5bb062f7d657",
       "name": "Get upload session - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads/{upload_id}",
@@ -1407,7 +953,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "5d4535b5-f1aa-433b-be01-f2891d6a6d66",
+      "uuid": "16269cb3-277a-4660-9fef-5bb062f7d657",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1420,7 +966,7 @@
       }
     },
     {
-      "id": "e3393b2a-1faf-4e78-93bd-96532bac1870",
+      "id": "24dada51-5cc9-4be9-9853-fdadaf7d2811",
       "name": "Abort upload - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads/{upload_id}/abort",
@@ -1446,7 +992,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "e3393b2a-1faf-4e78-93bd-96532bac1870",
+      "uuid": "24dada51-5cc9-4be9-9853-fdadaf7d2811",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1459,7 +1005,7 @@
       }
     },
     {
-      "id": "426d5d85-d8d6-4b5f-b71d-1b2cbd45923c",
+      "id": "4085440c-d708-4a91-812b-f6952aed42f7",
       "name": "Complete upload - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads/{upload_id}/complete",
@@ -1485,7 +1031,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "426d5d85-d8d6-4b5f-b71d-1b2cbd45923c",
+      "uuid": "4085440c-d708-4a91-812b-f6952aed42f7",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1498,7 +1044,7 @@
       }
     },
     {
-      "id": "4d774dce-a042-49a3-b6f1-d1bda2fc9431",
+      "id": "f7f7c097-f1fb-4e9e-8aa9-612e8c6eb566",
       "name": "Sign multipart parts - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/uploads/{upload_id}/parts",
@@ -1524,7 +1070,365 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "4d774dce-a042-49a3-b6f1-d1bda2fc9431",
+      "uuid": "f7f7c097-f1fb-4e9e-8aa9-612e8c6eb566",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ad3b150d-d7c0-4a8b-bb20-ad1d1be1922d",
+      "name": "List checkpoints - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/checkpoints",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"checkpoints\": [\n    {\n      \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n      \"checkpoint_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"manifest_no\": 1000000,\n      \"namespace_id\": \"demo\",\n      \"owner\": {\n        \"name\": \"name\",\n        \"kind\": \"user\"\n      }\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ad3b150d-d7c0-4a8b-bb20-ad1d1be1922d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "e22ff319-ce0f-4544-ac28-076ed4113639",
+      "name": "Create checkpoint - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/checkpoints",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n  \"checkpoint_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_no\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"owner\": {\n    \"name\": \"name\",\n    \"kind\": \"user\"\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e22ff319-ce0f-4544-ac28-076ed4113639",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "d4f8e622-fd0e-4644-9bc9-c87e156860a3",
+      "name": "Release checkpoint - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/checkpoints/{checkpoint_id}/release",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "checkpoint_id": {
+            "equalTo": "checkpoint_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"checkpoint_id\": \"chk_00000000000000000000000000000002\",\n  \"namespace_id\": \"demo\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "d4f8e622-fd0e-4644-9bc9-c87e156860a3",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "4afd6fa1-6ac3-45e2-a14b-713c04311d7f",
+      "name": "Get namespace diagnostics - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/diagnostics",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"current_manifest_no\": 1000000,\n  \"head_seq\": 1000000,\n  \"live_checkpoints\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_segments\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "4afd6fa1-6ac3-45e2-a14b-713c04311d7f",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "d3abed9a-0a1c-48e5-8cee-6daef91a35b8",
+      "name": "Get grep index status - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"disabled\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "d3abed9a-0a1c-48e5-8cee-6daef91a35b8",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "113f1e14-93b5-44d7-ab71-9e5270d9fd12",
+      "name": "Disable the grep index - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index/disable",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"disabled\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "113f1e14-93b5-44d7-ab71-9e5270d9fd12",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "18c87cbe-32bd-480d-bbfa-5fac8e2dab64",
+      "name": "Enable the grep index - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index/enable",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"disabled\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "18c87cbe-32bd-480d-bbfa-5fac8e2dab64",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "0ac63aef-8eec-46ba-97e0-91286e0c551d",
+      "name": "Collect grep-index garbage - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/grep/index/gc",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"deleted_other_objects\": 1000000,\n  \"deleted_segments\": 1000000,\n  \"namespace_degraded\": true,\n  \"namespace_id\": \"demo\",\n  \"namespace_reaped\": true,\n  \"next_cursor\": \"next_cursor\",\n  \"retained_candidates\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "0ac63aef-8eec-46ba-97e0-91286e0c551d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c33794a6-8268-4386-a259-c19354aec5c1",
+      "name": "Run maintenance step - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/namespaces/{namespace_id}/maintenance/run",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"gc\": {\n    \"budget_exhausted\": true,\n    \"content_reclamation_deferred\": true,\n    \"deleted\": {\n      \"checkpoint_records\": 1000000,\n      \"content_objects\": 1000000,\n      \"manifests\": 1000000,\n      \"metadata_segments\": 1000000,\n      \"upload_sessions\": 1000000,\n      \"wal_segments\": 1000000\n    },\n    \"namespace_id\": \"demo\",\n    \"next_cursor\": \"next_cursor\",\n    \"next_reclamation_at_ms\": 1000000,\n    \"released_checkpoints\": {\n      \"expired\": 1000000,\n      \"fork\": 1000000,\n      \"missing_basis\": 1000000,\n      \"snapshot\": 1000000\n    },\n    \"retained\": {\n      \"checkpoint_not_releasable\": 1000000,\n      \"content_scan_deferred\": 1000000,\n      \"degraded_roots\": 1000000,\n      \"no_provider_timestamp\": 1000000,\n      \"no_reference_manifest\": 1000000,\n      \"referenced\": 1000000,\n      \"unrecognized_key\": 1000000,\n      \"upload_session_undecided\": 1000000,\n      \"upload_session_window\": 1000000,\n      \"within_grace_window\": 1000000\n    },\n    \"retained_candidates\": 1000000,\n    \"retention_degraded\": true\n  },\n  \"metadata_maintenance\": {\n    \"reorganize\": {\n      \"outcome\": \"not_needed\"\n    },\n    \"wal_flush\": {\n      \"outcome\": \"not_needed\"\n    }\n  },\n  \"namespace_id\": \"demo\",\n  \"retention\": {\n    \"retention_floor_seq\": 1000000\n  },\n  \"status_before\": {\n    \"current_manifest_no\": 1000000,\n    \"head_seq\": 1000000,\n    \"live_checkpoints\": 1000000,\n    \"live_snapshots\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"retention_floor_seq\": 1000000,\n    \"wal_tail_segments\": 1000000\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c33794a6-8268-4386-a259-c19354aec5c1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "2059cee9-1153-46a6-94e1-ea44c5d4eaaf",
+      "name": "Probe the store contract - default",
+      "request": {
+        "urlPathTemplate": "/v0/admin/store/probe",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"checks\": [\n    {\n      \"message\": \"message\",\n      \"name\": \"name\",\n      \"outcome\": \"passed\"\n    }\n  ],\n  \"run_id\": \"run_id\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "2059cee9-1153-46a6-94e1-ea44c5d4eaaf",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1538,6 +1442,6 @@
     }
   ],
   "meta": {
-    "total": 41
+    "total": 38
   }
 }

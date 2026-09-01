@@ -44,16 +44,16 @@ func NewClient(options *core.RequestOptions) *Client {
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
 //	}
-//	client.Inodes.GetInode(
+//	client.Inodes.Retrieve(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) GetInode(
+func (c *Client) Retrieve(
 	ctx context.Context,
 	request *loonfs.GetInodeRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.PathEntry, error) {
-	response, err := c.WithRawResponse.GetInode(
+	response, err := c.WithRawResponse.Retrieve(
 		ctx,
 		request,
 		opts...,
@@ -72,11 +72,11 @@ func (c *Client) GetInode(
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
 //	}
-//	client.Inodes.ListInodeChildren(
+//	client.Inodes.ListChildren(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) ListInodeChildren(
+func (c *Client) ListChildren(
 	ctx context.Context,
 	request *loonfs.ListInodeChildrenRequest,
 	opts ...option.RequestOption,
@@ -148,11 +148,11 @@ func (c *Client) ListInodeChildren(
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
 //	}
-//	client.Inodes.ListFileRevisionsByInode(
+//	client.Inodes.ListRevisions(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) ListFileRevisionsByInode(
+func (c *Client) ListRevisions(
 	ctx context.Context,
 	request *loonfs.ListFileRevisionsByInodeRequest,
 	opts ...option.RequestOption,
@@ -225,16 +225,16 @@ func (c *Client) ListFileRevisionsByInode(
 //	    InodeID: "inode_id",
 //	    RevisionNo: int64(1000000),
 //	}
-//	client.Inodes.GetFileRevisionBytesByInode(
+//	client.Inodes.Content(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) GetFileRevisionBytesByInode(
+func (c *Client) Content(
 	ctx context.Context,
 	request *loonfs.GetFileRevisionBytesByInodeRequest,
 	opts ...option.RequestOption,
 ) (io.Reader, error) {
-	response, err := c.WithRawResponse.GetFileRevisionBytesByInode(
+	response, err := c.WithRawResponse.Content(
 		ctx,
 		request,
 		opts...,
@@ -257,16 +257,16 @@ func (c *Client) GetFileRevisionBytesByInode(
 //	        "key": "value",
 //	    },
 //	}
-//	client.Inodes.CreateDownloadByInode(
+//	client.Inodes.CreateDownload(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) CreateDownloadByInode(
+func (c *Client) CreateDownload(
 	ctx context.Context,
 	request *loonfs.CreateDownloadByInodeRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.BeginDownloadByInodeResponse, error) {
-	response, err := c.WithRawResponse.CreateDownloadByInode(
+	response, err := c.WithRawResponse.CreateDownload(
 		ctx,
 		request,
 		opts...,

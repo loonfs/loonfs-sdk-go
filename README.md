@@ -31,7 +31,7 @@ func main() {
 		option.WithToken(os.Getenv("LOONFS_AUTH_TOKEN")),
 	)
 
-	capabilities, err := loon.System.GetCapabilities(context.Background())
+	capabilities, err := loon.Capabilities.Retrieve(context.Background())
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +39,7 @@ func main() {
 }
 ```
 
-Upload and download helpers are available from the `transfers` package. See
+`client.Files.Upload` and `client.Files.Download` transfer whole files in memory. See
 [reference.md](./reference.md) for the generated API reference.
 
 ## Proxy

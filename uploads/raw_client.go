@@ -33,7 +33,7 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 	}
 }
 
-func (r *RawClient) CreateUpload(
+func (r *RawClient) Create(
 	ctx context.Context,
 	request *loonfs.CreateUploadRequest,
 	opts ...option.RequestOption,
@@ -80,7 +80,7 @@ func (r *RawClient) CreateUpload(
 	}, nil
 }
 
-func (r *RawClient) GetUpload(
+func (r *RawClient) Retrieve(
 	ctx context.Context,
 	request *loonfs.GetUploadRequest,
 	opts ...option.RequestOption,
@@ -126,7 +126,7 @@ func (r *RawClient) GetUpload(
 	}, nil
 }
 
-func (r *RawClient) AbortUpload(
+func (r *RawClient) Abort(
 	ctx context.Context,
 	request *loonfs.AbortUploadRequest,
 	opts ...option.RequestOption,
@@ -172,7 +172,7 @@ func (r *RawClient) AbortUpload(
 	}, nil
 }
 
-func (r *RawClient) CompleteUpload(
+func (r *RawClient) Complete(
 	ctx context.Context,
 	request *loonfs.CompleteUploadBody,
 	opts ...option.RequestOption,
@@ -220,7 +220,7 @@ func (r *RawClient) CompleteUpload(
 	}, nil
 }
 
-func (r *RawClient) PutUploadContent(
+func (r *RawClient) PutContent(
 	ctx context.Context,
 	// Namespace id
 	namespaceID string,
@@ -271,7 +271,7 @@ func (r *RawClient) PutUploadContent(
 	}, nil
 }
 
-func (r *RawClient) SignUploadParts(
+func (r *RawClient) SignParts(
 	ctx context.Context,
 	request *loonfs.SignUploadPartsRequest,
 	opts ...option.RequestOption,

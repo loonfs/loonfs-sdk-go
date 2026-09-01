@@ -8,8 +8,8 @@ import (
 )
 
 var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
-	503: func(apiError *core.APIError) error {
-		return &ServiceUnavailableError{
+	400: func(apiError *core.APIError) error {
+		return &BadRequestError{
 			APIError: apiError,
 		}
 	},
@@ -18,28 +18,8 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
-	400: func(apiError *core.APIError) error {
-		return &BadRequestError{
-			APIError: apiError,
-		}
-	},
-	404: func(apiError *core.APIError) error {
-		return &NotFoundError{
-			APIError: apiError,
-		}
-	},
-	410: func(apiError *core.APIError) error {
-		return &GoneError{
-			APIError: apiError,
-		}
-	},
-	500: func(apiError *core.APIError) error {
-		return &InternalServerError{
-			APIError: apiError,
-		}
-	},
-	501: func(apiError *core.APIError) error {
-		return &NotImplementedError{
+	503: func(apiError *core.APIError) error {
+		return &ServiceUnavailableError{
 			APIError: apiError,
 		}
 	},
@@ -48,8 +28,28 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
+	410: func(apiError *core.APIError) error {
+		return &GoneError{
+			APIError: apiError,
+		}
+	},
+	404: func(apiError *core.APIError) error {
+		return &NotFoundError{
+			APIError: apiError,
+		}
+	},
 	413: func(apiError *core.APIError) error {
 		return &ContentTooLargeError{
+			APIError: apiError,
+		}
+	},
+	501: func(apiError *core.APIError) error {
+		return &NotImplementedError{
+			APIError: apiError,
+		}
+	},
+	500: func(apiError *core.APIError) error {
+		return &InternalServerError{
 			APIError: apiError,
 		}
 	},

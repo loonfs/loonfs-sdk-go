@@ -45,16 +45,16 @@ func NewClient(options *core.RequestOptions) *Client {
 //	        ServiceProxied: &loonfs.BeginUploadServiceProxied{},
 //	    },
 //	}
-//	client.Uploads.CreateUpload(
+//	client.Uploads.Create(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) CreateUpload(
+func (c *Client) Create(
 	ctx context.Context,
 	request *loonfs.CreateUploadRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.BeginUploadResponse, error) {
-	response, err := c.WithRawResponse.CreateUpload(
+	response, err := c.WithRawResponse.Create(
 		ctx,
 		request,
 		opts...,
@@ -73,16 +73,16 @@ func (c *Client) CreateUpload(
 //	    NamespaceID: "namespace_id",
 //	    UploadID: "upload_id",
 //	}
-//	client.Uploads.GetUpload(
+//	client.Uploads.Retrieve(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) GetUpload(
+func (c *Client) Retrieve(
 	ctx context.Context,
 	request *loonfs.GetUploadRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.UploadSession, error) {
-	response, err := c.WithRawResponse.GetUpload(
+	response, err := c.WithRawResponse.Retrieve(
 		ctx,
 		request,
 		opts...,
@@ -101,16 +101,16 @@ func (c *Client) GetUpload(
 //	    NamespaceID: "namespace_id",
 //	    UploadID: "upload_id",
 //	}
-//	client.Uploads.AbortUpload(
+//	client.Uploads.Abort(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) AbortUpload(
+func (c *Client) Abort(
 	ctx context.Context,
 	request *loonfs.AbortUploadRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.UploadSession, error) {
-	response, err := c.WithRawResponse.AbortUpload(
+	response, err := c.WithRawResponse.Abort(
 		ctx,
 		request,
 		opts...,
@@ -132,16 +132,16 @@ func (c *Client) AbortUpload(
 //	        ServiceProxied: &loonfs.CompleteUploadServiceProxied{},
 //	    },
 //	}
-//	client.Uploads.CompleteUpload(
+//	client.Uploads.Complete(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) CompleteUpload(
+func (c *Client) Complete(
 	ctx context.Context,
 	request *loonfs.CompleteUploadBody,
 	opts ...option.RequestOption,
 ) (*loonfs.UploadSession, error) {
-	response, err := c.WithRawResponse.CompleteUpload(
+	response, err := c.WithRawResponse.Complete(
 		ctx,
 		request,
 		opts...,
@@ -153,7 +153,7 @@ func (c *Client) CompleteUpload(
 }
 
 // Uploads bytes into a service-proxied upload session and returns the content reference for the stored object.
-func (c *Client) PutUploadContent(
+func (c *Client) PutContent(
 	ctx context.Context,
 	// Namespace id
 	namespaceID string,
@@ -162,7 +162,7 @@ func (c *Client) PutUploadContent(
 	request io.Reader,
 	opts ...option.RequestOption,
 ) (*loonfs.UploadContentResponse, error) {
-	response, err := c.WithRawResponse.PutUploadContent(
+	response, err := c.WithRawResponse.PutContent(
 		ctx,
 		namespaceID,
 		uploadID,
@@ -192,16 +192,16 @@ func (c *Client) PutUploadContent(
 //	        },
 //	    },
 //	}
-//	client.Uploads.SignUploadParts(
+//	client.Uploads.SignParts(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) SignUploadParts(
+func (c *Client) SignParts(
 	ctx context.Context,
 	request *loonfs.SignUploadPartsRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.SignUploadPartsResponse, error) {
-	response, err := c.WithRawResponse.SignUploadParts(
+	response, err := c.WithRawResponse.SignParts(
 		ctx,
 		request,
 		opts...,
