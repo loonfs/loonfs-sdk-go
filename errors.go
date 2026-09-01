@@ -199,7 +199,7 @@ func (s *ServiceUnavailableError) Unwrap() error {
 	return s.APIError
 }
 
-// Missing or invalid bearer token
+// Unauthorized
 type UnauthorizedError struct {
 	*core.APIError
 	Body *APIError

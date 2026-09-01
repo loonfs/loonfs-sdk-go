@@ -4,7 +4,6 @@ package namespaces
 
 import (
 	context "context"
-	http "net/http"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
 	core "github.com/loonfs/loonfs-sdk-go/core"
@@ -42,16 +41,16 @@ func NewClient(options *core.RequestOptions) *Client {
 //	request := &loonfs.CreateNamespaceRequest{
 //	    NamespaceID: "demo",
 //	}
-//	client.Namespaces.CreateNamespace(
+//	client.Namespaces.Create(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) CreateNamespace(
+func (c *Client) Create(
 	ctx context.Context,
 	request *loonfs.CreateNamespaceRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.Namespace, error) {
-	response, err := c.WithRawResponse.CreateNamespace(
+	response, err := c.WithRawResponse.Create(
 		ctx,
 		request,
 		opts...,
@@ -69,16 +68,16 @@ func (c *Client) CreateNamespace(
 //	request := &loonfs.GetNamespaceRequest{
 //	    NamespaceID: "namespace_id",
 //	}
-//	client.Namespaces.GetNamespace(
+//	client.Namespaces.Retrieve(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) GetNamespace(
+func (c *Client) Retrieve(
 	ctx context.Context,
 	request *loonfs.GetNamespaceRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.Namespace, error) {
-	response, err := c.WithRawResponse.GetNamespace(
+	response, err := c.WithRawResponse.Retrieve(
 		ctx,
 		request,
 		opts...,
@@ -96,16 +95,16 @@ func (c *Client) GetNamespace(
 //	request := &loonfs.DeleteNamespaceRequest{
 //	    NamespaceID: "namespace_id",
 //	}
-//	client.Namespaces.DeleteNamespace(
+//	client.Namespaces.Delete(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) DeleteNamespace(
+func (c *Client) Delete(
 	ctx context.Context,
 	request *loonfs.DeleteNamespaceRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.DeleteNamespaceResponse, error) {
-	response, err := c.WithRawResponse.DeleteNamespace(
+	response, err := c.WithRawResponse.Delete(
 		ctx,
 		request,
 		opts...,
@@ -124,176 +123,16 @@ func (c *Client) DeleteNamespace(
 //	    NamespaceID: "namespace_id",
 //	    NewNamespaceID: "demo",
 //	}
-//	client.Namespaces.ForkNamespace(
+//	client.Namespaces.Fork(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) ForkNamespace(
+func (c *Client) Fork(
 	ctx context.Context,
 	request *loonfs.ForkNamespaceRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.Namespace, error) {
-	response, err := c.WithRawResponse.ForkNamespace(
-		ctx,
-		request,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
-}
-
-// Lists live snapshots in snapshot-id order. Released and expired snapshots are omitted.
-//
-// Example:
-//
-//	request := &loonfs.ListSnapshotsRequest{
-//	    NamespaceID: "namespace_id",
-//	}
-//	client.Namespaces.ListSnapshots(
-//	    context.TODO(),
-//	    request,
-//	)
-func (c *Client) ListSnapshots(
-	ctx context.Context,
-	request *loonfs.ListSnapshotsRequest,
-	opts ...option.RequestOption,
-) (*core.Page[*string, *loonfs.SnapshotSummary, *loonfs.ListSnapshotsResponse], error) {
-	options := core.NewRequestOptions(opts...)
-	baseURL := internal.ResolveBaseURL(
-		options.BaseURL,
-		c.baseURL,
-		"",
-	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/v0/namespaces/%v/snapshots",
-		request.NamespaceID,
-	)
-	queryParams, err := internal.QueryValues(request)
-	if err != nil {
-		return nil, err
-	}
-	headers := internal.MergeHeaders(
-		c.options.ToHeader(),
-		options.ToHeader(),
-	)
-	prepareCall := func(pageRequest *core.PageRequest[*string]) *internal.CallParams {
-		if pageRequest.Cursor != nil {
-			queryParams.Set("cursor", *pageRequest.Cursor)
-		}
-		nextURL := endpointURL
-		if len(queryParams) > 0 {
-			nextURL += "?" + queryParams.Encode()
-		}
-		return &internal.CallParams{
-			URL:             nextURL,
-			Method:          http.MethodGet,
-			Headers:         headers,
-			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
-			BodyProperties:  options.BodyProperties,
-			QueryParameters: options.QueryParameters,
-			Client:          options.HTTPClient,
-			Response:        pageRequest.Response,
-			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
-		}
-	}
-	readPageResponse := func(response *loonfs.ListSnapshotsResponse) *core.PageResponse[*string, *loonfs.SnapshotSummary, *loonfs.ListSnapshotsResponse] {
-		var zeroValue *string
-		next := response.GetNextCursor()
-		results := response.GetSnapshots()
-		return &core.PageResponse[*string, *loonfs.SnapshotSummary, *loonfs.ListSnapshotsResponse]{
-			Results:  results,
-			Response: response,
-			Next:     next,
-			Done:     next == zeroValue || *next == "",
-		}
-	}
-	pager := internal.NewCursorPager(
-		c.caller,
-		prepareCall,
-		readPageResponse,
-	)
-	return pager.GetPage(ctx, request.Cursor)
-}
-
-// Creates a snapshot of the current namespace state. Every call creates a new snapshot.
-//
-// Example:
-//
-//	request := &loonfs.CreateSnapshotRequest{
-//	    NamespaceID: "namespace_id",
-//	    Name: "name",
-//	    TTLMs: int64(1000000),
-//	}
-//	client.Namespaces.CreateSnapshot(
-//	    context.TODO(),
-//	    request,
-//	)
-func (c *Client) CreateSnapshot(
-	ctx context.Context,
-	request *loonfs.CreateSnapshotRequest,
-	opts ...option.RequestOption,
-) (*loonfs.SnapshotSummary, error) {
-	response, err := c.WithRawResponse.CreateSnapshot(
-		ctx,
-		request,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
-}
-
-// Extends a live snapshot without passing its lifetime limit. Repeating the request has the same result.
-//
-// Example:
-//
-//	request := &loonfs.ExtendSnapshotRequest{
-//	    NamespaceID: "namespace_id",
-//	    SnapshotID: "snapshot_id",
-//	    TTLMs: int64(1000000),
-//	}
-//	client.Namespaces.ExtendSnapshot(
-//	    context.TODO(),
-//	    request,
-//	)
-func (c *Client) ExtendSnapshot(
-	ctx context.Context,
-	request *loonfs.ExtendSnapshotRequest,
-	opts ...option.RequestOption,
-) (*loonfs.SnapshotSummary, error) {
-	response, err := c.WithRawResponse.ExtendSnapshot(
-		ctx,
-		request,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
-}
-
-// Releases a snapshot by id. Repeated releases succeed.
-//
-// Example:
-//
-//	request := &loonfs.ReleaseSnapshotRequest{
-//	    NamespaceID: "namespace_id",
-//	    SnapshotID: "snapshot_id",
-//	}
-//	client.Namespaces.ReleaseSnapshot(
-//	    context.TODO(),
-//	    request,
-//	)
-func (c *Client) ReleaseSnapshot(
-	ctx context.Context,
-	request *loonfs.ReleaseSnapshotRequest,
-	opts ...option.RequestOption,
-) (*loonfs.ReleaseSnapshotResponse, error) {
-	response, err := c.WithRawResponse.ReleaseSnapshot(
+	response, err := c.WithRawResponse.Fork(
 		ctx,
 		request,
 		opts...,

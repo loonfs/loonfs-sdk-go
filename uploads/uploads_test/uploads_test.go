@@ -11,8 +11,8 @@ import (
 	testing "testing"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
-	option "github.com/loonfs/loonfs-sdk-go/option"
 	server "github.com/loonfs/loonfs-sdk-go/server"
+	option "github.com/loonfs/loonfs-sdk-go/option"
 	require "github.com/stretchr/testify/require"
 )
 
@@ -77,7 +77,7 @@ func VerifyRequestCount(
 	require.Equal(t, expected, len(result.Requests))
 }
 
-func TestUploadsCreateUploadWithWireMock(
+func TestUploadsCreateWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -94,19 +94,19 @@ func TestUploadsCreateUploadWithWireMock(
 			ServiceProxied: &loonfs.BeginUploadServiceProxied{},
 		},
 	}
-	_, invocationErr := client.Uploads.CreateUpload(
+	_, invocationErr := client.Uploads.Create(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestUploadsCreateUploadWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestUploadsCreateWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestUploadsCreateUploadWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads", nil, 1)
+	VerifyRequestCount(t, "TestUploadsCreateWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads", nil, 1)
 }
 
-func TestUploadsGetUploadWithWireMock(
+func TestUploadsRetrieveWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -121,19 +121,19 @@ func TestUploadsGetUploadWithWireMock(
 		NamespaceID: "namespace_id",
 		UploadID:    "upload_id",
 	}
-	_, invocationErr := client.Uploads.GetUpload(
+	_, invocationErr := client.Uploads.Retrieve(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestUploadsGetUploadWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestUploadsRetrieveWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestUploadsGetUploadWithWireMock", "GET", "/v0/namespaces/namespace_id/uploads/upload_id", nil, 1)
+	VerifyRequestCount(t, "TestUploadsRetrieveWithWireMock", "GET", "/v0/namespaces/namespace_id/uploads/upload_id", nil, 1)
 }
 
-func TestUploadsAbortUploadWithWireMock(
+func TestUploadsAbortWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -148,19 +148,19 @@ func TestUploadsAbortUploadWithWireMock(
 		NamespaceID: "namespace_id",
 		UploadID:    "upload_id",
 	}
-	_, invocationErr := client.Uploads.AbortUpload(
+	_, invocationErr := client.Uploads.Abort(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestUploadsAbortUploadWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestUploadsAbortWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestUploadsAbortUploadWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads/upload_id/abort", nil, 1)
+	VerifyRequestCount(t, "TestUploadsAbortWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads/upload_id/abort", nil, 1)
 }
 
-func TestUploadsCompleteUploadWithWireMock(
+func TestUploadsCompleteWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -178,19 +178,19 @@ func TestUploadsCompleteUploadWithWireMock(
 			ServiceProxied: &loonfs.CompleteUploadServiceProxied{},
 		},
 	}
-	_, invocationErr := client.Uploads.CompleteUpload(
+	_, invocationErr := client.Uploads.Complete(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestUploadsCompleteUploadWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestUploadsCompleteWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestUploadsCompleteUploadWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads/upload_id/complete", nil, 1)
+	VerifyRequestCount(t, "TestUploadsCompleteWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads/upload_id/complete", nil, 1)
 }
 
-func TestUploadsSignUploadPartsWithWireMock(
+func TestUploadsSignPartsWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -214,14 +214,14 @@ func TestUploadsSignUploadPartsWithWireMock(
 			},
 		},
 	}
-	_, invocationErr := client.Uploads.SignUploadParts(
+	_, invocationErr := client.Uploads.SignParts(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestUploadsSignUploadPartsWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestUploadsSignPartsWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestUploadsSignUploadPartsWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads/upload_id/parts", nil, 1)
+	VerifyRequestCount(t, "TestUploadsSignPartsWithWireMock", "POST", "/v0/namespaces/namespace_id/uploads/upload_id/parts", nil, 1)
 }

@@ -11,8 +11,8 @@ import (
 	testing "testing"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
-	option "github.com/loonfs/loonfs-sdk-go/option"
 	server "github.com/loonfs/loonfs-sdk-go/server"
+	option "github.com/loonfs/loonfs-sdk-go/option"
 	require "github.com/stretchr/testify/require"
 )
 
@@ -77,7 +77,7 @@ func VerifyRequestCount(
 	require.Equal(t, expected, len(result.Requests))
 }
 
-func TestNamespacesCreateNamespaceWithWireMock(
+func TestNamespacesCreateWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -91,19 +91,19 @@ func TestNamespacesCreateNamespaceWithWireMock(
 	request := &loonfs.CreateNamespaceRequest{
 		NamespaceID: "demo",
 	}
-	_, invocationErr := client.Namespaces.CreateNamespace(
+	_, invocationErr := client.Namespaces.Create(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestNamespacesCreateNamespaceWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestNamespacesCreateWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestNamespacesCreateNamespaceWithWireMock", "POST", "/v0/namespaces", nil, 1)
+	VerifyRequestCount(t, "TestNamespacesCreateWithWireMock", "POST", "/v0/namespaces", nil, 1)
 }
 
-func TestNamespacesGetNamespaceWithWireMock(
+func TestNamespacesRetrieveWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -117,19 +117,19 @@ func TestNamespacesGetNamespaceWithWireMock(
 	request := &loonfs.GetNamespaceRequest{
 		NamespaceID: "namespace_id",
 	}
-	_, invocationErr := client.Namespaces.GetNamespace(
+	_, invocationErr := client.Namespaces.Retrieve(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestNamespacesGetNamespaceWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestNamespacesRetrieveWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestNamespacesGetNamespaceWithWireMock", "GET", "/v0/namespaces/namespace_id", nil, 1)
+	VerifyRequestCount(t, "TestNamespacesRetrieveWithWireMock", "GET", "/v0/namespaces/namespace_id", nil, 1)
 }
 
-func TestNamespacesDeleteNamespaceWithWireMock(
+func TestNamespacesDeleteWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -143,19 +143,19 @@ func TestNamespacesDeleteNamespaceWithWireMock(
 	request := &loonfs.DeleteNamespaceRequest{
 		NamespaceID: "namespace_id",
 	}
-	_, invocationErr := client.Namespaces.DeleteNamespace(
+	_, invocationErr := client.Namespaces.Delete(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestNamespacesDeleteNamespaceWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestNamespacesDeleteWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestNamespacesDeleteNamespaceWithWireMock", "DELETE", "/v0/namespaces/namespace_id", nil, 1)
+	VerifyRequestCount(t, "TestNamespacesDeleteWithWireMock", "DELETE", "/v0/namespaces/namespace_id", nil, 1)
 }
 
-func TestNamespacesForkNamespaceWithWireMock(
+func TestNamespacesForkWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -170,123 +170,14 @@ func TestNamespacesForkNamespaceWithWireMock(
 		NamespaceID:    "namespace_id",
 		NewNamespaceID: "demo",
 	}
-	_, invocationErr := client.Namespaces.ForkNamespace(
+	_, invocationErr := client.Namespaces.Fork(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestNamespacesForkNamespaceWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestNamespacesForkWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestNamespacesForkNamespaceWithWireMock", "POST", "/v0/namespaces/namespace_id/forks", nil, 1)
-}
-
-func TestNamespacesListSnapshotsWithWireMock(
-	t *testing.T,
-) {
-	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
-	if WireMockBaseURL == "" {
-		WireMockBaseURL = "http://localhost:8080"
-	}
-	client := server.NewClient(
-		option.WithBaseURL(WireMockBaseURL),
-		option.WithToken("test-token"),
-	)
-	request := &loonfs.ListSnapshotsRequest{
-		NamespaceID: "namespace_id",
-	}
-	_, invocationErr := client.Namespaces.ListSnapshots(
-		context.TODO(),
-		request,
-		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestNamespacesListSnapshotsWithWireMock"}},
-		),
-	)
-
-	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestNamespacesListSnapshotsWithWireMock", "GET", "/v0/namespaces/namespace_id/snapshots", nil, 1)
-}
-
-func TestNamespacesCreateSnapshotWithWireMock(
-	t *testing.T,
-) {
-	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
-	if WireMockBaseURL == "" {
-		WireMockBaseURL = "http://localhost:8080"
-	}
-	client := server.NewClient(
-		option.WithBaseURL(WireMockBaseURL),
-		option.WithToken("test-token"),
-	)
-	request := &loonfs.CreateSnapshotRequest{
-		NamespaceID: "namespace_id",
-		Name:        "name",
-		TTLMs:       int64(1000000),
-	}
-	_, invocationErr := client.Namespaces.CreateSnapshot(
-		context.TODO(),
-		request,
-		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestNamespacesCreateSnapshotWithWireMock"}},
-		),
-	)
-
-	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestNamespacesCreateSnapshotWithWireMock", "POST", "/v0/namespaces/namespace_id/snapshots", nil, 1)
-}
-
-func TestNamespacesExtendSnapshotWithWireMock(
-	t *testing.T,
-) {
-	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
-	if WireMockBaseURL == "" {
-		WireMockBaseURL = "http://localhost:8080"
-	}
-	client := server.NewClient(
-		option.WithBaseURL(WireMockBaseURL),
-		option.WithToken("test-token"),
-	)
-	request := &loonfs.ExtendSnapshotRequest{
-		NamespaceID: "namespace_id",
-		SnapshotID:  "snapshot_id",
-		TTLMs:       int64(1000000),
-	}
-	_, invocationErr := client.Namespaces.ExtendSnapshot(
-		context.TODO(),
-		request,
-		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestNamespacesExtendSnapshotWithWireMock"}},
-		),
-	)
-
-	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestNamespacesExtendSnapshotWithWireMock", "POST", "/v0/namespaces/namespace_id/snapshots/snapshot_id/extend", nil, 1)
-}
-
-func TestNamespacesReleaseSnapshotWithWireMock(
-	t *testing.T,
-) {
-	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
-	if WireMockBaseURL == "" {
-		WireMockBaseURL = "http://localhost:8080"
-	}
-	client := server.NewClient(
-		option.WithBaseURL(WireMockBaseURL),
-		option.WithToken("test-token"),
-	)
-	request := &loonfs.ReleaseSnapshotRequest{
-		NamespaceID: "namespace_id",
-		SnapshotID:  "snapshot_id",
-	}
-	_, invocationErr := client.Namespaces.ReleaseSnapshot(
-		context.TODO(),
-		request,
-		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestNamespacesReleaseSnapshotWithWireMock"}},
-		),
-	)
-
-	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestNamespacesReleaseSnapshotWithWireMock", "POST", "/v0/namespaces/namespace_id/snapshots/snapshot_id/release", nil, 1)
+	VerifyRequestCount(t, "TestNamespacesForkWithWireMock", "POST", "/v0/namespaces/namespace_id/forks", nil, 1)
 }

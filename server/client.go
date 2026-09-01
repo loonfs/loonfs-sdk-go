@@ -3,26 +3,32 @@
 package server
 
 import (
-	admin "github.com/loonfs/loonfs-sdk-go/admin"
+	client "github.com/loonfs/loonfs-sdk-go/admin/client"
+	capabilities "github.com/loonfs/loonfs-sdk-go/capabilities"
+	changes "github.com/loonfs/loonfs-sdk-go/changes"
+	commits "github.com/loonfs/loonfs-sdk-go/commits"
 	core "github.com/loonfs/loonfs-sdk-go/core"
-	filesystem "github.com/loonfs/loonfs-sdk-go/filesystem"
+	files "github.com/loonfs/loonfs-sdk-go/files"
 	inodes "github.com/loonfs/loonfs-sdk-go/inodes"
 	internal "github.com/loonfs/loonfs-sdk-go/internal"
 	namespaces "github.com/loonfs/loonfs-sdk-go/namespaces"
 	option "github.com/loonfs/loonfs-sdk-go/option"
-	query "github.com/loonfs/loonfs-sdk-go/query"
-	system "github.com/loonfs/loonfs-sdk-go/system"
+	snapshots "github.com/loonfs/loonfs-sdk-go/snapshots"
+	trash "github.com/loonfs/loonfs-sdk-go/trash"
 	uploads "github.com/loonfs/loonfs-sdk-go/uploads"
 )
 
 type Client struct {
-	System     *system.Client
-	Admin      *admin.Client
-	Namespaces *namespaces.Client
-	Filesystem *filesystem.Client
-	Query      *query.Client
-	Inodes     *inodes.Client
-	Uploads    *uploads.Client
+	Capabilities *capabilities.Client
+	Namespaces   *namespaces.Client
+	Changes      *changes.Client
+	Commits      *commits.Client
+	Files        *files.Client
+	Trash        *trash.Client
+	Inodes       *inodes.Client
+	Snapshots    *snapshots.Client
+	Uploads      *uploads.Client
+	Admin        *client.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -32,15 +38,18 @@ type Client struct {
 func NewClient(opts ...option.RequestOption) *Client {
 	options := core.NewRequestOptions(opts...)
 	return &Client{
-		System:     system.NewClient(options),
-		Admin:      admin.NewClient(options),
-		Namespaces: namespaces.NewClient(options),
-		Filesystem: filesystem.NewClient(options),
-		Query:      query.NewClient(options),
-		Inodes:     inodes.NewClient(options),
-		Uploads:    uploads.NewClient(options),
-		options:    options,
-		baseURL:    options.BaseURL,
+		Capabilities: capabilities.NewClient(options),
+		Namespaces:   namespaces.NewClient(options),
+		Changes:      changes.NewClient(options),
+		Commits:      commits.NewClient(options),
+		Files:        files.NewClient(options),
+		Trash:        trash.NewClient(options),
+		Inodes:       inodes.NewClient(options),
+		Snapshots:    snapshots.NewClient(options),
+		Uploads:      uploads.NewClient(options),
+		Admin:        client.NewClient(options),
+		options:      options,
+		baseURL:      options.BaseURL,
 		caller: internal.NewCaller(
 			&internal.CallerParams{
 				Client:         options.HTTPClient,

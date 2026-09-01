@@ -1,129 +1,6 @@
 # Reference
-## system
-<details><summary><code>client.System.GetHealth() -> string</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Returns `ok` when the server is running and can accept requests.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-client.System.GetHealth(
-    context.TODO(),
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.System.GetMetrics() -> string</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Returns this process's metrics in Prometheus text exposition format 0.0.4. Unlike `/health` and `/readiness`, the route requires the deployment's bearer token.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-client.System.GetMetrics(
-    context.TODO(),
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.System.GetReadiness() -> string</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Returns `ready` while the server admits new work. Once shutdown begins and publisher admission closes, answers 503 `shutting_down` so load balancers can drain the instance. `/health` stays the liveness probe: it only reports that the process is up.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-client.System.GetReadiness(
-    context.TODO(),
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.System.GetCapabilities() -> *loonfs.CapabilityDocument</code></summary>
+## Capabilities
+<details><summary><code>client.Capabilities.Retrieve() -> *loonfs.CapabilityDocument</code></summary>
 <dl>
 <dd>
 
@@ -150,715 +27,10 @@ Returns a summary of supported features and limits.
 <dd>
 
 ```go
-client.System.GetCapabilities(
+client.Capabilities.Retrieve(
     context.TODO(),
 )
 ```
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-## admin
-<details><summary><code>client.Admin.ListCheckpoints(NamespaceID) -> *loonfs.ListCheckpointsResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Lists one page of active checkpoints in checkpoint-id order. Expired checkpoints remain visible until collection releases them. Released checkpoints are omitted. The cursor resumes a live listing and does not create a snapshot.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.ListCheckpointsRequest{
-    NamespaceID: "namespace_id",
-}
-client.Admin.ListCheckpoints(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**limit:** `*int` — Maximum page size
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**cursor:** `*string` — Opaque checkpoint-list page cursor
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Admin.CreateCheckpoint(NamespaceID, request) -> *loonfs.Checkpoint</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is released, so routine maintenance should flush the WAL instead. This is a maintenance/admin operation, not a file mutation.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.CreateCheckpointRequest{
-    NamespaceID: "namespace_id",
-    Name: "name",
-}
-client.Admin.CreateCheckpoint(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**name:** `string` 
-
-Label recorded on the checkpoint record. A label, not a key: several
-records may carry the same name over different bases.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**ttlMs:** `*int64` 
-
-Optional lifetime; the server computes the record's expiry from its
-own clock. Absent means the pin holds until explicitly released.
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Admin.ReleaseCheckpoint(NamespaceID, CheckpointID) -> *loonfs.ReleaseCheckpointResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Releases a user-owned checkpoint pin by id. Idempotent: releasing an already-released or reaped record succeeds. The record is reaped by a later garbage-collection pass; its pinned data becomes collectable only on the pass after that.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.ReleaseCheckpointRequest{
-    NamespaceID: "namespace_id",
-    CheckpointID: "checkpoint_id",
-}
-client.Admin.ReleaseCheckpoint(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**checkpointID:** `string` — Checkpoint id
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Admin.GetNamespaceDiagnostics(NamespaceID) -> *loonfs.NamespaceDiagnostics</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Returns namespace state together with the current manifest and visible WAL tail.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.GetNamespaceDiagnosticsRequest{
-    NamespaceID: "namespace_id",
-}
-client.Admin.GetNamespaceDiagnostics(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Admin.GetGrepIndex(NamespaceID) -> *loonfs.GrepIndex</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Returns whether the namespace's grep index is `disabled`, `backfilling`, or `active`, including build progress when available. A namespace that has never enabled the index is `disabled`. This operation requires a deployment that maintains grep indexes and does not change the index.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.GetGrepIndexRequest{
-    NamespaceID: "namespace_id",
-}
-client.Admin.GetGrepIndex(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Admin.DisableGrepIndex(NamespaceID) -> *loonfs.GrepIndex</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Disables the namespace's grep root and clears its segment references with one durable compare-and-swap; index maintenance stops on its own once a step reads the disabled root. Explicit grep garbage collection later reclaims the segments. Idempotent. Requires this deployment to maintain the grep index.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.DisableGrepIndexRequest{
-    NamespaceID: "namespace_id",
-}
-client.Admin.DisableGrepIndex(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Admin.EnableGrepIndex(NamespaceID) -> *loonfs.GrepIndex</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Enables the namespace's grep root and asks this deployment's maintenance runner for the backfill's first step. The response reports the lifecycle and bookkeeping read after the transition: a fresh enable is `backfilling` with the sequence its checkpoint captured, while an already-enabled namespace answers with its current status. Idempotent. Requires this deployment to maintain the grep index.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.EnableGrepIndexRequest{
-    NamespaceID: "namespace_id",
-}
-client.Admin.EnableGrepIndex(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Admin.GcGrepIndex(NamespaceID, request) -> *loonfs.GrepGcResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Runs one explicit garbage-collection pass over only this namespace's grep-owned extension keyspace. A tombstoned or absent namespace has aged extension state reaped; no grep garbage collection runs implicitly. `max_objects` bounds the reads the pass spends and returns a `next_cursor` when keys remain; resuming re-reads liveness and the grep root, so a cursor only skips enumeration. Requires this deployment to maintain the grep index.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.GrepGcRequest{
-    NamespaceID: "namespace_id",
-}
-client.Admin.GcGrepIndex(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**cursor:** `*string` 
-
-Opaque resume token returned as `next_cursor` by an earlier pass
-against the same namespace.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**maxObjects:** `*int64` 
-
-Reads this pass may spend before returning with a `next_cursor`.
-Omit to take the same per-pass default the runtime's own collection
-takes.
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Admin.RunMaintenance(NamespaceID, request) -> *loonfs.MaintenanceStepResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Runs one bounded maintenance step. Include `metadata_maintenance`, `retention`, or `gc` to select actions. Each selector is an options object, and an empty object uses server defaults. Actions run in that order, and only selected actions appear in the response. At least one action is required. A deleted namespace accepts only `gc`. GC processes up to 1024 candidates by default and returns a cursor when more work remains. A lost root update race is reported as an outcome.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.MaintenanceStepRequest{
-    NamespaceID: "namespace_id",
-}
-client.Admin.RunMaintenance(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**gc:** `*loonfs.GcRequest` 
-
-Run one bounded mark-and-sweep garbage-collection pass. Omit this
-field to skip garbage collection.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**metadataMaintenance:** `*loonfs.MetadataMaintenanceRequest` 
-
-Flush the visible WAL tail into metadata segments, then run one bounded
-reorganization step.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**retention:** `*loonfs.AdvanceRetentionRequest` 
-
-Advance the retention floor to the flushed manifest head. Include this
-field to select the action.
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Admin.ProbeStore(request) -> *loonfs.StoreProbeResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Proves the configured object store honours the create-if-absent, compare-and-swap, visibility, listing, and ranged-read semantics LoonFS depends on, and reports what it found check by check. Nothing runs this implicitly: a probe writes and deletes objects, all of them under a scratch prefix that is not a durable object family, and its last check deletes them and proves the prefix empty. A store that fails a check answers 200 with that check reported `failed` — the probe ran, and the answer is that the store is wrong. Optional capabilities a store declares it lacks answer `unsupported`, which is an answer rather than a fault. This route does not decide whether the deployment may serve presigned direct uploads: that trust comes from the endpoint allowlist, because a probe exercises the server's own request path and never a presigned capability handed to a client.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := map[string]any{
-    "key": "value",
-}
-client.Admin.ProbeStore(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**request:** `loonfs.StoreProbeRequest` 
-    
 </dd>
 </dl>
 </dd>
@@ -870,7 +42,7 @@ client.Admin.ProbeStore(
 </details>
 
 ## namespaces
-<details><summary><code>client.Namespaces.CreateNamespace(request) -> *loonfs.Namespace</code></summary>
+<details><summary><code>client.Namespaces.Create(request) -> *loonfs.Namespace</code></summary>
 <dl>
 <dd>
 
@@ -900,7 +72,7 @@ Creates a new empty namespace.
 request := &loonfs.CreateNamespaceRequest{
     NamespaceID: "demo",
 }
-client.Namespaces.CreateNamespace(
+client.Namespaces.Create(
     context.TODO(),
     request,
 )
@@ -930,7 +102,7 @@ client.Namespaces.CreateNamespace(
 </dl>
 </details>
 
-<details><summary><code>client.Namespaces.GetNamespace(NamespaceID) -> *loonfs.Namespace</code></summary>
+<details><summary><code>client.Namespaces.Retrieve(NamespaceID) -> *loonfs.Namespace</code></summary>
 <dl>
 <dd>
 
@@ -960,7 +132,7 @@ Returns the current head and retention state for a namespace.
 request := &loonfs.GetNamespaceRequest{
     NamespaceID: "namespace_id",
 }
-client.Namespaces.GetNamespace(
+client.Namespaces.Retrieve(
     context.TODO(),
     request,
 )
@@ -990,7 +162,7 @@ client.Namespaces.GetNamespace(
 </dl>
 </details>
 
-<details><summary><code>client.Namespaces.DeleteNamespace(NamespaceID) -> *loonfs.DeleteNamespaceResponse</code></summary>
+<details><summary><code>client.Namespaces.Delete(NamespaceID) -> *loonfs.DeleteNamespaceResponse</code></summary>
 <dl>
 <dd>
 
@@ -1020,7 +192,7 @@ Marks a namespace as deleted.
 request := &loonfs.DeleteNamespaceRequest{
     NamespaceID: "namespace_id",
 }
-client.Namespaces.DeleteNamespace(
+client.Namespaces.Delete(
     context.TODO(),
     request,
 )
@@ -1058,7 +230,7 @@ client.Namespaces.DeleteNamespace(
 </dl>
 </details>
 
-<details><summary><code>client.Namespaces.ForkNamespace(NamespaceID, request) -> *loonfs.Namespace</code></summary>
+<details><summary><code>client.Namespaces.Fork(NamespaceID, request) -> *loonfs.Namespace</code></summary>
 <dl>
 <dd>
 
@@ -1089,7 +261,7 @@ request := &loonfs.ForkNamespaceRequest{
     NamespaceID: "namespace_id",
     NewNamespaceID: "demo",
 }
-client.Namespaces.ForkNamespace(
+client.Namespaces.Fork(
     context.TODO(),
     request,
 )
@@ -1127,309 +299,8 @@ client.Namespaces.ForkNamespace(
 </dl>
 </details>
 
-<details><summary><code>client.Namespaces.ListSnapshots(NamespaceID) -> *loonfs.ListSnapshotsResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Lists live snapshots in snapshot-id order. Released and expired snapshots are omitted.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.ListSnapshotsRequest{
-    NamespaceID: "namespace_id",
-}
-client.Namespaces.ListSnapshots(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**limit:** `*int` — Maximum page size
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**cursor:** `*string` — Opaque snapshot-list page cursor
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Namespaces.CreateSnapshot(NamespaceID, request) -> *loonfs.SnapshotSummary</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Creates a snapshot of the current namespace state. Every call creates a new snapshot.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.CreateSnapshotRequest{
-    NamespaceID: "namespace_id",
-    Name: "name",
-    TTLMs: int64(1000000),
-}
-client.Namespaces.CreateSnapshot(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**name:** `string` — A label that does not need to be unique.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**ttlMs:** `int64` — Snapshot lifetime from the current server time, in milliseconds.
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Namespaces.ExtendSnapshot(NamespaceID, SnapshotID, request) -> *loonfs.SnapshotSummary</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Extends a live snapshot without passing its lifetime limit. Repeating the request has the same result.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.ExtendSnapshotRequest{
-    NamespaceID: "namespace_id",
-    SnapshotID: "snapshot_id",
-    TTLMs: int64(1000000),
-}
-client.Namespaces.ExtendSnapshot(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**snapshotID:** `string` — Snapshot id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**ttlMs:** `int64` — Requested lifetime from the server's current time, in milliseconds.
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Namespaces.ReleaseSnapshot(NamespaceID, SnapshotID) -> *loonfs.ReleaseSnapshotResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Releases a snapshot by id. Repeated releases succeed.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.ReleaseSnapshotRequest{
-    NamespaceID: "namespace_id",
-    SnapshotID: "snapshot_id",
-}
-client.Namespaces.ReleaseSnapshot(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**snapshotID:** `string` — Snapshot id
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-## filesystem
-<details><summary><code>client.Filesystem.ListChanges(NamespaceID) -> *loonfs.ListChangesResponse</code></summary>
+## Changes
+<details><summary><code>client.Changes.List(NamespaceID) -> *loonfs.ListChangesResponse</code></summary>
 <dl>
 <dd>
 
@@ -1463,7 +334,7 @@ request := &loonfs.ListChangesRequest{
         "chk_00000000000000000000000000000002",
     ),
 }
-client.Filesystem.ListChanges(
+client.Changes.List(
     context.TODO(),
     request,
 )
@@ -1517,7 +388,8 @@ client.Filesystem.ListChanges(
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.CreateCommit(NamespaceID, request) -> *loonfs.CommitResponse</code></summary>
+## Commits
+<details><summary><code>client.Commits.Create(NamespaceID, request) -> *loonfs.CommitResponse</code></summary>
 <dl>
 <dd>
 
@@ -1559,7 +431,7 @@ request := &loonfs.CommitRequest{
         },
     },
 }
-client.Filesystem.CreateCommit(
+client.Commits.Create(
     context.TODO(),
     request,
 )
@@ -1640,7 +512,8 @@ together or not at all.
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.GetFileBytes(NamespaceID) -> string</code></summary>
+## Files
+<details><summary><code>client.Files.Content(NamespaceID) -> string</code></summary>
 <dl>
 <dd>
 
@@ -1671,7 +544,7 @@ request := &loonfs.GetFileBytesRequest{
     NamespaceID: "namespace_id",
     Path: "path",
 }
-client.Filesystem.GetFileBytes(
+client.Files.Content(
     context.TODO(),
     request,
 )
@@ -1725,7 +598,7 @@ client.Filesystem.GetFileBytes(
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.CreateDownload(NamespaceID, request) -> *loonfs.BeginDownloadResponse</code></summary>
+<details><summary><code>client.Files.CreateDownload(NamespaceID, request) -> *loonfs.BeginDownloadResponse</code></summary>
 <dl>
 <dd>
 
@@ -1759,7 +632,7 @@ request := &loonfs.BeginDownloadRequest{
     ),
     Path: "/docs/report.txt",
 }
-client.Filesystem.CreateDownload(
+client.Files.CreateDownload(
     context.TODO(),
     request,
 )
@@ -1813,7 +686,7 @@ client.Filesystem.CreateDownload(
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.ListPathEntries(NamespaceID) -> *loonfs.ListPathEntriesResponse</code></summary>
+<details><summary><code>client.Files.List(NamespaceID) -> *loonfs.ListPathEntriesResponse</code></summary>
 <dl>
 <dd>
 
@@ -1847,7 +720,7 @@ request := &loonfs.ListPathEntriesRequest{
         "chk_00000000000000000000000000000002",
     ),
 }
-client.Filesystem.ListPathEntries(
+client.Files.List(
     context.TODO(),
     request,
 )
@@ -1917,7 +790,7 @@ client.Filesystem.ListPathEntries(
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.GetPathEntry(NamespaceID) -> *loonfs.PathEntry</code></summary>
+<details><summary><code>client.Files.Retrieve(NamespaceID) -> *loonfs.PathEntry</code></summary>
 <dl>
 <dd>
 
@@ -1951,7 +824,7 @@ request := &loonfs.GetPathEntryRequest{
         "chk_00000000000000000000000000000002",
     ),
 }
-client.Filesystem.GetPathEntry(
+client.Files.Retrieve(
     context.TODO(),
     request,
 )
@@ -2005,7 +878,7 @@ client.Filesystem.GetPathEntry(
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.ListFileRevisions(NamespaceID) -> *loonfs.ListFileRevisionsResponse</code></summary>
+<details><summary><code>client.Files.ListRevisions(NamespaceID) -> *loonfs.ListFileRevisionsResponse</code></summary>
 <dl>
 <dd>
 
@@ -2036,7 +909,7 @@ request := &loonfs.ListFileRevisionsRequest{
     NamespaceID: "namespace_id",
     Path: "path",
 }
-client.Filesystem.ListFileRevisions(
+client.Files.ListRevisions(
     context.TODO(),
     request,
 )
@@ -2090,84 +963,7 @@ client.Filesystem.ListFileRevisions(
 </dl>
 </details>
 
-<details><summary><code>client.Filesystem.ListTrash(NamespaceID) -> *loonfs.ListTrashResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Returns the namespace's recoverable deletions, oldest deletion first. Entries never age out at the retention floor; each carries the inode id and deletion sequence undelete needs, plus the deleted name when the delete recorded one.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.ListTrashRequest{
-    NamespaceID: "namespace_id",
-}
-client.Filesystem.ListTrash(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**limit:** `*int` — Maximum page size
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**cursor:** `*string` — Opaque trash page cursor
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-## query
-<details><summary><code>client.Query.Grep(NamespaceID) -> *loonfs.GrepResponse</code></summary>
+<details><summary><code>client.Files.Grep(NamespaceID) -> *loonfs.GrepResponse</code></summary>
 <dl>
 <dd>
 
@@ -2198,7 +994,7 @@ request := &loonfs.GrepRequest{
     NamespaceID: "namespace_id",
     Pattern: "pattern",
 }
-client.Query.Grep(
+client.Files.Grep(
     context.TODO(),
     request,
 )
@@ -2284,8 +1080,85 @@ client.Query.Grep(
 </dl>
 </details>
 
+## Trash
+<details><summary><code>client.Trash.List(NamespaceID) -> *loonfs.ListTrashResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Returns the namespace's recoverable deletions, oldest deletion first. Entries never age out at the retention floor; each carries the inode id and deletion sequence undelete needs, plus the deleted name when the delete recorded one.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ListTrashRequest{
+    NamespaceID: "namespace_id",
+}
+client.Trash.List(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Maximum page size
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — Opaque trash page cursor
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## inodes
-<details><summary><code>client.Inodes.GetInode(NamespaceID, InodeID) -> *loonfs.PathEntry</code></summary>
+<details><summary><code>client.Inodes.Retrieve(NamespaceID, InodeID) -> *loonfs.PathEntry</code></summary>
 <dl>
 <dd>
 
@@ -2316,7 +1189,7 @@ request := &loonfs.GetInodeRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_123",
 }
-client.Inodes.GetInode(
+client.Inodes.Retrieve(
     context.TODO(),
     request,
 )
@@ -2362,7 +1235,7 @@ client.Inodes.GetInode(
 </dl>
 </details>
 
-<details><summary><code>client.Inodes.ListInodeChildren(NamespaceID, InodeID) -> *loonfs.ListInodeChildrenResponse</code></summary>
+<details><summary><code>client.Inodes.ListChildren(NamespaceID, InodeID) -> *loonfs.ListInodeChildrenResponse</code></summary>
 <dl>
 <dd>
 
@@ -2393,7 +1266,7 @@ request := &loonfs.ListInodeChildrenRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_123",
 }
-client.Inodes.ListInodeChildren(
+client.Inodes.ListChildren(
     context.TODO(),
     request,
 )
@@ -2455,7 +1328,7 @@ client.Inodes.ListInodeChildren(
 </dl>
 </details>
 
-<details><summary><code>client.Inodes.ListFileRevisionsByInode(NamespaceID, InodeID) -> *loonfs.ListFileRevisionsResponse</code></summary>
+<details><summary><code>client.Inodes.ListRevisions(NamespaceID, InodeID) -> *loonfs.ListFileRevisionsResponse</code></summary>
 <dl>
 <dd>
 
@@ -2486,7 +1359,7 @@ request := &loonfs.ListFileRevisionsByInodeRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_123",
 }
-client.Inodes.ListFileRevisionsByInode(
+client.Inodes.ListRevisions(
     context.TODO(),
     request,
 )
@@ -2540,7 +1413,7 @@ client.Inodes.ListFileRevisionsByInode(
 </dl>
 </details>
 
-<details><summary><code>client.Inodes.GetFileRevisionBytesByInode(NamespaceID, InodeID, RevisionNo) -> string</code></summary>
+<details><summary><code>client.Inodes.Content(NamespaceID, InodeID, RevisionNo) -> string</code></summary>
 <dl>
 <dd>
 
@@ -2572,7 +1445,7 @@ request := &loonfs.GetFileRevisionBytesByInodeRequest{
     InodeID: "inode_id",
     RevisionNo: int64(1000000),
 }
-client.Inodes.GetFileRevisionBytesByInode(
+client.Inodes.Content(
     context.TODO(),
     request,
 )
@@ -2618,7 +1491,7 @@ client.Inodes.GetFileRevisionBytesByInode(
 </dl>
 </details>
 
-<details><summary><code>client.Inodes.CreateDownloadByInode(NamespaceID, InodeID, RevisionNo, request) -> *loonfs.BeginDownloadByInodeResponse</code></summary>
+<details><summary><code>client.Inodes.CreateDownload(NamespaceID, InodeID, RevisionNo, request) -> *loonfs.BeginDownloadByInodeResponse</code></summary>
 <dl>
 <dd>
 
@@ -2653,7 +1526,7 @@ request := &loonfs.CreateDownloadByInodeRequest{
         "key": "value",
     },
 }
-client.Inodes.CreateDownloadByInode(
+client.Inodes.CreateDownload(
     context.TODO(),
     request,
 )
@@ -2707,8 +1580,310 @@ client.Inodes.CreateDownloadByInode(
 </dl>
 </details>
 
+## Snapshots
+<details><summary><code>client.Snapshots.List(NamespaceID) -> *loonfs.ListSnapshotsResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists live snapshots in snapshot-id order. Released and expired snapshots are omitted.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ListSnapshotsRequest{
+    NamespaceID: "namespace_id",
+}
+client.Snapshots.List(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Maximum page size
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — Opaque snapshot-list page cursor
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Snapshots.Create(NamespaceID, request) -> *loonfs.SnapshotSummary</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a snapshot of the current namespace state. Every call creates a new snapshot.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.CreateSnapshotRequest{
+    NamespaceID: "namespace_id",
+    Name: "name",
+    TTLMs: int64(1000000),
+}
+client.Snapshots.Create(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `string` — A label that does not need to be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ttlMs:** `int64` — Snapshot lifetime from the current server time, in milliseconds.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Snapshots.Extend(NamespaceID, SnapshotID, request) -> *loonfs.SnapshotSummary</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Extends a live snapshot without passing its lifetime limit. Repeating the request has the same result.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ExtendSnapshotRequest{
+    NamespaceID: "namespace_id",
+    SnapshotID: "snapshot_id",
+    TTLMs: int64(1000000),
+}
+client.Snapshots.Extend(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `string` — Snapshot id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ttlMs:** `int64` — Requested lifetime from the server's current time, in milliseconds.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Snapshots.Release(NamespaceID, SnapshotID) -> *loonfs.ReleaseSnapshotResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Releases a snapshot by id. Repeated releases succeed.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ReleaseSnapshotRequest{
+    NamespaceID: "namespace_id",
+    SnapshotID: "snapshot_id",
+}
+client.Snapshots.Release(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `string` — Snapshot id
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## uploads
-<details><summary><code>client.Uploads.CreateUpload(NamespaceID, request) -> *loonfs.BeginUploadResponse</code></summary>
+<details><summary><code>client.Uploads.Create(NamespaceID, request) -> *loonfs.BeginUploadResponse</code></summary>
 <dl>
 <dd>
 
@@ -2741,7 +1916,7 @@ request := &loonfs.CreateUploadRequest{
         ServiceProxied: &loonfs.BeginUploadServiceProxied{},
     },
 }
-client.Uploads.CreateUpload(
+client.Uploads.Create(
     context.TODO(),
     request,
 )
@@ -2779,7 +1954,7 @@ client.Uploads.CreateUpload(
 </dl>
 </details>
 
-<details><summary><code>client.Uploads.GetUpload(NamespaceID, UploadID) -> *loonfs.UploadSession</code></summary>
+<details><summary><code>client.Uploads.Retrieve(NamespaceID, UploadID) -> *loonfs.UploadSession</code></summary>
 <dl>
 <dd>
 
@@ -2810,7 +1985,7 @@ request := &loonfs.GetUploadRequest{
     NamespaceID: "namespace_id",
     UploadID: "upload_id",
 }
-client.Uploads.GetUpload(
+client.Uploads.Retrieve(
     context.TODO(),
     request,
 )
@@ -2848,7 +2023,7 @@ client.Uploads.GetUpload(
 </dl>
 </details>
 
-<details><summary><code>client.Uploads.AbortUpload(NamespaceID, UploadID) -> *loonfs.UploadSession</code></summary>
+<details><summary><code>client.Uploads.Abort(NamespaceID, UploadID) -> *loonfs.UploadSession</code></summary>
 <dl>
 <dd>
 
@@ -2879,7 +2054,7 @@ request := &loonfs.AbortUploadRequest{
     NamespaceID: "namespace_id",
     UploadID: "upload_id",
 }
-client.Uploads.AbortUpload(
+client.Uploads.Abort(
     context.TODO(),
     request,
 )
@@ -2917,7 +2092,7 @@ client.Uploads.AbortUpload(
 </dl>
 </details>
 
-<details><summary><code>client.Uploads.CompleteUpload(NamespaceID, UploadID, request) -> *loonfs.UploadSession</code></summary>
+<details><summary><code>client.Uploads.Complete(NamespaceID, UploadID, request) -> *loonfs.UploadSession</code></summary>
 <dl>
 <dd>
 
@@ -2951,7 +2126,7 @@ request := &loonfs.CompleteUploadBody{
         ServiceProxied: &loonfs.CompleteUploadServiceProxied{},
     },
 }
-client.Uploads.CompleteUpload(
+client.Uploads.Complete(
     context.TODO(),
     request,
 )
@@ -2997,7 +2172,7 @@ client.Uploads.CompleteUpload(
 </dl>
 </details>
 
-<details><summary><code>client.Uploads.SignUploadParts(NamespaceID, UploadID, request) -> *loonfs.SignUploadPartsResponse</code></summary>
+<details><summary><code>client.Uploads.SignParts(NamespaceID, UploadID, request) -> *loonfs.SignUploadPartsResponse</code></summary>
 <dl>
 <dd>
 
@@ -3037,7 +2212,7 @@ request := &loonfs.SignUploadPartsRequest{
         },
     },
 }
-client.Uploads.SignUploadParts(
+client.Uploads.SignParts(
     context.TODO(),
     request,
 )
@@ -3075,6 +2250,715 @@ client.Uploads.SignUploadParts(
 
 Parts to authorize and the checksum for each part. Requesting a part
 again replaces the previous upload for that part number.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Admin Checkpoints
+<details><summary><code>client.Admin.Checkpoints.List(NamespaceID) -> *loonfs.ListCheckpointsResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists one page of active checkpoints in checkpoint-id order. Expired checkpoints remain visible until collection releases them. Released checkpoints are omitted. The cursor resumes a live listing and does not create a snapshot.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &admin.ListCheckpointsRequest{
+    NamespaceID: "namespace_id",
+}
+client.Admin.Checkpoints.List(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Maximum page size
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — Opaque checkpoint-list page cursor
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Admin.Checkpoints.Create(NamespaceID, request) -> *loonfs.Checkpoint</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is released, so routine maintenance should flush the WAL instead. This is a maintenance/admin operation, not a file mutation.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &admin.CreateCheckpointRequest{
+    NamespaceID: "namespace_id",
+    Name: "name",
+}
+client.Admin.Checkpoints.Create(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `string` 
+
+Label recorded on the checkpoint record. A label, not a key: several
+records may carry the same name over different bases.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ttlMs:** `*int64` 
+
+Optional lifetime; the server computes the record's expiry from its
+own clock. Absent means the pin holds until explicitly released.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Admin.Checkpoints.Release(NamespaceID, CheckpointID) -> *loonfs.ReleaseCheckpointResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Releases a user-owned checkpoint pin by id. Idempotent: releasing an already-released or reaped record succeeds. The record is reaped by a later garbage-collection pass; its pinned data becomes collectable only on the pass after that.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &admin.ReleaseCheckpointRequest{
+    NamespaceID: "namespace_id",
+    CheckpointID: "checkpoint_id",
+}
+client.Admin.Checkpoints.Release(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**checkpointID:** `string` — Checkpoint id
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Admin Diagnostics
+<details><summary><code>client.Admin.Diagnostics.Retrieve(NamespaceID) -> *loonfs.NamespaceDiagnostics</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Returns namespace state together with the current manifest and visible WAL tail.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &admin.GetNamespaceDiagnosticsRequest{
+    NamespaceID: "namespace_id",
+}
+client.Admin.Diagnostics.Retrieve(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Admin GrepIndex
+<details><summary><code>client.Admin.GrepIndex.Retrieve(NamespaceID) -> *loonfs.GrepIndex</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Returns whether the namespace's grep index is `disabled`, `backfilling`, or `active`, including build progress when available. A namespace that has never enabled the index is `disabled`. This operation requires a deployment that maintains grep indexes and does not change the index.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &admin.GetGrepIndexRequest{
+    NamespaceID: "namespace_id",
+}
+client.Admin.GrepIndex.Retrieve(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Admin.GrepIndex.Disable(NamespaceID) -> *loonfs.GrepIndex</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Disables the namespace's grep root and clears its segment references with one durable compare-and-swap; index maintenance stops on its own once a step reads the disabled root. Explicit grep garbage collection later reclaims the segments. Idempotent. Requires this deployment to maintain the grep index.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &admin.DisableGrepIndexRequest{
+    NamespaceID: "namespace_id",
+}
+client.Admin.GrepIndex.Disable(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Admin.GrepIndex.Enable(NamespaceID) -> *loonfs.GrepIndex</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Enables the namespace's grep root and asks this deployment's maintenance runner for the backfill's first step. The response reports the lifecycle and bookkeeping read after the transition: a fresh enable is `backfilling` with the sequence its checkpoint captured, while an already-enabled namespace answers with its current status. Idempotent. Requires this deployment to maintain the grep index.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &admin.EnableGrepIndexRequest{
+    NamespaceID: "namespace_id",
+}
+client.Admin.GrepIndex.Enable(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Admin.GrepIndex.Gc(NamespaceID, request) -> *loonfs.GrepGcResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Runs one explicit garbage-collection pass over only this namespace's grep-owned extension keyspace. A tombstoned or absent namespace has aged extension state reaped; no grep garbage collection runs implicitly. `max_objects` bounds the reads the pass spends and returns a `next_cursor` when keys remain; resuming re-reads liveness and the grep root, so a cursor only skips enumeration. Requires this deployment to maintain the grep index.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &admin.GrepGcRequest{
+    NamespaceID: "namespace_id",
+}
+client.Admin.GrepIndex.Gc(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` 
+
+Opaque resume token returned as `next_cursor` by an earlier pass
+against the same namespace.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxObjects:** `*int64` 
+
+Reads this pass may spend before returning with a `next_cursor`.
+Omit to take the same per-pass default the runtime's own collection
+takes.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Admin Maintenance
+<details><summary><code>client.Admin.Maintenance.Run(NamespaceID, request) -> *loonfs.MaintenanceStepResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Runs one bounded maintenance step. Include `metadata_maintenance`, `retention`, or `gc` to select actions. Each selector is an options object, and an empty object uses server defaults. Actions run in that order, and only selected actions appear in the response. At least one action is required. A deleted namespace accepts only `gc`. GC processes up to 1024 candidates by default and returns a cursor when more work remains. A lost root update race is reported as an outcome.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &admin.MaintenanceStepRequest{
+    NamespaceID: "namespace_id",
+}
+client.Admin.Maintenance.Run(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**gc:** `*loonfs.GcRequest` 
+
+Run one bounded mark-and-sweep garbage-collection pass. Omit this
+field to skip garbage collection.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadataMaintenance:** `*loonfs.MetadataMaintenanceRequest` 
+
+Flush the visible WAL tail into metadata segments, then run one bounded
+reorganization step.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**retention:** `*loonfs.AdvanceRetentionRequest` 
+
+Advance the retention floor to the flushed manifest head. Include this
+field to select the action.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Admin Store
+<details><summary><code>client.Admin.Store.Probe(request) -> *loonfs.StoreProbeResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Proves the configured object store honours the create-if-absent, compare-and-swap, visibility, listing, and ranged-read semantics LoonFS depends on, and reports what it found check by check. Nothing runs this implicitly: a probe writes and deletes objects, all of them under a scratch prefix that is not a durable object family, and its last check deletes them and proves the prefix empty. A store that fails a check answers 200 with that check reported `failed` — the probe ran, and the answer is that the store is wrong. Optional capabilities a store declares it lacks answer `unsupported`, which is an answer rather than a fault. This route does not decide whether the deployment may serve presigned direct uploads: that trust comes from the endpoint allowlist, because a probe exercises the server's own request path and never a presigned capability handed to a client.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := map[string]any{
+    "key": "value",
+}
+client.Admin.Store.Probe(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `loonfs.StoreProbeRequest` 
     
 </dd>
 </dl>

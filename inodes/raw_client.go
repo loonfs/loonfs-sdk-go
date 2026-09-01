@@ -34,7 +34,7 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 	}
 }
 
-func (r *RawClient) GetInode(
+func (r *RawClient) Retrieve(
 	ctx context.Context,
 	request *loonfs.GetInodeRequest,
 	opts ...option.RequestOption,
@@ -87,7 +87,7 @@ func (r *RawClient) GetInode(
 	}, nil
 }
 
-func (r *RawClient) GetFileRevisionBytesByInode(
+func (r *RawClient) Content(
 	ctx context.Context,
 	request *loonfs.GetFileRevisionBytesByInodeRequest,
 	opts ...option.RequestOption,
@@ -134,7 +134,7 @@ func (r *RawClient) GetFileRevisionBytesByInode(
 	}, nil
 }
 
-func (r *RawClient) CreateDownloadByInode(
+func (r *RawClient) CreateDownload(
 	ctx context.Context,
 	request *loonfs.CreateDownloadByInodeRequest,
 	opts ...option.RequestOption,
