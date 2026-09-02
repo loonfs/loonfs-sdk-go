@@ -238,7 +238,7 @@ type ListSnapshotsResponse struct {
 	// Opaque cursor for the next page.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
 	// Live snapshot records in ascending snapshot-id order.
-	Snapshots []*SnapshotSummary `json:"snapshots" url:"snapshots"`
+	Snapshots []*Snapshot `json:"snapshots" url:"snapshots"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -261,7 +261,7 @@ func (l *ListSnapshotsResponse) GetNextCursor() *string {
 	return l.NextCursor
 }
 
-func (l *ListSnapshotsResponse) GetSnapshots() []*SnapshotSummary {
+func (l *ListSnapshotsResponse) GetSnapshots() []*Snapshot {
 	if l == nil {
 		return nil
 	}
@@ -298,7 +298,7 @@ func (l *ListSnapshotsResponse) SetNextCursor(nextCursor *string) {
 
 // SetSnapshots sets the Snapshots field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListSnapshotsResponse) SetSnapshots(snapshots []*SnapshotSummary) {
+func (l *ListSnapshotsResponse) SetSnapshots(snapshots []*Snapshot) {
 	l.Snapshots = snapshots
 	l.require(listSnapshotsResponseFieldSnapshots)
 }
@@ -450,15 +450,15 @@ func (r *ReleaseSnapshotResponse) String() string {
 
 // A live snapshot.
 var (
-	snapshotSummaryFieldCreatedAtMs = big.NewInt(1 << 0)
-	snapshotSummaryFieldExpiresAtMs = big.NewInt(1 << 1)
-	snapshotSummaryFieldHeadSeq     = big.NewInt(1 << 2)
-	snapshotSummaryFieldName        = big.NewInt(1 << 3)
-	snapshotSummaryFieldNamespaceID = big.NewInt(1 << 4)
-	snapshotSummaryFieldSnapshotID  = big.NewInt(1 << 5)
+	snapshotFieldCreatedAtMs = big.NewInt(1 << 0)
+	snapshotFieldExpiresAtMs = big.NewInt(1 << 1)
+	snapshotFieldHeadSeq     = big.NewInt(1 << 2)
+	snapshotFieldName        = big.NewInt(1 << 3)
+	snapshotFieldNamespaceID = big.NewInt(1 << 4)
+	snapshotFieldSnapshotID  = big.NewInt(1 << 5)
 )
 
-type SnapshotSummary struct {
+type Snapshot struct {
 	// Time the snapshot record was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
 	// When the snapshot lease expires, in Unix milliseconds.
@@ -479,56 +479,56 @@ type SnapshotSummary struct {
 	rawJSON         json.RawMessage
 }
 
-func (s *SnapshotSummary) GetCreatedAtMs() int64 {
+func (s *Snapshot) GetCreatedAtMs() int64 {
 	if s == nil {
 		return 0
 	}
 	return s.CreatedAtMs
 }
 
-func (s *SnapshotSummary) GetExpiresAtMs() int64 {
+func (s *Snapshot) GetExpiresAtMs() int64 {
 	if s == nil {
 		return 0
 	}
 	return s.ExpiresAtMs
 }
 
-func (s *SnapshotSummary) GetHeadSeq() ChangeSeq {
+func (s *Snapshot) GetHeadSeq() ChangeSeq {
 	if s == nil {
 		return 0
 	}
 	return s.HeadSeq
 }
 
-func (s *SnapshotSummary) GetName() string {
+func (s *Snapshot) GetName() string {
 	if s == nil {
 		return ""
 	}
 	return s.Name
 }
 
-func (s *SnapshotSummary) GetNamespaceID() NamespaceID {
+func (s *Snapshot) GetNamespaceID() NamespaceID {
 	if s == nil {
 		return ""
 	}
 	return s.NamespaceID
 }
 
-func (s *SnapshotSummary) GetSnapshotID() CheckpointID {
+func (s *Snapshot) GetSnapshotID() CheckpointID {
 	if s == nil {
 		return ""
 	}
 	return s.SnapshotID
 }
 
-func (s *SnapshotSummary) GetExtraProperties() map[string]interface{} {
+func (s *Snapshot) GetExtraProperties() map[string]interface{} {
 	if s == nil {
 		return nil
 	}
 	return s.extraProperties
 }
 
-func (s *SnapshotSummary) require(field *big.Int) {
+func (s *Snapshot) require(field *big.Int) {
 	if s.explicitFields == nil {
 		s.explicitFields = big.NewInt(0)
 	}
@@ -537,53 +537,53 @@ func (s *SnapshotSummary) require(field *big.Int) {
 
 // SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SnapshotSummary) SetCreatedAtMs(createdAtMs int64) {
+func (s *Snapshot) SetCreatedAtMs(createdAtMs int64) {
 	s.CreatedAtMs = createdAtMs
-	s.require(snapshotSummaryFieldCreatedAtMs)
+	s.require(snapshotFieldCreatedAtMs)
 }
 
 // SetExpiresAtMs sets the ExpiresAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SnapshotSummary) SetExpiresAtMs(expiresAtMs int64) {
+func (s *Snapshot) SetExpiresAtMs(expiresAtMs int64) {
 	s.ExpiresAtMs = expiresAtMs
-	s.require(snapshotSummaryFieldExpiresAtMs)
+	s.require(snapshotFieldExpiresAtMs)
 }
 
 // SetHeadSeq sets the HeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SnapshotSummary) SetHeadSeq(headSeq ChangeSeq) {
+func (s *Snapshot) SetHeadSeq(headSeq ChangeSeq) {
 	s.HeadSeq = headSeq
-	s.require(snapshotSummaryFieldHeadSeq)
+	s.require(snapshotFieldHeadSeq)
 }
 
 // SetName sets the Name field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SnapshotSummary) SetName(name string) {
+func (s *Snapshot) SetName(name string) {
 	s.Name = name
-	s.require(snapshotSummaryFieldName)
+	s.require(snapshotFieldName)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SnapshotSummary) SetNamespaceID(namespaceID NamespaceID) {
+func (s *Snapshot) SetNamespaceID(namespaceID NamespaceID) {
 	s.NamespaceID = namespaceID
-	s.require(snapshotSummaryFieldNamespaceID)
+	s.require(snapshotFieldNamespaceID)
 }
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SnapshotSummary) SetSnapshotID(snapshotID CheckpointID) {
+func (s *Snapshot) SetSnapshotID(snapshotID CheckpointID) {
 	s.SnapshotID = snapshotID
-	s.require(snapshotSummaryFieldSnapshotID)
+	s.require(snapshotFieldSnapshotID)
 }
 
-func (s *SnapshotSummary) UnmarshalJSON(data []byte) error {
-	type unmarshaler SnapshotSummary
+func (s *Snapshot) UnmarshalJSON(data []byte) error {
+	type unmarshaler Snapshot
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*s = SnapshotSummary(value)
+	*s = Snapshot(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *s)
 	if err != nil {
 		return err
@@ -593,8 +593,8 @@ func (s *SnapshotSummary) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s *SnapshotSummary) MarshalJSON() ([]byte, error) {
-	type embed SnapshotSummary
+func (s *Snapshot) MarshalJSON() ([]byte, error) {
+	type embed Snapshot
 	var marshaler = struct {
 		embed
 	}{
@@ -604,7 +604,7 @@ func (s *SnapshotSummary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (s *SnapshotSummary) String() string {
+func (s *Snapshot) String() string {
 	if s == nil {
 		return "<nil>"
 	}

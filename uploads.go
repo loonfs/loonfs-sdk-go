@@ -46,22 +46,22 @@ func (a *AbortUploadRequest) SetUploadID(uploadID string) {
 }
 
 var (
-	completeUploadBodyFieldNamespaceID = big.NewInt(1 << 0)
-	completeUploadBodyFieldUploadID    = big.NewInt(1 << 1)
+	completeUploadRequestFieldNamespaceID = big.NewInt(1 << 0)
+	completeUploadRequestFieldUploadID    = big.NewInt(1 << 1)
 )
 
-type CompleteUploadBody struct {
+type CompleteUploadRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// Upload session id
-	UploadID string                 `json:"-" url:"-"`
-	Body     *CompleteUploadRequest `json:"-" url:"-"`
+	UploadID string            `json:"-" url:"-"`
+	Body     *UploadCompletion `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (c *CompleteUploadBody) require(field *big.Int) {
+func (c *CompleteUploadRequest) require(field *big.Int) {
 	if c.explicitFields == nil {
 		c.explicitFields = big.NewInt(0)
 	}
@@ -70,20 +70,20 @@ func (c *CompleteUploadBody) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CompleteUploadBody) SetNamespaceID(namespaceID string) {
+func (c *CompleteUploadRequest) SetNamespaceID(namespaceID string) {
 	c.NamespaceID = namespaceID
-	c.require(completeUploadBodyFieldNamespaceID)
+	c.require(completeUploadRequestFieldNamespaceID)
 }
 
 // SetUploadID sets the UploadID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CompleteUploadBody) SetUploadID(uploadID string) {
+func (c *CompleteUploadRequest) SetUploadID(uploadID string) {
 	c.UploadID = uploadID
-	c.require(completeUploadBodyFieldUploadID)
+	c.require(completeUploadRequestFieldUploadID)
 }
 
-func (c *CompleteUploadBody) UnmarshalJSON(data []byte) error {
-	body := new(CompleteUploadRequest)
+func (c *CompleteUploadRequest) UnmarshalJSON(data []byte) error {
+	body := new(UploadCompletion)
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (c *CompleteUploadBody) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *CompleteUploadBody) MarshalJSON() ([]byte, error) {
+func (c *CompleteUploadRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.Body)
 }
 
@@ -1356,160 +1356,6 @@ func (c *CompleteUploadDirectPut) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Request to complete an upload session.
-//
-// `mode` must match the mode used to start the session. Direct uploads
-// include the expected content details. Multipart also includes its parts.
-type CompleteUploadRequest struct {
-	Mode            string
-	ServiceProxied  *CompleteUploadServiceProxied
-	DirectPut       *CompleteUploadDirectPut
-	DirectMultipart *CompleteUploadDirectMultipart
-
-	rawJSON json.RawMessage
-}
-
-func (c *CompleteUploadRequest) GetMode() string {
-	if c == nil {
-		return ""
-	}
-	return c.Mode
-}
-
-func (c *CompleteUploadRequest) GetServiceProxied() *CompleteUploadServiceProxied {
-	if c == nil {
-		return nil
-	}
-	return c.ServiceProxied
-}
-
-func (c *CompleteUploadRequest) GetDirectPut() *CompleteUploadDirectPut {
-	if c == nil {
-		return nil
-	}
-	return c.DirectPut
-}
-
-func (c *CompleteUploadRequest) GetDirectMultipart() *CompleteUploadDirectMultipart {
-	if c == nil {
-		return nil
-	}
-	return c.DirectMultipart
-}
-
-func (c *CompleteUploadRequest) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Mode string `json:"mode"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	c.Mode = unmarshaler.Mode
-	if unmarshaler.Mode == "" {
-		return fmt.Errorf("%T did not include discriminant mode", c)
-	}
-	switch unmarshaler.Mode {
-	case "service_proxied":
-		value := new(CompleteUploadServiceProxied)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.ServiceProxied = value
-	case "direct_put":
-		value := new(CompleteUploadDirectPut)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.DirectPut = value
-	case "direct_multipart":
-		value := new(CompleteUploadDirectMultipart)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.DirectMultipart = value
-	}
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c CompleteUploadRequest) MarshalJSON() ([]byte, error) {
-	if err := c.validate(); err != nil {
-		return nil, err
-	}
-	if c.ServiceProxied != nil {
-		return internal.MarshalJSONWithExtraProperty(c.ServiceProxied, "mode", "service_proxied")
-	}
-	if c.DirectPut != nil {
-		return internal.MarshalJSONWithExtraProperty(c.DirectPut, "mode", "direct_put")
-	}
-	if c.DirectMultipart != nil {
-		return internal.MarshalJSONWithExtraProperty(c.DirectMultipart, "mode", "direct_multipart")
-	}
-	if len(c.rawJSON) > 0 {
-		return c.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
-}
-
-type CompleteUploadRequestVisitor interface {
-	VisitServiceProxied(*CompleteUploadServiceProxied) error
-	VisitDirectPut(*CompleteUploadDirectPut) error
-	VisitDirectMultipart(*CompleteUploadDirectMultipart) error
-}
-
-func (c *CompleteUploadRequest) Accept(visitor CompleteUploadRequestVisitor) error {
-	if c.ServiceProxied != nil {
-		return visitor.VisitServiceProxied(c.ServiceProxied)
-	}
-	if c.DirectPut != nil {
-		return visitor.VisitDirectPut(c.DirectPut)
-	}
-	if c.DirectMultipart != nil {
-		return visitor.VisitDirectMultipart(c.DirectMultipart)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", c)
-}
-
-func (c *CompleteUploadRequest) validate() error {
-	if c == nil {
-		return fmt.Errorf("type %T is nil", c)
-	}
-	var fields []string
-	if c.ServiceProxied != nil {
-		fields = append(fields, "service_proxied")
-	}
-	if c.DirectPut != nil {
-		fields = append(fields, "direct_put")
-	}
-	if c.DirectMultipart != nil {
-		fields = append(fields, "direct_multipart")
-	}
-	if len(fields) == 0 {
-		if c.Mode != "" {
-			if len(c.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Mode)
-		}
-		return fmt.Errorf("type %T is empty", c)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
-	}
-	if c.Mode != "" {
-		field := fields[0]
-		if c.Mode != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				c,
-				c.Mode,
-				c,
-			)
-		}
-	}
-	return nil
-}
-
 // Complete a service-proxied upload.
 type CompleteUploadServiceProxied struct {
 
@@ -1921,6 +1767,160 @@ func (s *SignedUploadPart) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", s)
+}
+
+// Request to complete an upload session.
+//
+// `mode` must match the mode used to start the session. Direct uploads
+// include the expected content details. Multipart also includes its parts.
+type UploadCompletion struct {
+	Mode            string
+	ServiceProxied  *CompleteUploadServiceProxied
+	DirectPut       *CompleteUploadDirectPut
+	DirectMultipart *CompleteUploadDirectMultipart
+
+	rawJSON json.RawMessage
+}
+
+func (u *UploadCompletion) GetMode() string {
+	if u == nil {
+		return ""
+	}
+	return u.Mode
+}
+
+func (u *UploadCompletion) GetServiceProxied() *CompleteUploadServiceProxied {
+	if u == nil {
+		return nil
+	}
+	return u.ServiceProxied
+}
+
+func (u *UploadCompletion) GetDirectPut() *CompleteUploadDirectPut {
+	if u == nil {
+		return nil
+	}
+	return u.DirectPut
+}
+
+func (u *UploadCompletion) GetDirectMultipart() *CompleteUploadDirectMultipart {
+	if u == nil {
+		return nil
+	}
+	return u.DirectMultipart
+}
+
+func (u *UploadCompletion) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Mode string `json:"mode"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	u.Mode = unmarshaler.Mode
+	if unmarshaler.Mode == "" {
+		return fmt.Errorf("%T did not include discriminant mode", u)
+	}
+	switch unmarshaler.Mode {
+	case "service_proxied":
+		value := new(CompleteUploadServiceProxied)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.ServiceProxied = value
+	case "direct_put":
+		value := new(CompleteUploadDirectPut)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.DirectPut = value
+	case "direct_multipart":
+		value := new(CompleteUploadDirectMultipart)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.DirectMultipart = value
+	}
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u UploadCompletion) MarshalJSON() ([]byte, error) {
+	if err := u.validate(); err != nil {
+		return nil, err
+	}
+	if u.ServiceProxied != nil {
+		return internal.MarshalJSONWithExtraProperty(u.ServiceProxied, "mode", "service_proxied")
+	}
+	if u.DirectPut != nil {
+		return internal.MarshalJSONWithExtraProperty(u.DirectPut, "mode", "direct_put")
+	}
+	if u.DirectMultipart != nil {
+		return internal.MarshalJSONWithExtraProperty(u.DirectMultipart, "mode", "direct_multipart")
+	}
+	if len(u.rawJSON) > 0 {
+		return u.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", u)
+}
+
+type UploadCompletionVisitor interface {
+	VisitServiceProxied(*CompleteUploadServiceProxied) error
+	VisitDirectPut(*CompleteUploadDirectPut) error
+	VisitDirectMultipart(*CompleteUploadDirectMultipart) error
+}
+
+func (u *UploadCompletion) Accept(visitor UploadCompletionVisitor) error {
+	if u.ServiceProxied != nil {
+		return visitor.VisitServiceProxied(u.ServiceProxied)
+	}
+	if u.DirectPut != nil {
+		return visitor.VisitDirectPut(u.DirectPut)
+	}
+	if u.DirectMultipart != nil {
+		return visitor.VisitDirectMultipart(u.DirectMultipart)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", u)
+}
+
+func (u *UploadCompletion) validate() error {
+	if u == nil {
+		return fmt.Errorf("type %T is nil", u)
+	}
+	var fields []string
+	if u.ServiceProxied != nil {
+		fields = append(fields, "service_proxied")
+	}
+	if u.DirectPut != nil {
+		fields = append(fields, "direct_put")
+	}
+	if u.DirectMultipart != nil {
+		fields = append(fields, "direct_multipart")
+	}
+	if len(fields) == 0 {
+		if u.Mode != "" {
+			if len(u.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", u, u.Mode)
+		}
+		return fmt.Errorf("type %T is empty", u)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", u, fields)
+	}
+	if u.Mode != "" {
+		field := fields[0]
+		if u.Mode != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				u,
+				u.Mode,
+				u,
+			)
+		}
+	}
+	return nil
 }
 
 // Size and checksum reported by the client for a complete payload.

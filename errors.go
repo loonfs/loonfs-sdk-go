@@ -10,11 +10,11 @@ import (
 // Invalid namespace id, limit, or cursor
 type BadRequestError struct {
 	*core.APIError
-	Body *APIError
+	Body *ErrorResponse
 }
 
 func (b *BadRequestError) UnmarshalJSON(data []byte) error {
-	var body *APIError
+	var body *ErrorResponse
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -34,11 +34,11 @@ func (b *BadRequestError) Unwrap() error {
 // Lost a grep root-pointer publication race; retry
 type ConflictError struct {
 	*core.APIError
-	Body *APIError
+	Body *ErrorResponse
 }
 
 func (c *ConflictError) UnmarshalJSON(data []byte) error {
-	var body *APIError
+	var body *ErrorResponse
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -58,11 +58,11 @@ func (c *ConflictError) Unwrap() error {
 // Content exceeds the advertised `download.max_content_bytes` limit
 type ContentTooLargeError struct {
 	*core.APIError
-	Body *APIError
+	Body *ErrorResponse
 }
 
 func (c *ContentTooLargeError) UnmarshalJSON(data []byte) error {
-	var body *APIError
+	var body *ErrorResponse
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -82,11 +82,11 @@ func (c *ContentTooLargeError) Unwrap() error {
 // Namespace deleted
 type GoneError struct {
 	*core.APIError
-	Body *APIError
+	Body *ErrorResponse
 }
 
 func (g *GoneError) UnmarshalJSON(data []byte) error {
-	var body *APIError
+	var body *ErrorResponse
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -106,11 +106,11 @@ func (g *GoneError) Unwrap() error {
 // The grep index is corrupt or its backing store is unavailable
 type InternalServerError struct {
 	*core.APIError
-	Body *APIError
+	Body *ErrorResponse
 }
 
 func (i *InternalServerError) UnmarshalJSON(data []byte) error {
-	var body *APIError
+	var body *ErrorResponse
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -130,11 +130,11 @@ func (i *InternalServerError) Unwrap() error {
 // Namespace not found
 type NotFoundError struct {
 	*core.APIError
-	Body *APIError
+	Body *ErrorResponse
 }
 
 func (n *NotFoundError) UnmarshalJSON(data []byte) error {
-	var body *APIError
+	var body *ErrorResponse
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -154,11 +154,11 @@ func (n *NotFoundError) Unwrap() error {
 // This deployment does not maintain the grep index
 type NotImplementedError struct {
 	*core.APIError
-	Body *APIError
+	Body *ErrorResponse
 }
 
 func (n *NotImplementedError) UnmarshalJSON(data []byte) error {
-	var body *APIError
+	var body *ErrorResponse
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -202,11 +202,11 @@ func (s *ServiceUnavailableError) Unwrap() error {
 // Unauthorized
 type UnauthorizedError struct {
 	*core.APIError
-	Body *APIError
+	Body *ErrorResponse
 }
 
 func (u *UnauthorizedError) UnmarshalJSON(data []byte) error {
-	var body *APIError
+	var body *ErrorResponse
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}

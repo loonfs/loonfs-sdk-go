@@ -1,6 +1,6 @@
 # Releasing
 
-SDK v0.1.x targets LoonFS API v0.3.x. The repository must be public before its
+SDK v0.2.x targets LoonFS API v0.3.x. The repository must be public before its
 module can be indexed by the public Go proxy.
 
 Run the full test suite, including the generated WireMock tests documented in

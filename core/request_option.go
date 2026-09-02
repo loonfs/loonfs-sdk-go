@@ -23,9 +23,6 @@ type RequestOptions struct {
 	BodyProperties             map[string]interface{}
 	QueryParameters            url.Values
 	MaxAttempts                uint
-	MaxBufSize                 int
-	MaxStreamReconnectAttempts uint
-	DisableStreamReconnection  bool
 	DisableRetries             bool
 	Token                      string
 	TokenFunc                  func() (string, error)
@@ -117,31 +114,6 @@ type MaxAttemptsOption struct {
 
 func (m *MaxAttemptsOption) applyRequestOptions(opts *RequestOptions) {
 	opts.MaxAttempts = m.MaxAttempts
-}
-
-// MaxBufSizeOption implements the RequestOption interface.
-type MaxBufSizeOption struct {
-	MaxBufSize int
-}
-
-func (m *MaxBufSizeOption) applyRequestOptions(opts *RequestOptions) {
-	opts.MaxBufSize = m.MaxBufSize
-}
-
-// MaxStreamReconnectAttemptsOption implements the RequestOption interface.
-type MaxStreamReconnectAttemptsOption struct {
-	MaxStreamReconnectAttempts uint
-}
-
-func (m *MaxStreamReconnectAttemptsOption) applyRequestOptions(opts *RequestOptions) {
-	opts.MaxStreamReconnectAttempts = m.MaxStreamReconnectAttempts
-}
-
-// WithoutStreamReconnectionOption implements the RequestOption interface.
-type WithoutStreamReconnectionOption struct{}
-
-func (w *WithoutStreamReconnectionOption) applyRequestOptions(opts *RequestOptions) {
-	opts.DisableStreamReconnection = true
 }
 
 // WithoutRetriesOption implements the RequestOption interface.

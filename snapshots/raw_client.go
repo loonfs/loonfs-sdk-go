@@ -36,7 +36,7 @@ func (r *RawClient) Create(
 	ctx context.Context,
 	request *loonfs.CreateSnapshotRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.SnapshotSummary], error) {
+) (*core.Response[*loonfs.Snapshot], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -52,7 +52,7 @@ func (r *RawClient) Create(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *loonfs.SnapshotSummary
+	var response *loonfs.Snapshot
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -72,7 +72,7 @@ func (r *RawClient) Create(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.SnapshotSummary]{
+	return &core.Response[*loonfs.Snapshot]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -83,7 +83,7 @@ func (r *RawClient) Extend(
 	ctx context.Context,
 	request *loonfs.ExtendSnapshotRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.SnapshotSummary], error) {
+) (*core.Response[*loonfs.Snapshot], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -100,7 +100,7 @@ func (r *RawClient) Extend(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *loonfs.SnapshotSummary
+	var response *loonfs.Snapshot
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -120,7 +120,7 @@ func (r *RawClient) Extend(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.SnapshotSummary]{
+	return &core.Response[*loonfs.Snapshot]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
