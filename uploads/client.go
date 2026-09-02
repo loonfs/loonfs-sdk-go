@@ -125,10 +125,10 @@ func (c *Client) Abort(
 //
 // Example:
 //
-//	request := &loonfs.CompleteUploadBody{
+//	request := &loonfs.CompleteUploadRequest{
 //	    NamespaceID: "namespace_id",
 //	    UploadID: "upload_id",
-//	    Body: &loonfs.CompleteUploadRequest{
+//	    Body: &loonfs.UploadCompletion{
 //	        ServiceProxied: &loonfs.CompleteUploadServiceProxied{},
 //	    },
 //	}
@@ -138,7 +138,7 @@ func (c *Client) Abort(
 //	)
 func (c *Client) Complete(
 	ctx context.Context,
-	request *loonfs.CompleteUploadBody,
+	request *loonfs.CompleteUploadRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.UploadSession, error) {
 	response, err := c.WithRawResponse.Complete(

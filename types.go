@@ -236,188 +236,6 @@ func (a *AdvanceRetentionResponse) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-// HTTP error body used by LoonFS APIs.
-var (
-	aPIErrorFieldCode      = big.NewInt(1 << 0)
-	aPIErrorFieldDetails   = big.NewInt(1 << 1)
-	aPIErrorFieldFeature   = big.NewInt(1 << 2)
-	aPIErrorFieldMessage   = big.NewInt(1 << 3)
-	aPIErrorFieldParam     = big.NewInt(1 << 4)
-	aPIErrorFieldRequestID = big.NewInt(1 << 5)
-)
-
-type APIError struct {
-	// Stable machine-readable reason from the [`ErrorCode`](crate::ErrorCode)
-	// registry.
-	//
-	// Carried as a string so clients keep working when a newer server
-	// introduces a code they do not know; use
-	// [`ErrorCode::parse`](crate::ErrorCode::parse) for typed access.
-	Code string `json:"code" url:"code"`
-	// Structured context for the code, present when the failure carries
-	// machine-usable identity (API spec, "Standard error contract"). Boxed
-	// so the rare detailed error does not widen every error-carrying result.
-	Details *ErrorDetails `json:"details,omitempty" url:"details,omitempty"`
-	// For `not_supported` errors, the capability-document feature key the
-	// client should reconcile against.
-	Feature *string `json:"feature,omitempty" url:"feature,omitempty"`
-	// Human-readable error message.
-	Message string `json:"message" url:"message"`
-	// Identifies the invalid input. Body fields use JSON Pointer paths;
-	// query and path parameters use their names; CLI errors use the flag or
-	// argument as written.
-	Param *string `json:"param,omitempty" url:"param,omitempty"`
-	// Correlation id the server assigned to the failed request; the same
-	// value is sent as the `x-request-id` response header.
-	RequestID *string `json:"request_id,omitempty" url:"request_id,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (a *APIError) GetCode() string {
-	if a == nil {
-		return ""
-	}
-	return a.Code
-}
-
-func (a *APIError) GetDetails() *ErrorDetails {
-	if a == nil {
-		return nil
-	}
-	return a.Details
-}
-
-func (a *APIError) GetFeature() *string {
-	if a == nil {
-		return nil
-	}
-	return a.Feature
-}
-
-func (a *APIError) GetMessage() string {
-	if a == nil {
-		return ""
-	}
-	return a.Message
-}
-
-func (a *APIError) GetParam() *string {
-	if a == nil {
-		return nil
-	}
-	return a.Param
-}
-
-func (a *APIError) GetRequestID() *string {
-	if a == nil {
-		return nil
-	}
-	return a.RequestID
-}
-
-func (a *APIError) GetExtraProperties() map[string]interface{} {
-	if a == nil {
-		return nil
-	}
-	return a.extraProperties
-}
-
-func (a *APIError) require(field *big.Int) {
-	if a.explicitFields == nil {
-		a.explicitFields = big.NewInt(0)
-	}
-	a.explicitFields.Or(a.explicitFields, field)
-}
-
-// SetCode sets the Code field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (a *APIError) SetCode(code string) {
-	a.Code = code
-	a.require(aPIErrorFieldCode)
-}
-
-// SetDetails sets the Details field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (a *APIError) SetDetails(details *ErrorDetails) {
-	a.Details = details
-	a.require(aPIErrorFieldDetails)
-}
-
-// SetFeature sets the Feature field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (a *APIError) SetFeature(feature *string) {
-	a.Feature = feature
-	a.require(aPIErrorFieldFeature)
-}
-
-// SetMessage sets the Message field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (a *APIError) SetMessage(message string) {
-	a.Message = message
-	a.require(aPIErrorFieldMessage)
-}
-
-// SetParam sets the Param field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (a *APIError) SetParam(param *string) {
-	a.Param = param
-	a.require(aPIErrorFieldParam)
-}
-
-// SetRequestID sets the RequestID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (a *APIError) SetRequestID(requestID *string) {
-	a.RequestID = requestID
-	a.require(aPIErrorFieldRequestID)
-}
-
-func (a *APIError) UnmarshalJSON(data []byte) error {
-	type unmarshaler APIError
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*a = APIError(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *a)
-	if err != nil {
-		return err
-	}
-	a.extraProperties = extraProperties
-	a.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (a *APIError) MarshalJSON() ([]byte, error) {
-	type embed APIError
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*a),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (a *APIError) String() string {
-	if a == nil {
-		return "<nil>"
-	}
-	if len(a.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(a); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", a)
-}
-
 // Revision number for an inode's attributes. It starts at 0 and increases whenever the attribute map changes.
 type AttributeRevisionNo = int64
 
@@ -2202,6 +2020,188 @@ func (e *ErrorDetails) MarshalJSON() ([]byte, error) {
 }
 
 func (e *ErrorDetails) String() string {
+	if e == nil {
+		return "<nil>"
+	}
+	if len(e.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(e); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", e)
+}
+
+// HTTP error body used by LoonFS APIs.
+var (
+	errorResponseFieldCode      = big.NewInt(1 << 0)
+	errorResponseFieldDetails   = big.NewInt(1 << 1)
+	errorResponseFieldFeature   = big.NewInt(1 << 2)
+	errorResponseFieldMessage   = big.NewInt(1 << 3)
+	errorResponseFieldParam     = big.NewInt(1 << 4)
+	errorResponseFieldRequestID = big.NewInt(1 << 5)
+)
+
+type ErrorResponse struct {
+	// Stable machine-readable reason from the [`ErrorCode`](crate::ErrorCode)
+	// registry.
+	//
+	// Carried as a string so clients keep working when a newer server
+	// introduces a code they do not know; use
+	// [`ErrorCode::parse`](crate::ErrorCode::parse) for typed access.
+	Code string `json:"code" url:"code"`
+	// Structured context for the code, present when the failure carries
+	// machine-usable identity (API spec, "Standard error contract"). Boxed
+	// so the rare detailed error does not widen every error-carrying result.
+	Details *ErrorDetails `json:"details,omitempty" url:"details,omitempty"`
+	// For `not_supported` errors, the capability-document feature key the
+	// client should reconcile against.
+	Feature *string `json:"feature,omitempty" url:"feature,omitempty"`
+	// Human-readable error message.
+	Message string `json:"message" url:"message"`
+	// Identifies the invalid input. Body fields use JSON Pointer paths;
+	// query and path parameters use their names; CLI errors use the flag or
+	// argument as written.
+	Param *string `json:"param,omitempty" url:"param,omitempty"`
+	// Correlation id the server assigned to the failed request; the same
+	// value is sent as the `x-request-id` response header.
+	RequestID *string `json:"request_id,omitempty" url:"request_id,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (e *ErrorResponse) GetCode() string {
+	if e == nil {
+		return ""
+	}
+	return e.Code
+}
+
+func (e *ErrorResponse) GetDetails() *ErrorDetails {
+	if e == nil {
+		return nil
+	}
+	return e.Details
+}
+
+func (e *ErrorResponse) GetFeature() *string {
+	if e == nil {
+		return nil
+	}
+	return e.Feature
+}
+
+func (e *ErrorResponse) GetMessage() string {
+	if e == nil {
+		return ""
+	}
+	return e.Message
+}
+
+func (e *ErrorResponse) GetParam() *string {
+	if e == nil {
+		return nil
+	}
+	return e.Param
+}
+
+func (e *ErrorResponse) GetRequestID() *string {
+	if e == nil {
+		return nil
+	}
+	return e.RequestID
+}
+
+func (e *ErrorResponse) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
+	return e.extraProperties
+}
+
+func (e *ErrorResponse) require(field *big.Int) {
+	if e.explicitFields == nil {
+		e.explicitFields = big.NewInt(0)
+	}
+	e.explicitFields.Or(e.explicitFields, field)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorResponse) SetCode(code string) {
+	e.Code = code
+	e.require(errorResponseFieldCode)
+}
+
+// SetDetails sets the Details field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorResponse) SetDetails(details *ErrorDetails) {
+	e.Details = details
+	e.require(errorResponseFieldDetails)
+}
+
+// SetFeature sets the Feature field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorResponse) SetFeature(feature *string) {
+	e.Feature = feature
+	e.require(errorResponseFieldFeature)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorResponse) SetMessage(message string) {
+	e.Message = message
+	e.require(errorResponseFieldMessage)
+}
+
+// SetParam sets the Param field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorResponse) SetParam(param *string) {
+	e.Param = param
+	e.require(errorResponseFieldParam)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorResponse) SetRequestID(requestID *string) {
+	e.RequestID = requestID
+	e.require(errorResponseFieldRequestID)
+}
+
+func (e *ErrorResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler ErrorResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*e = ErrorResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *e)
+	if err != nil {
+		return err
+	}
+	e.extraProperties = extraProperties
+	e.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (e *ErrorResponse) MarshalJSON() ([]byte, error) {
+	type embed ErrorResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*e),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, e.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (e *ErrorResponse) String() string {
 	if e == nil {
 		return "<nil>"
 	}

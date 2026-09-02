@@ -50,7 +50,7 @@ func (c *Client) List(
 	ctx context.Context,
 	request *loonfs.ListSnapshotsRequest,
 	opts ...option.RequestOption,
-) (*core.Page[*string, *loonfs.SnapshotSummary, *loonfs.ListSnapshotsResponse], error) {
+) (*core.Page[*string, *loonfs.Snapshot, *loonfs.ListSnapshotsResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -90,11 +90,11 @@ func (c *Client) List(
 			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
 		}
 	}
-	readPageResponse := func(response *loonfs.ListSnapshotsResponse) *core.PageResponse[*string, *loonfs.SnapshotSummary, *loonfs.ListSnapshotsResponse] {
+	readPageResponse := func(response *loonfs.ListSnapshotsResponse) *core.PageResponse[*string, *loonfs.Snapshot, *loonfs.ListSnapshotsResponse] {
 		var zeroValue *string
 		next := response.GetNextCursor()
 		results := response.GetSnapshots()
-		return &core.PageResponse[*string, *loonfs.SnapshotSummary, *loonfs.ListSnapshotsResponse]{
+		return &core.PageResponse[*string, *loonfs.Snapshot, *loonfs.ListSnapshotsResponse]{
 			Results:  results,
 			Response: response,
 			Next:     next,
@@ -126,7 +126,7 @@ func (c *Client) Create(
 	ctx context.Context,
 	request *loonfs.CreateSnapshotRequest,
 	opts ...option.RequestOption,
-) (*loonfs.SnapshotSummary, error) {
+) (*loonfs.Snapshot, error) {
 	response, err := c.WithRawResponse.Create(
 		ctx,
 		request,
@@ -155,7 +155,7 @@ func (c *Client) Extend(
 	ctx context.Context,
 	request *loonfs.ExtendSnapshotRequest,
 	opts ...option.RequestOption,
-) (*loonfs.SnapshotSummary, error) {
+) (*loonfs.Snapshot, error) {
 	response, err := c.WithRawResponse.Extend(
 		ctx,
 		request,

@@ -174,7 +174,7 @@ func (r *RawClient) Abort(
 
 func (r *RawClient) Complete(
 	ctx context.Context,
-	request *loonfs.CompleteUploadBody,
+	request *loonfs.CompleteUploadRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*loonfs.UploadSession], error) {
 	options := core.NewRequestOptions(opts...)

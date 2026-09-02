@@ -171,10 +171,10 @@ func TestUploadsCompleteWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &loonfs.CompleteUploadBody{
+	request := &loonfs.CompleteUploadRequest{
 		NamespaceID: "namespace_id",
 		UploadID:    "upload_id",
-		Body: &loonfs.CompleteUploadRequest{
+		Body: &loonfs.UploadCompletion{
 			ServiceProxied: &loonfs.CompleteUploadServiceProxied{},
 		},
 	}

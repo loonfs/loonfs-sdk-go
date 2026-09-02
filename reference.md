@@ -1657,7 +1657,7 @@ client.Snapshots.List(
 </dl>
 </details>
 
-<details><summary><code>client.Snapshots.Create(NamespaceID, request) -> *loonfs.SnapshotSummary</code></summary>
+<details><summary><code>client.Snapshots.Create(NamespaceID, request) -> *loonfs.Snapshot</code></summary>
 <dl>
 <dd>
 
@@ -1735,7 +1735,7 @@ client.Snapshots.Create(
 </dl>
 </details>
 
-<details><summary><code>client.Snapshots.Extend(NamespaceID, SnapshotID, request) -> *loonfs.SnapshotSummary</code></summary>
+<details><summary><code>client.Snapshots.Extend(NamespaceID, SnapshotID, request) -> *loonfs.Snapshot</code></summary>
 <dl>
 <dd>
 
@@ -2119,10 +2119,10 @@ Completes an upload. The request mode must match the mode used to start the sess
 <dd>
 
 ```go
-request := &loonfs.CompleteUploadBody{
+request := &loonfs.CompleteUploadRequest{
     NamespaceID: "namespace_id",
     UploadID: "upload_id",
-    Body: &loonfs.CompleteUploadRequest{
+    Body: &loonfs.UploadCompletion{
         ServiceProxied: &loonfs.CompleteUploadServiceProxied{},
     },
 }
@@ -2160,7 +2160,7 @@ client.Uploads.Complete(
 <dl>
 <dd>
 
-**request:** `*loonfs.CompleteUploadRequest` 
+**request:** `*loonfs.UploadCompletion` 
     
 </dd>
 </dl>
