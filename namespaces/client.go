@@ -115,7 +115,7 @@ func (c *Client) Delete(
 	return response.Body, nil
 }
 
-// Creates a new namespace as a fork from the source namespace's current durable view.
+// Creates a new namespace from the source current head or a live snapshot.
 //
 // Example:
 //

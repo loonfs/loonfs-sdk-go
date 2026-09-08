@@ -42,7 +42,7 @@ func NewClient(options *core.RequestOptions) *Client {
 //	request := &loonfs.CreateUploadRequest{
 //	    NamespaceID: "namespace_id",
 //	    Body: &loonfs.BeginUploadRequest{
-//	        ServiceProxied: &loonfs.BeginUploadServiceProxied{},
+//	        DirectMultipart: &loonfs.BeginUploadDirectMultipart{},
 //	    },
 //	}
 //	client.Uploads.Create(
@@ -129,7 +129,25 @@ func (c *Client) Abort(
 //	    NamespaceID: "namespace_id",
 //	    UploadID: "upload_id",
 //	    Body: &loonfs.UploadCompletion{
-//	        ServiceProxied: &loonfs.CompleteUploadServiceProxied{},
+//	        DirectMultipart: &loonfs.CompleteUploadDirectMultipart{
+//	            Content: &loonfs.UploadContentClaim{
+//	                Checksum: &loonfs.Checksum{
+//	                    Algorithm: loonfs.ChecksumAlgorithmSha256,
+//	                    Value: "value",
+//	                },
+//	                SizeBytes: int64(1000000),
+//	            },
+//	            Parts: []*loonfs.CompletedUploadPart{
+//	                &loonfs.CompletedUploadPart{
+//	                    Checksum: &loonfs.Checksum{
+//	                        Algorithm: loonfs.ChecksumAlgorithmSha256,
+//	                        Value: "value",
+//	                    },
+//	                    Etag: "etag",
+//	                    PartNumber: 1,
+//	                },
+//	            },
+//	        },
 //	    },
 //	}
 //	client.Uploads.Complete(

@@ -242,7 +242,7 @@ client.Namespaces.Delete(
 <dl>
 <dd>
 
-Creates a new namespace as a fork from the source namespace's current durable view.
+Creates a new namespace from the source current head or a live snapshot.
 </dd>
 </dl>
 </dd>
@@ -288,6 +288,14 @@ client.Namespaces.Fork(
 <dd>
 
 **newNamespaceID:** `loonfs.NamespaceID` — Durable namespace id for the fork target.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.CheckpointID` — Fork from this live snapshot instead of the current head.
     
 </dd>
 </dl>
@@ -401,7 +409,7 @@ client.Changes.List(
 <dl>
 <dd>
 
-Applies one commit: an ordered, non-empty list of path operations that commit together as one logical commit, under one commit id that makes retries idempotent. A single-operation call is the one-element case. The first operation that fails aborts the whole request, and a request carrying more than one operation names that operation's position in `details.operation_index`.
+Applies one commit: an ordered, non-empty list of path operations that commit together as one logical commit, under one commit id that makes retries idempotent. Request assertions check the pre-state after receipt resolution and before operations; a failed assertion names its position in `details.assertion_index`. A single-operation call is the one-element case. The first operation that fails aborts the whole request, and a request carrying more than one operation names that operation's position in `details.operation_index`.
 </dd>
 </dl>
 </dd>
@@ -425,8 +433,9 @@ request := &loonfs.CommitRequest{
     CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
     Operations: []*loonfs.FilesystemOperation{
         &loonfs.FilesystemOperation{
-            CreateDirectory: &loonfs.FilesystemOperationCreateDirectory{
-                Path: "/docs/report.txt",
+            CopyPath: &loonfs.FilesystemOperationCopyPath{
+                FromPath: "/docs/report.txt",
+                ToPath: "/docs/report.txt",
             },
         },
     },
@@ -465,6 +474,14 @@ client.Commits.Create(
 <dl>
 <dd>
 
+**assertions:** `[]*loonfs.CommitAssertion` — Ordered admission conditions evaluated before any operations.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **commitID:** `loonfs.CommitID` — Caller-supplied idempotency key for the whole request.
     
 </dd>
@@ -473,10 +490,7 @@ client.Commits.Create(
 <dl>
 <dd>
 
-**contentTokens:** `[]*loonfs.ContentToken` 
-
-Proofs for any new external content refs introduced by this request.
-One proof covers every operation that names its content ref.
+**contentTokens:** `[]*loonfs.ContentToken` — The proofs for new external content references in this request.
     
 </dd>
 </dl>
@@ -484,12 +498,7 @@ One proof covers every operation that names its content ref.
 <dl>
 <dd>
 
-**message:** `*string` 
-
-Caller annotation recorded on the commit and reported by the change
-feed. Part of the commit's identity: reusing `commit_id` with a
-different message is a `commit_id_reuse_conflict`, exactly as it is
-for an explicit commit.
+**message:** `*string` — The caller annotation that forms part of the commit identity.
     
 </dd>
 </dl>
@@ -497,10 +506,7 @@ for an explicit commit.
 <dl>
 <dd>
 
-**operations:** `[]*loonfs.FilesystemOperation` 
-
-Ordered operations to apply. Must be non-empty; they commit all
-together or not at all.
+**operations:** `[]*loonfs.FilesystemOperation` — The non-empty ordered operations to commit atomically.
     
 </dd>
 </dl>
@@ -1913,7 +1919,7 @@ Starts an upload session for content that may later be attached to a file. Servi
 request := &loonfs.CreateUploadRequest{
     NamespaceID: "namespace_id",
     Body: &loonfs.BeginUploadRequest{
-        ServiceProxied: &loonfs.BeginUploadServiceProxied{},
+        DirectMultipart: &loonfs.BeginUploadDirectMultipart{},
     },
 }
 client.Uploads.Create(
@@ -2123,7 +2129,25 @@ request := &loonfs.CompleteUploadRequest{
     NamespaceID: "namespace_id",
     UploadID: "upload_id",
     Body: &loonfs.UploadCompletion{
-        ServiceProxied: &loonfs.CompleteUploadServiceProxied{},
+        DirectMultipart: &loonfs.CompleteUploadDirectMultipart{
+            Content: &loonfs.UploadContentClaim{
+                Checksum: &loonfs.Checksum{
+                    Algorithm: loonfs.ChecksumAlgorithmSha256,
+                    Value: "value",
+                },
+                SizeBytes: int64(1000000),
+            },
+            Parts: []*loonfs.CompletedUploadPart{
+                &loonfs.CompletedUploadPart{
+                    Checksum: &loonfs.Checksum{
+                        Algorithm: loonfs.ChecksumAlgorithmSha256,
+                        Value: "value",
+                    },
+                    Etag: "etag",
+                    PartNumber: 1,
+                },
+            },
+        },
     },
 }
 client.Uploads.Complete(
@@ -2246,10 +2270,7 @@ client.Uploads.SignParts(
 <dl>
 <dd>
 
-**parts:** `[]*loonfs.UploadPartChecksumClaim` 
-
-Parts to authorize and the checksum for each part. Requesting a part
-again replaces the previous upload for that part number.
+**parts:** `[]*loonfs.UploadPartChecksumClaim` — The parts to authorize; repeated part numbers replace their previous uploads.
     
 </dd>
 </dl>
@@ -2261,8 +2282,8 @@ again replaces the previous upload for that part number.
 </dl>
 </details>
 
-## Admin Checkpoints
-<details><summary><code>client.Admin.Checkpoints.List(NamespaceID) -> *loonfs.ListCheckpointsResponse</code></summary>
+## Maintenance Checkpoints
+<details><summary><code>client.Maintenance.Checkpoints.List(NamespaceID) -> *loonfs.ListCheckpointsResponse</code></summary>
 <dl>
 <dd>
 
@@ -2289,10 +2310,10 @@ Lists one page of active checkpoints in checkpoint-id order. Expired checkpoints
 <dd>
 
 ```go
-request := &admin.ListCheckpointsRequest{
+request := &maintenance.ListCheckpointsRequest{
     NamespaceID: "namespace_id",
 }
-client.Admin.Checkpoints.List(
+client.Maintenance.Checkpoints.List(
     context.TODO(),
     request,
 )
@@ -2338,7 +2359,7 @@ client.Admin.Checkpoints.List(
 </dl>
 </details>
 
-<details><summary><code>client.Admin.Checkpoints.Create(NamespaceID, request) -> *loonfs.Checkpoint</code></summary>
+<details><summary><code>client.Maintenance.Checkpoints.Create(NamespaceID, request) -> *loonfs.Checkpoint</code></summary>
 <dl>
 <dd>
 
@@ -2350,7 +2371,7 @@ client.Admin.Checkpoints.List(
 <dl>
 <dd>
 
-Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is released, so routine maintenance should flush the WAL instead. This is a maintenance/admin operation, not a file mutation.
+Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is released, so routine maintenance should flush the WAL instead. This is a maintenance operation, not a file mutation.
 </dd>
 </dl>
 </dd>
@@ -2365,11 +2386,11 @@ Creates a named, user-owned checkpoint record pinning the current namespace view
 <dd>
 
 ```go
-request := &admin.CreateCheckpointRequest{
+request := &maintenance.CreateCheckpointRequest{
     NamespaceID: "namespace_id",
     Name: "name",
 }
-client.Admin.Checkpoints.Create(
+client.Maintenance.Checkpoints.Create(
     context.TODO(),
     request,
 )
@@ -2395,10 +2416,7 @@ client.Admin.Checkpoints.Create(
 <dl>
 <dd>
 
-**name:** `string` 
-
-Label recorded on the checkpoint record. A label, not a key: several
-records may carry the same name over different bases.
+**name:** `string` — The non-unique label recorded on the checkpoint.
     
 </dd>
 </dl>
@@ -2406,10 +2424,7 @@ records may carry the same name over different bases.
 <dl>
 <dd>
 
-**ttlMs:** `*int64` 
-
-Optional lifetime; the server computes the record's expiry from its
-own clock. Absent means the pin holds until explicitly released.
+**ttlMs:** `*int64` — The checkpoint lifetime in milliseconds, or `None` for an explicit release only.
     
 </dd>
 </dl>
@@ -2421,7 +2436,7 @@ own clock. Absent means the pin holds until explicitly released.
 </dl>
 </details>
 
-<details><summary><code>client.Admin.Checkpoints.Release(NamespaceID, CheckpointID) -> *loonfs.ReleaseCheckpointResponse</code></summary>
+<details><summary><code>client.Maintenance.Checkpoints.Release(NamespaceID, CheckpointID) -> *loonfs.ReleaseCheckpointResponse</code></summary>
 <dl>
 <dd>
 
@@ -2448,11 +2463,11 @@ Releases a user-owned checkpoint pin by id. Idempotent: releasing an already-rel
 <dd>
 
 ```go
-request := &admin.ReleaseCheckpointRequest{
+request := &maintenance.ReleaseCheckpointRequest{
     NamespaceID: "namespace_id",
     CheckpointID: "checkpoint_id",
 }
-client.Admin.Checkpoints.Release(
+client.Maintenance.Checkpoints.Release(
     context.TODO(),
     request,
 )
@@ -2490,8 +2505,8 @@ client.Admin.Checkpoints.Release(
 </dl>
 </details>
 
-## Admin Diagnostics
-<details><summary><code>client.Admin.Diagnostics.Retrieve(NamespaceID) -> *loonfs.NamespaceDiagnostics</code></summary>
+## Maintenance Diagnostics
+<details><summary><code>client.Maintenance.Diagnostics.Retrieve(NamespaceID) -> *loonfs.NamespaceDiagnostics</code></summary>
 <dl>
 <dd>
 
@@ -2518,10 +2533,10 @@ Returns namespace state together with the current manifest and visible WAL tail.
 <dd>
 
 ```go
-request := &admin.GetNamespaceDiagnosticsRequest{
+request := &maintenance.GetNamespaceDiagnosticsRequest{
     NamespaceID: "namespace_id",
 }
-client.Admin.Diagnostics.Retrieve(
+client.Maintenance.Diagnostics.Retrieve(
     context.TODO(),
     request,
 )
@@ -2551,8 +2566,8 @@ client.Admin.Diagnostics.Retrieve(
 </dl>
 </details>
 
-## Admin GrepIndex
-<details><summary><code>client.Admin.GrepIndex.Retrieve(NamespaceID) -> *loonfs.GrepIndex</code></summary>
+## Maintenance GrepIndex
+<details><summary><code>client.Maintenance.GrepIndex.Retrieve(NamespaceID) -> *loonfs.GrepIndex</code></summary>
 <dl>
 <dd>
 
@@ -2579,10 +2594,10 @@ Returns whether the namespace's grep index is `disabled`, `backfilling`, or `act
 <dd>
 
 ```go
-request := &admin.GetGrepIndexRequest{
+request := &maintenance.GetGrepIndexRequest{
     NamespaceID: "namespace_id",
 }
-client.Admin.GrepIndex.Retrieve(
+client.Maintenance.GrepIndex.Retrieve(
     context.TODO(),
     request,
 )
@@ -2612,7 +2627,7 @@ client.Admin.GrepIndex.Retrieve(
 </dl>
 </details>
 
-<details><summary><code>client.Admin.GrepIndex.Disable(NamespaceID) -> *loonfs.GrepIndex</code></summary>
+<details><summary><code>client.Maintenance.GrepIndex.Disable(NamespaceID) -> *loonfs.GrepIndex</code></summary>
 <dl>
 <dd>
 
@@ -2639,10 +2654,10 @@ Disables the namespace's grep root and clears its segment references with one du
 <dd>
 
 ```go
-request := &admin.DisableGrepIndexRequest{
+request := &maintenance.DisableGrepIndexRequest{
     NamespaceID: "namespace_id",
 }
-client.Admin.GrepIndex.Disable(
+client.Maintenance.GrepIndex.Disable(
     context.TODO(),
     request,
 )
@@ -2672,7 +2687,7 @@ client.Admin.GrepIndex.Disable(
 </dl>
 </details>
 
-<details><summary><code>client.Admin.GrepIndex.Enable(NamespaceID) -> *loonfs.GrepIndex</code></summary>
+<details><summary><code>client.Maintenance.GrepIndex.Enable(NamespaceID) -> *loonfs.GrepIndex</code></summary>
 <dl>
 <dd>
 
@@ -2699,10 +2714,10 @@ Enables the namespace's grep root and asks this deployment's maintenance runner 
 <dd>
 
 ```go
-request := &admin.EnableGrepIndexRequest{
+request := &maintenance.EnableGrepIndexRequest{
     NamespaceID: "namespace_id",
 }
-client.Admin.GrepIndex.Enable(
+client.Maintenance.GrepIndex.Enable(
     context.TODO(),
     request,
 )
@@ -2732,7 +2747,7 @@ client.Admin.GrepIndex.Enable(
 </dl>
 </details>
 
-<details><summary><code>client.Admin.GrepIndex.Gc(NamespaceID, request) -> *loonfs.GrepGcResponse</code></summary>
+<details><summary><code>client.Maintenance.GrepIndex.Gc(NamespaceID, request) -> *loonfs.GrepGcResponse</code></summary>
 <dl>
 <dd>
 
@@ -2759,10 +2774,10 @@ Runs one explicit garbage-collection pass over only this namespace's grep-owned 
 <dd>
 
 ```go
-request := &admin.GrepGcRequest{
+request := &maintenance.GrepGcRequest{
     NamespaceID: "namespace_id",
 }
-client.Admin.GrepIndex.Gc(
+client.Maintenance.GrepIndex.Gc(
     context.TODO(),
     request,
 )
@@ -2788,10 +2803,7 @@ client.Admin.GrepIndex.Gc(
 <dl>
 <dd>
 
-**cursor:** `*string` 
-
-Opaque resume token returned as `next_cursor` by an earlier pass
-against the same namespace.
+**cursor:** `*string` — The opaque `next_cursor` returned by an earlier pass for the same namespace.
     
 </dd>
 </dl>
@@ -2799,11 +2811,7 @@ against the same namespace.
 <dl>
 <dd>
 
-**maxObjects:** `*int64` 
-
-Reads this pass may spend before returning with a `next_cursor`.
-Omit to take the same per-pass default the runtime's own collection
-takes.
+**maxObjects:** `*int64` — The maximum reads for this pass, or `None` for the server default.
     
 </dd>
 </dl>
@@ -2815,8 +2823,8 @@ takes.
 </dl>
 </details>
 
-## Admin Maintenance
-<details><summary><code>client.Admin.Maintenance.Run(NamespaceID, request) -> *loonfs.MaintenanceStepResponse</code></summary>
+## Maintenance Runs
+<details><summary><code>client.Maintenance.Runs.Create(NamespaceID, request) -> *loonfs.RunMaintenanceResponse</code></summary>
 <dl>
 <dd>
 
@@ -2828,7 +2836,7 @@ takes.
 <dl>
 <dd>
 
-Runs one bounded maintenance step. Include `metadata_maintenance`, `retention`, or `gc` to select actions. Each selector is an options object, and an empty object uses server defaults. Actions run in that order, and only selected actions appear in the response. At least one action is required. A deleted namespace accepts only `gc`. GC processes up to 1024 candidates by default and returns a cursor when more work remains. A lost root update race is reported as an outcome.
+Runs one maintenance job for the namespace. The body names the job with `kind`: `metadata`, `metadata_compaction`, `gc`, or `retention`. The response carries the same `kind` and that job's result. A deleted namespace accepts only `gc`. A `gc` call performs up to 1024 durable work steps unless `max_steps` says otherwise, and returns a cursor when work remains. Steps include marking, merging, and sweeping; the budget does not count object-store requests.
 </dd>
 </dl>
 </dd>
@@ -2843,10 +2851,13 @@ Runs one bounded maintenance step. Include `metadata_maintenance`, `retention`, 
 <dd>
 
 ```go
-request := &admin.MaintenanceStepRequest{
+request := &maintenance.CreateRunsRequest{
     NamespaceID: "namespace_id",
+    Body: &loonfs.RunMaintenanceRequest{
+        Gc: &loonfs.RunMaintenanceRequestGc{},
+    },
 }
-client.Admin.Maintenance.Run(
+client.Maintenance.Runs.Create(
     context.TODO(),
     request,
 )
@@ -2872,32 +2883,7 @@ client.Admin.Maintenance.Run(
 <dl>
 <dd>
 
-**gc:** `*loonfs.GcRequest` 
-
-Run one bounded mark-and-sweep garbage-collection pass. Omit this
-field to skip garbage collection.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**metadataMaintenance:** `*loonfs.MetadataMaintenanceRequest` 
-
-Flush the visible WAL tail into metadata segments, then run one bounded
-reorganization step.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**retention:** `*loonfs.AdvanceRetentionRequest` 
-
-Advance the retention floor to the flushed manifest head. Include this
-field to select the action.
+**request:** `*loonfs.RunMaintenanceRequest` 
     
 </dd>
 </dl>
@@ -2909,8 +2895,8 @@ field to select the action.
 </dl>
 </details>
 
-## Admin Store
-<details><summary><code>client.Admin.Store.Probe(request) -> *loonfs.StoreProbeResponse</code></summary>
+## Maintenance Store
+<details><summary><code>client.Maintenance.Store.Probe(request) -> *loonfs.StoreProbeResponse</code></summary>
 <dl>
 <dd>
 
@@ -2940,7 +2926,7 @@ Proves the configured object store honours the create-if-absent, compare-and-swa
 request := map[string]any{
     "key": "value",
 }
-client.Admin.Store.Probe(
+client.Maintenance.Store.Probe(
     context.TODO(),
     request,
 )

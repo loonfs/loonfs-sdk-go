@@ -426,18 +426,9 @@ func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *CheckpointID) {
 	g.require(getPathEntryRequestFieldSnapshotID)
 }
 
-// A short-lived capability to read one file's content object, plus
-// everything the reader needs to check what arrives.
+// A presigned URL for one content object.
 //
-// The raw object key is deliberately not here, exactly as it is not in a
-// `direct_put` grant: a client learns a URL that expires, not an address it
-// can revisit.
-//
-// The grant names one immutable content object, so it does not go stale
-// when the path moves on. A commit that replaces the file writes a new
-// object and leaves this one alone; what the capability reads is what the
-// requested revision held when the grant was issued, and the reference
-// says which bytes those are.
+// The URL expires at `access.expires_at_ms`; later path changes do not change the object.
 var (
 	beginDownloadResponseFieldAccess      = big.NewInt(1 << 0)
 	beginDownloadResponseFieldContentRef  = big.NewInt(1 << 1)
@@ -449,10 +440,7 @@ var (
 type BeginDownloadResponse struct {
 	// Short-lived read capability the client uses without learning the raw object key.
 	Access *ObjectTransferAccess `json:"access" url:"access"`
-	// Identity, byte length, and checksum evidence for the object the
-	// capability reads. A reader checks the bytes it receives against
-	// `size_bytes` and recomputes `checksum.algorithm` over the complete
-	// payload.
+	// The identity, byte length, and checksum of the object to download.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// Namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
@@ -608,8 +596,8 @@ var (
 type GrepMatch struct {
 	// Byte offset of the match within the file.
 	ByteOffset int64 `json:"byte_offset" url:"byte_offset"`
-	// Stable inode ID within a namespace
-	InodeID string `json:"inode_id" url:"inode_id"`
+	// Durable identity of the matched file.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// The matching line, truncated to the server's line cap.
 	Line string `json:"line" url:"line"`
 	// One-based line number of the match.
@@ -635,7 +623,7 @@ func (g *GrepMatch) GetByteOffset() int64 {
 	return g.ByteOffset
 }
 
-func (g *GrepMatch) GetInodeID() string {
+func (g *GrepMatch) GetInodeID() InodeID {
 	if g == nil {
 		return ""
 	}
@@ -700,7 +688,7 @@ func (g *GrepMatch) SetByteOffset(byteOffset int64) {
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepMatch) SetInodeID(inodeID string) {
+func (g *GrepMatch) SetInodeID(inodeID InodeID) {
 	g.InodeID = inodeID
 	g.require(grepMatchFieldInodeID)
 }
@@ -795,21 +783,15 @@ var (
 type GrepResponse struct {
 	// Commits at or below this sequence were answered from the index.
 	BuiltThroughSeq ChangeSeq `json:"built_through_seq" url:"built_through_seq"`
-	// Sequence this page was evaluated at. Pages are evaluated against
-	// the namespace head at page time; the cursor is an ordering resume,
-	// not a snapshot pin.
+	// The namespace head sequence used to evaluate this page.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Matches in ascending `(inode_id, byte_offset)` order. A page may
-	// return fewer matches than its limit and still carry a cursor: the
-	// per-page verified-candidate budget bounds how much content one
-	// request reads, whatever the plan's false-positive rate.
+	// The matches in ascending `(inode_id, byte_offset)` order.
 	Matches []*GrepMatch `json:"matches" url:"matches"`
 	// Namespace searched.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Present when another page follows.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
-	// True when revisions after `built_through_seq` were scanned
-	// exhaustively; false only when `allow_stale` skipped them.
+	// Whether revisions after `built_through_seq` were scanned exhaustively.
 	TailScanned bool `json:"tail_scanned" url:"tail_scanned"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -959,11 +941,7 @@ func (g *GrepResponse) String() string {
 	return fmt.Sprintf("%#v", g)
 }
 
-// One directory listing and the namespace head it was answered at.
-//
-// The envelope names the listing target and head so an empty directory
-// still tells the caller which state it observed, and so the response can
-// grow without reshaping `entries`.
+// One directory listing and the namespace head used to read it.
 var (
 	listPathEntriesResponseFieldEntries     = big.NewInt(1 << 0)
 	listPathEntriesResponseFieldHeadSeq     = big.NewInt(1 << 1)
@@ -973,10 +951,7 @@ var (
 )
 
 type ListPathEntriesResponse struct {
-	// Directory entries for this page.
-	//
-	// Entries are returned in canonical name-key order. Higher-level display
-	// surfaces may sort entries separately for presentation.
+	// The directory entries in canonical name-key order.
 	Entries []*PathEntry `json:"entries" url:"entries"`
 	// Namespace head sequence this listing was read from.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`

@@ -7,7 +7,7 @@ import (
 	core "github.com/loonfs/loonfs-sdk-go/core"
 )
 
-// Invalid namespace id, limit, or cursor
+// Unknown query parameter
 type BadRequestError struct {
 	*core.APIError
 	Body *ErrorResponse
@@ -175,7 +175,7 @@ func (n *NotImplementedError) Unwrap() error {
 	return n.APIError
 }
 
-// The server cannot complete the request now. Inspect `code` to determine whether the cause is a deadline, shutdown, load, required maintenance, or invalid storage credentials. A mutation may still complete after a deadline or lost acknowledgment, so determine its outcome before retrying.
+// The server cannot complete the request now. Inspect `code` to determine whether the cause is a deadline, shutdown, load, writer-session admission, required maintenance, or invalid storage credentials. A mutation may still complete after a deadline or lost acknowledgment, so determine its outcome before retrying.
 type ServiceUnavailableError struct {
 	*core.APIError
 	Body any
