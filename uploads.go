@@ -182,8 +182,7 @@ type SignUploadPartsRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// Upload session id
 	UploadID string `json:"-" url:"-"`
-	// Parts to authorize and the checksum for each part. Requesting a part
-	// again replaces the previous upload for that part number.
+	// The parts to authorize; repeated part numbers replace their previous uploads.
 	Parts []*UploadPartChecksumClaim `json:"parts" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -245,8 +244,7 @@ var (
 )
 
 type BeginUploadDirectMultipart struct {
-	// Byte length of every part except the last. The server uses its
-	// default when this is omitted.
+	// The byte length of every part except the last, or `None` for the server default.
 	PartSizeBytes *int64 `json:"part_size_bytes,omitempty" url:"part_size_bytes,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -412,15 +410,12 @@ func (b *BeginUploadDirectPut) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
-// Request to start an upload session, tagged by transport mode.
-//
-// Each variant contains only fields valid for that transport, so invalid
-// combinations are rejected during decoding. The `mode` field is required.
+// A request to start an upload session for one required transport mode.
 type BeginUploadRequest struct {
 	Mode            string
-	ServiceProxied  *BeginUploadServiceProxied
-	DirectPut       *BeginUploadDirectPut
 	DirectMultipart *BeginUploadDirectMultipart
+	DirectPut       *BeginUploadDirectPut
+	ServiceProxied  *BeginUploadServiceProxied
 
 	rawJSON json.RawMessage
 }
@@ -432,11 +427,11 @@ func (b *BeginUploadRequest) GetMode() string {
 	return b.Mode
 }
 
-func (b *BeginUploadRequest) GetServiceProxied() *BeginUploadServiceProxied {
+func (b *BeginUploadRequest) GetDirectMultipart() *BeginUploadDirectMultipart {
 	if b == nil {
 		return nil
 	}
-	return b.ServiceProxied
+	return b.DirectMultipart
 }
 
 func (b *BeginUploadRequest) GetDirectPut() *BeginUploadDirectPut {
@@ -446,11 +441,11 @@ func (b *BeginUploadRequest) GetDirectPut() *BeginUploadDirectPut {
 	return b.DirectPut
 }
 
-func (b *BeginUploadRequest) GetDirectMultipart() *BeginUploadDirectMultipart {
+func (b *BeginUploadRequest) GetServiceProxied() *BeginUploadServiceProxied {
 	if b == nil {
 		return nil
 	}
-	return b.DirectMultipart
+	return b.ServiceProxied
 }
 
 func (b *BeginUploadRequest) UnmarshalJSON(data []byte) error {
@@ -465,24 +460,24 @@ func (b *BeginUploadRequest) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant mode", b)
 	}
 	switch unmarshaler.Mode {
-	case "service_proxied":
-		value := new(BeginUploadServiceProxied)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		b.ServiceProxied = value
-	case "direct_put":
-		value := new(BeginUploadDirectPut)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		b.DirectPut = value
 	case "direct_multipart":
 		value := new(BeginUploadDirectMultipart)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		b.DirectMultipart = value
+	case "direct_put":
+		value := new(BeginUploadDirectPut)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		b.DirectPut = value
+	case "service_proxied":
+		value := new(BeginUploadServiceProxied)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		b.ServiceProxied = value
 	}
 	b.rawJSON = json.RawMessage(data)
 	return nil
@@ -492,14 +487,14 @@ func (b BeginUploadRequest) MarshalJSON() ([]byte, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
 	}
-	if b.ServiceProxied != nil {
-		return internal.MarshalJSONWithExtraProperty(b.ServiceProxied, "mode", "service_proxied")
+	if b.DirectMultipart != nil {
+		return internal.MarshalJSONWithExtraProperty(b.DirectMultipart, "mode", "direct_multipart")
 	}
 	if b.DirectPut != nil {
 		return internal.MarshalJSONWithExtraProperty(b.DirectPut, "mode", "direct_put")
 	}
-	if b.DirectMultipart != nil {
-		return internal.MarshalJSONWithExtraProperty(b.DirectMultipart, "mode", "direct_multipart")
+	if b.ServiceProxied != nil {
+		return internal.MarshalJSONWithExtraProperty(b.ServiceProxied, "mode", "service_proxied")
 	}
 	if len(b.rawJSON) > 0 {
 		return b.rawJSON, nil
@@ -508,20 +503,20 @@ func (b BeginUploadRequest) MarshalJSON() ([]byte, error) {
 }
 
 type BeginUploadRequestVisitor interface {
-	VisitServiceProxied(*BeginUploadServiceProxied) error
-	VisitDirectPut(*BeginUploadDirectPut) error
 	VisitDirectMultipart(*BeginUploadDirectMultipart) error
+	VisitDirectPut(*BeginUploadDirectPut) error
+	VisitServiceProxied(*BeginUploadServiceProxied) error
 }
 
 func (b *BeginUploadRequest) Accept(visitor BeginUploadRequestVisitor) error {
-	if b.ServiceProxied != nil {
-		return visitor.VisitServiceProxied(b.ServiceProxied)
+	if b.DirectMultipart != nil {
+		return visitor.VisitDirectMultipart(b.DirectMultipart)
 	}
 	if b.DirectPut != nil {
 		return visitor.VisitDirectPut(b.DirectPut)
 	}
-	if b.DirectMultipart != nil {
-		return visitor.VisitDirectMultipart(b.DirectMultipart)
+	if b.ServiceProxied != nil {
+		return visitor.VisitServiceProxied(b.ServiceProxied)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", b)
 }
@@ -531,14 +526,14 @@ func (b *BeginUploadRequest) validate() error {
 		return fmt.Errorf("type %T is nil", b)
 	}
 	var fields []string
-	if b.ServiceProxied != nil {
-		fields = append(fields, "service_proxied")
+	if b.DirectMultipart != nil {
+		fields = append(fields, "direct_multipart")
 	}
 	if b.DirectPut != nil {
 		fields = append(fields, "direct_put")
 	}
-	if b.DirectMultipart != nil {
-		fields = append(fields, "direct_multipart")
+	if b.ServiceProxied != nil {
+		fields = append(fields, "service_proxied")
 	}
 	if len(fields) == 0 {
 		if b.Mode != "" {
@@ -566,15 +561,12 @@ func (b *BeginUploadRequest) validate() error {
 	return nil
 }
 
-// Response to starting an upload session, tagged by transport mode.
-//
-// Each variant contains only the fields needed by that transport. Unknown
-// response fields are accepted for forward compatibility.
+// The response from starting an upload session for one transport mode.
 type BeginUploadResponse struct {
 	Mode            string
-	ServiceProxied  *BeginUploadResponseServiceProxied
-	DirectPut       *BeginUploadResponseDirectPut
 	DirectMultipart *BeginUploadResponseDirectMultipart
+	DirectPut       *BeginUploadResponseDirectPut
+	ServiceProxied  *BeginUploadResponseServiceProxied
 
 	rawJSON json.RawMessage
 }
@@ -586,11 +578,11 @@ func (b *BeginUploadResponse) GetMode() string {
 	return b.Mode
 }
 
-func (b *BeginUploadResponse) GetServiceProxied() *BeginUploadResponseServiceProxied {
+func (b *BeginUploadResponse) GetDirectMultipart() *BeginUploadResponseDirectMultipart {
 	if b == nil {
 		return nil
 	}
-	return b.ServiceProxied
+	return b.DirectMultipart
 }
 
 func (b *BeginUploadResponse) GetDirectPut() *BeginUploadResponseDirectPut {
@@ -600,11 +592,11 @@ func (b *BeginUploadResponse) GetDirectPut() *BeginUploadResponseDirectPut {
 	return b.DirectPut
 }
 
-func (b *BeginUploadResponse) GetDirectMultipart() *BeginUploadResponseDirectMultipart {
+func (b *BeginUploadResponse) GetServiceProxied() *BeginUploadResponseServiceProxied {
 	if b == nil {
 		return nil
 	}
-	return b.DirectMultipart
+	return b.ServiceProxied
 }
 
 func (b *BeginUploadResponse) UnmarshalJSON(data []byte) error {
@@ -619,24 +611,24 @@ func (b *BeginUploadResponse) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant mode", b)
 	}
 	switch unmarshaler.Mode {
-	case "service_proxied":
-		value := new(BeginUploadResponseServiceProxied)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		b.ServiceProxied = value
-	case "direct_put":
-		value := new(BeginUploadResponseDirectPut)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		b.DirectPut = value
 	case "direct_multipart":
 		value := new(BeginUploadResponseDirectMultipart)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		b.DirectMultipart = value
+	case "direct_put":
+		value := new(BeginUploadResponseDirectPut)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		b.DirectPut = value
+	case "service_proxied":
+		value := new(BeginUploadResponseServiceProxied)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		b.ServiceProxied = value
 	}
 	b.rawJSON = json.RawMessage(data)
 	return nil
@@ -646,14 +638,14 @@ func (b BeginUploadResponse) MarshalJSON() ([]byte, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
 	}
-	if b.ServiceProxied != nil {
-		return internal.MarshalJSONWithExtraProperty(b.ServiceProxied, "mode", "service_proxied")
+	if b.DirectMultipart != nil {
+		return internal.MarshalJSONWithExtraProperty(b.DirectMultipart, "mode", "direct_multipart")
 	}
 	if b.DirectPut != nil {
 		return internal.MarshalJSONWithExtraProperty(b.DirectPut, "mode", "direct_put")
 	}
-	if b.DirectMultipart != nil {
-		return internal.MarshalJSONWithExtraProperty(b.DirectMultipart, "mode", "direct_multipart")
+	if b.ServiceProxied != nil {
+		return internal.MarshalJSONWithExtraProperty(b.ServiceProxied, "mode", "service_proxied")
 	}
 	if len(b.rawJSON) > 0 {
 		return b.rawJSON, nil
@@ -662,20 +654,20 @@ func (b BeginUploadResponse) MarshalJSON() ([]byte, error) {
 }
 
 type BeginUploadResponseVisitor interface {
-	VisitServiceProxied(*BeginUploadResponseServiceProxied) error
-	VisitDirectPut(*BeginUploadResponseDirectPut) error
 	VisitDirectMultipart(*BeginUploadResponseDirectMultipart) error
+	VisitDirectPut(*BeginUploadResponseDirectPut) error
+	VisitServiceProxied(*BeginUploadResponseServiceProxied) error
 }
 
 func (b *BeginUploadResponse) Accept(visitor BeginUploadResponseVisitor) error {
-	if b.ServiceProxied != nil {
-		return visitor.VisitServiceProxied(b.ServiceProxied)
+	if b.DirectMultipart != nil {
+		return visitor.VisitDirectMultipart(b.DirectMultipart)
 	}
 	if b.DirectPut != nil {
 		return visitor.VisitDirectPut(b.DirectPut)
 	}
-	if b.DirectMultipart != nil {
-		return visitor.VisitDirectMultipart(b.DirectMultipart)
+	if b.ServiceProxied != nil {
+		return visitor.VisitServiceProxied(b.ServiceProxied)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", b)
 }
@@ -685,14 +677,14 @@ func (b *BeginUploadResponse) validate() error {
 		return fmt.Errorf("type %T is nil", b)
 	}
 	var fields []string
-	if b.ServiceProxied != nil {
-		fields = append(fields, "service_proxied")
+	if b.DirectMultipart != nil {
+		fields = append(fields, "direct_multipart")
 	}
 	if b.DirectPut != nil {
 		fields = append(fields, "direct_put")
 	}
-	if b.DirectMultipart != nil {
-		fields = append(fields, "direct_multipart")
+	if b.ServiceProxied != nil {
+		fields = append(fields, "service_proxied")
 	}
 	if len(fields) == 0 {
 		if b.Mode != "" {
@@ -733,12 +725,9 @@ type BeginUploadResponseDirectMultipart struct {
 	ChecksumAlgorithm ChecksumAlgorithm `json:"checksum_algorithm" url:"checksum_algorithm"`
 	// Namespace authorized to consume the eventual staged content.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Byte length of every part except the last. At most 10,000 parts
-	// may be uploaded, so this bounds the object at 10,000 times the
-	// part size.
+	// The byte length of every part except the last, with at most 10,000 parts allowed.
 	PartSizeBytes int64 `json:"part_size_bytes" url:"part_size_bytes"`
-	// Durable session identity used by subsequent part-signing and
-	// completion calls.
+	// The session identity used by later part-signing and completion calls.
 	UploadID UploadID `json:"upload_id" url:"upload_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1006,8 +995,7 @@ var (
 type BeginUploadResponseServiceProxied struct {
 	// Namespace authorized to consume the eventual staged content.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Durable session identity used by subsequent append and completion
-	// calls.
+	// The session identity used by later append and completion calls.
 	UploadID UploadID `json:"upload_id" url:"upload_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1422,11 +1410,7 @@ func (c *CompleteUploadServiceProxied) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// One uploaded part, as the client observed the provider accept it.
-//
-// The server keeps no durable record of any part. Part bookkeeping is the
-// client's, exactly as it is in the provider's own multipart API, and this
-// is where the client hands it back.
+// One uploaded part accepted by the object-store provider.
 var (
 	completedUploadPartFieldChecksum   = big.NewInt(1 << 0)
 	completedUploadPartFieldEtag       = big.NewInt(1 << 1)
@@ -1769,15 +1753,12 @@ func (s *SignedUploadPart) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// Request to complete an upload session.
-//
-// `mode` must match the mode used to start the session. Direct uploads
-// include the expected content details. Multipart also includes its parts.
+// A request to complete an upload session using the mode that started it.
 type UploadCompletion struct {
 	Mode            string
-	ServiceProxied  *CompleteUploadServiceProxied
-	DirectPut       *CompleteUploadDirectPut
 	DirectMultipart *CompleteUploadDirectMultipart
+	DirectPut       *CompleteUploadDirectPut
+	ServiceProxied  *CompleteUploadServiceProxied
 
 	rawJSON json.RawMessage
 }
@@ -1789,11 +1770,11 @@ func (u *UploadCompletion) GetMode() string {
 	return u.Mode
 }
 
-func (u *UploadCompletion) GetServiceProxied() *CompleteUploadServiceProxied {
+func (u *UploadCompletion) GetDirectMultipart() *CompleteUploadDirectMultipart {
 	if u == nil {
 		return nil
 	}
-	return u.ServiceProxied
+	return u.DirectMultipart
 }
 
 func (u *UploadCompletion) GetDirectPut() *CompleteUploadDirectPut {
@@ -1803,11 +1784,11 @@ func (u *UploadCompletion) GetDirectPut() *CompleteUploadDirectPut {
 	return u.DirectPut
 }
 
-func (u *UploadCompletion) GetDirectMultipart() *CompleteUploadDirectMultipart {
+func (u *UploadCompletion) GetServiceProxied() *CompleteUploadServiceProxied {
 	if u == nil {
 		return nil
 	}
-	return u.DirectMultipart
+	return u.ServiceProxied
 }
 
 func (u *UploadCompletion) UnmarshalJSON(data []byte) error {
@@ -1822,24 +1803,24 @@ func (u *UploadCompletion) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant mode", u)
 	}
 	switch unmarshaler.Mode {
-	case "service_proxied":
-		value := new(CompleteUploadServiceProxied)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.ServiceProxied = value
-	case "direct_put":
-		value := new(CompleteUploadDirectPut)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.DirectPut = value
 	case "direct_multipart":
 		value := new(CompleteUploadDirectMultipart)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		u.DirectMultipart = value
+	case "direct_put":
+		value := new(CompleteUploadDirectPut)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.DirectPut = value
+	case "service_proxied":
+		value := new(CompleteUploadServiceProxied)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.ServiceProxied = value
 	}
 	u.rawJSON = json.RawMessage(data)
 	return nil
@@ -1849,14 +1830,14 @@ func (u UploadCompletion) MarshalJSON() ([]byte, error) {
 	if err := u.validate(); err != nil {
 		return nil, err
 	}
-	if u.ServiceProxied != nil {
-		return internal.MarshalJSONWithExtraProperty(u.ServiceProxied, "mode", "service_proxied")
+	if u.DirectMultipart != nil {
+		return internal.MarshalJSONWithExtraProperty(u.DirectMultipart, "mode", "direct_multipart")
 	}
 	if u.DirectPut != nil {
 		return internal.MarshalJSONWithExtraProperty(u.DirectPut, "mode", "direct_put")
 	}
-	if u.DirectMultipart != nil {
-		return internal.MarshalJSONWithExtraProperty(u.DirectMultipart, "mode", "direct_multipart")
+	if u.ServiceProxied != nil {
+		return internal.MarshalJSONWithExtraProperty(u.ServiceProxied, "mode", "service_proxied")
 	}
 	if len(u.rawJSON) > 0 {
 		return u.rawJSON, nil
@@ -1865,20 +1846,20 @@ func (u UploadCompletion) MarshalJSON() ([]byte, error) {
 }
 
 type UploadCompletionVisitor interface {
-	VisitServiceProxied(*CompleteUploadServiceProxied) error
-	VisitDirectPut(*CompleteUploadDirectPut) error
 	VisitDirectMultipart(*CompleteUploadDirectMultipart) error
+	VisitDirectPut(*CompleteUploadDirectPut) error
+	VisitServiceProxied(*CompleteUploadServiceProxied) error
 }
 
 func (u *UploadCompletion) Accept(visitor UploadCompletionVisitor) error {
-	if u.ServiceProxied != nil {
-		return visitor.VisitServiceProxied(u.ServiceProxied)
+	if u.DirectMultipart != nil {
+		return visitor.VisitDirectMultipart(u.DirectMultipart)
 	}
 	if u.DirectPut != nil {
 		return visitor.VisitDirectPut(u.DirectPut)
 	}
-	if u.DirectMultipart != nil {
-		return visitor.VisitDirectMultipart(u.DirectMultipart)
+	if u.ServiceProxied != nil {
+		return visitor.VisitServiceProxied(u.ServiceProxied)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", u)
 }
@@ -1888,14 +1869,14 @@ func (u *UploadCompletion) validate() error {
 		return fmt.Errorf("type %T is nil", u)
 	}
 	var fields []string
-	if u.ServiceProxied != nil {
-		fields = append(fields, "service_proxied")
+	if u.DirectMultipart != nil {
+		fields = append(fields, "direct_multipart")
 	}
 	if u.DirectPut != nil {
 		fields = append(fields, "direct_put")
 	}
-	if u.DirectMultipart != nil {
-		fields = append(fields, "direct_multipart")
+	if u.ServiceProxied != nil {
+		fields = append(fields, "service_proxied")
 	}
 	if len(fields) == 0 {
 		if u.Mode != "" {
@@ -1923,10 +1904,7 @@ func (u *UploadCompletion) validate() error {
 	return nil
 }
 
-// Size and checksum reported by the client for a complete payload.
-//
-// Direct uploads provide this at completion. The server verifies it against
-// the object stored by the provider.
+// The size and checksum reported for a complete direct-upload payload.
 var (
 	uploadContentClaimFieldChecksum  = big.NewInt(1 << 0)
 	uploadContentClaimFieldSizeBytes = big.NewInt(1 << 1)
@@ -2178,8 +2156,7 @@ func (u UploadMode) Ptr() *UploadMode {
 	return &u
 }
 
-// One part's checksum, supplied by the client so the server can sign it
-// into that part's upload URL.
+// One upload part number and its checksum.
 var (
 	uploadPartChecksumClaimFieldChecksum   = big.NewInt(1 << 0)
 	uploadPartChecksumClaimFieldPartNumber = big.NewInt(1 << 1)
@@ -2285,9 +2262,9 @@ func (u *UploadPartChecksumClaim) String() string {
 // Current view of one upload session.
 type UploadSession struct {
 	Status    string
-	Open      *UploadSessionStatusOpen
-	Completed *UploadSessionStatusCompleted
 	Aborted   *UploadSessionStatusAborted
+	Completed *UploadSessionStatusCompleted
+	Open      *UploadSessionStatusOpen
 
 	rawJSON json.RawMessage
 }
@@ -2299,11 +2276,11 @@ func (u *UploadSession) GetStatus() string {
 	return u.Status
 }
 
-func (u *UploadSession) GetOpen() *UploadSessionStatusOpen {
+func (u *UploadSession) GetAborted() *UploadSessionStatusAborted {
 	if u == nil {
 		return nil
 	}
-	return u.Open
+	return u.Aborted
 }
 
 func (u *UploadSession) GetCompleted() *UploadSessionStatusCompleted {
@@ -2313,11 +2290,11 @@ func (u *UploadSession) GetCompleted() *UploadSessionStatusCompleted {
 	return u.Completed
 }
 
-func (u *UploadSession) GetAborted() *UploadSessionStatusAborted {
+func (u *UploadSession) GetOpen() *UploadSessionStatusOpen {
 	if u == nil {
 		return nil
 	}
-	return u.Aborted
+	return u.Open
 }
 
 func (u *UploadSession) UnmarshalJSON(data []byte) error {
@@ -2332,24 +2309,24 @@ func (u *UploadSession) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant status", u)
 	}
 	switch unmarshaler.Status {
-	case "open":
-		value := new(UploadSessionStatusOpen)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.Open = value
-	case "completed":
-		value := new(UploadSessionStatusCompleted)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.Completed = value
 	case "aborted":
 		value := new(UploadSessionStatusAborted)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		u.Aborted = value
+	case "completed":
+		value := new(UploadSessionStatusCompleted)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.Completed = value
+	case "open":
+		value := new(UploadSessionStatusOpen)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.Open = value
 	}
 	u.rawJSON = json.RawMessage(data)
 	return nil
@@ -2359,14 +2336,14 @@ func (u UploadSession) MarshalJSON() ([]byte, error) {
 	if err := u.validate(); err != nil {
 		return nil, err
 	}
-	if u.Open != nil {
-		return internal.MarshalJSONWithExtraProperty(u.Open, "status", "open")
+	if u.Aborted != nil {
+		return internal.MarshalJSONWithExtraProperty(u.Aborted, "status", "aborted")
 	}
 	if u.Completed != nil {
 		return internal.MarshalJSONWithExtraProperty(u.Completed, "status", "completed")
 	}
-	if u.Aborted != nil {
-		return internal.MarshalJSONWithExtraProperty(u.Aborted, "status", "aborted")
+	if u.Open != nil {
+		return internal.MarshalJSONWithExtraProperty(u.Open, "status", "open")
 	}
 	if len(u.rawJSON) > 0 {
 		return u.rawJSON, nil
@@ -2375,20 +2352,20 @@ func (u UploadSession) MarshalJSON() ([]byte, error) {
 }
 
 type UploadSessionVisitor interface {
-	VisitOpen(*UploadSessionStatusOpen) error
-	VisitCompleted(*UploadSessionStatusCompleted) error
 	VisitAborted(*UploadSessionStatusAborted) error
+	VisitCompleted(*UploadSessionStatusCompleted) error
+	VisitOpen(*UploadSessionStatusOpen) error
 }
 
 func (u *UploadSession) Accept(visitor UploadSessionVisitor) error {
-	if u.Open != nil {
-		return visitor.VisitOpen(u.Open)
+	if u.Aborted != nil {
+		return visitor.VisitAborted(u.Aborted)
 	}
 	if u.Completed != nil {
 		return visitor.VisitCompleted(u.Completed)
 	}
-	if u.Aborted != nil {
-		return visitor.VisitAborted(u.Aborted)
+	if u.Open != nil {
+		return visitor.VisitOpen(u.Open)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", u)
 }
@@ -2398,14 +2375,14 @@ func (u *UploadSession) validate() error {
 		return fmt.Errorf("type %T is nil", u)
 	}
 	var fields []string
-	if u.Open != nil {
-		fields = append(fields, "open")
+	if u.Aborted != nil {
+		fields = append(fields, "aborted")
 	}
 	if u.Completed != nil {
 		fields = append(fields, "completed")
 	}
-	if u.Aborted != nil {
-		fields = append(fields, "aborted")
+	if u.Open != nil {
+		fields = append(fields, "open")
 	}
 	if len(fields) == 0 {
 		if u.Status != "" {
@@ -2585,8 +2562,7 @@ type UploadSessionStatusCompleted struct {
 	CompletedAtMs int64 `json:"completed_at_ms" url:"completed_at_ms"`
 	// Verified content selected by this session.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// Fresh proof for a later commit. This is absent after the token
-	// minting window closes, while `content_ref` remains available.
+	// Fresh proof for a later commit, or `None` after the token minting window closes.
 	ContentToken *ContentToken `json:"content_token,omitempty" url:"content_token,omitempty"`
 	// Transport selected when the session began.
 	Mode UploadMode `json:"mode" url:"mode"`
@@ -2751,8 +2727,7 @@ var (
 )
 
 type UploadSessionStatusOpen struct {
-	// Unix-millisecond instant after which the session is abandoned and
-	// may be aborted by server-side cleanup.
+	// The Unix-millisecond time after which cleanup may abort the session.
 	ExpiresAtMs int64 `json:"expires_at_ms" url:"expires_at_ms"`
 	// Transport selected when the session began.
 	Mode UploadMode `json:"mode" url:"mode"`

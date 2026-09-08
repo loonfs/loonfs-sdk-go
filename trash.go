@@ -192,10 +192,7 @@ func (l *ListTrashResponse) String() string {
 	return fmt.Sprintf("%#v", l)
 }
 
-// One deletion that can still be restored.
-//
-// `inode_id` and `deletion_seq` are sufficient to restore it. The removed
-// directory binding is included when available.
+// One recoverable deletion and its removed directory binding.
 var (
 	trashEntryFieldDeletedAtMs    = big.NewInt(1 << 0)
 	trashEntryFieldDeletedBinding = big.NewInt(1 << 1)
@@ -207,14 +204,14 @@ var (
 type TrashEntry struct {
 	// Time of the deletion, in Unix milliseconds.
 	DeletedAtMs int64 `json:"deleted_at_ms" url:"deleted_at_ms"`
-	// Directory binding removed by the deletion, when available.
-	DeletedBinding *DirectoryBinding `json:"deleted_binding,omitempty" url:"deleted_binding,omitempty"`
+	// Directory binding removed by the deletion.
+	DeletedBinding *DirectoryBinding `json:"deleted_binding" url:"deleted_binding"`
 	// Actor responsible for the deletion.
 	DeletedBy *ActorRef `json:"deleted_by" url:"deleted_by"`
 	// Commit sequence that identifies this deletion.
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
-	// Stable inode ID within a namespace
-	InodeID string `json:"inode_id" url:"inode_id"`
+	// Inode hidden by the deletion.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -251,7 +248,7 @@ func (t *TrashEntry) GetDeletionSeq() ChangeSeq {
 	return t.DeletionSeq
 }
 
-func (t *TrashEntry) GetInodeID() string {
+func (t *TrashEntry) GetInodeID() InodeID {
 	if t == nil {
 		return ""
 	}
@@ -302,7 +299,7 @@ func (t *TrashEntry) SetDeletionSeq(deletionSeq ChangeSeq) {
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TrashEntry) SetInodeID(inodeID string) {
+func (t *TrashEntry) SetInodeID(inodeID InodeID) {
 	t.InodeID = inodeID
 	t.require(trashEntryFieldInodeID)
 }

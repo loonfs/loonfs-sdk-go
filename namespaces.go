@@ -95,6 +95,7 @@ func (d *DeleteNamespaceRequest) SetExpectedHeadSeq(expectedHeadSeq *ChangeSeq) 
 var (
 	forkNamespaceRequestFieldNamespaceID    = big.NewInt(1 << 0)
 	forkNamespaceRequestFieldNewNamespaceID = big.NewInt(1 << 1)
+	forkNamespaceRequestFieldSnapshotID     = big.NewInt(1 << 2)
 )
 
 type ForkNamespaceRequest struct {
@@ -102,6 +103,8 @@ type ForkNamespaceRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// Durable namespace id for the fork target.
 	NewNamespaceID NamespaceID `json:"new_namespace_id" url:"-"`
+	// Fork from this live snapshot instead of the current head.
+	SnapshotID *CheckpointID `json:"snapshot_id,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -126,6 +129,13 @@ func (f *ForkNamespaceRequest) SetNamespaceID(namespaceID string) {
 func (f *ForkNamespaceRequest) SetNewNamespaceID(newNamespaceID NamespaceID) {
 	f.NewNamespaceID = newNamespaceID
 	f.require(forkNamespaceRequestFieldNewNamespaceID)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *ForkNamespaceRequest) SetSnapshotID(snapshotID *CheckpointID) {
+	f.SnapshotID = snapshotID
+	f.require(forkNamespaceRequestFieldSnapshotID)
 }
 
 func (f *ForkNamespaceRequest) UnmarshalJSON(data []byte) error {
@@ -182,8 +192,7 @@ var (
 )
 
 type DeleteNamespaceResponse struct {
-	// The head's last committed sequence; the delete linearized
-	// immediately after it, so this is where history ended.
+	// The final committed sequence before the namespace was deleted.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// Namespace whose history ended.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`

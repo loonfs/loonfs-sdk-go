@@ -78,16 +78,13 @@ var (
 type CommittedChange struct {
 	// Client idempotency key for this logical commit.
 	CommitID CommitID `json:"commit_id" url:"commit_id"`
-	// Wall-clock stamp of the commit, in Unix milliseconds.
-	// Observational: `committed_seq` is the order.
+	// The commit time in Unix milliseconds; `committed_seq` defines commit order.
 	CommittedAtMs int64 `json:"committed_at_ms" url:"committed_at_ms"`
 	// Actor responsible for the commit, as supplied by the application.
 	CommittedBy *ActorRef `json:"committed_by" url:"committed_by"`
 	// Namespace sequence for this logical commit.
 	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
-	// Semantic filesystem events for this commit, in the order the commit
-	// applied them. One request operation may produce more than one event
-	// (see [`FilesystemChange`]).
+	// The filesystem events for this commit in commit order.
 	Events []*FilesystemChange `json:"events" url:"events"`
 	// Caller annotation, omitted when absent and carrying no filesystem semantics.
 	Message *string `json:"message,omitempty" url:"message,omitempty"`

@@ -3,7 +3,6 @@
 package server
 
 import (
-	client "github.com/loonfs/loonfs-sdk-go/admin/client"
 	capabilities "github.com/loonfs/loonfs-sdk-go/capabilities"
 	changes "github.com/loonfs/loonfs-sdk-go/changes"
 	commits "github.com/loonfs/loonfs-sdk-go/commits"
@@ -11,6 +10,7 @@ import (
 	files "github.com/loonfs/loonfs-sdk-go/files"
 	inodes "github.com/loonfs/loonfs-sdk-go/inodes"
 	internal "github.com/loonfs/loonfs-sdk-go/internal"
+	client "github.com/loonfs/loonfs-sdk-go/maintenance/client"
 	namespaces "github.com/loonfs/loonfs-sdk-go/namespaces"
 	option "github.com/loonfs/loonfs-sdk-go/option"
 	snapshots "github.com/loonfs/loonfs-sdk-go/snapshots"
@@ -28,7 +28,7 @@ type Client struct {
 	Inodes       *inodes.Client
 	Snapshots    *snapshots.Client
 	Uploads      *uploads.Client
-	Admin        *client.Client
+	Maintenance  *client.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -47,7 +47,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Inodes:       inodes.NewClient(options),
 		Snapshots:    snapshots.NewClient(options),
 		Uploads:      uploads.NewClient(options),
-		Admin:        client.NewClient(options),
+		Maintenance:  client.NewClient(options),
 		options:      options,
 		baseURL:      options.BaseURL,
 		caller: internal.NewCaller(

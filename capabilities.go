@@ -9,32 +9,21 @@ import (
 	big "math/big"
 )
 
-// A deployment's self-description (API spec, "Capability discovery").
-//
-// A remote client fetches this from `GET /v0/capabilities` and caches it; an
-// embedded engine exposes the same document as a constant. SDK gating logic
-// is therefore identical for both backends: check [`supports`] or
-// [`has_profile`], and treat a `not_supported` error as authoritative when
-// the two disagree.
-//
-// [`supports`]: CapabilityDocument::supports
-// [`has_profile`]: CapabilityDocument::has_profile
+// The API groups, features, and limits advertised by a deployment.
 var (
-	capabilityDocumentFieldFeatures        = big.NewInt(1 << 0)
-	capabilityDocumentFieldLimits          = big.NewInt(1 << 1)
-	capabilityDocumentFieldProfiles        = big.NewInt(1 << 2)
+	capabilityDocumentFieldAPIGroups       = big.NewInt(1 << 0)
+	capabilityDocumentFieldFeatures        = big.NewInt(1 << 1)
+	capabilityDocumentFieldLimits          = big.NewInt(1 << 2)
 	capabilityDocumentFieldProtocolVersion = big.NewInt(1 << 3)
 )
 
 type CapabilityDocument struct {
-	// Named features and whether this deployment supports them. An absent
-	// key means unsupported.
+	// The advertised `group/version` API groups, each with every required operation implemented.
+	APIGroups []string `json:"api_groups" url:"api_groups"`
+	// The named features supported by this deployment, with absent keys treated as unsupported.
 	Features map[string]bool `json:"features,omitempty" url:"features,omitempty"`
 	// Advisory numeric limits clients may use to pre-validate requests.
 	Limits map[string]int64 `json:"limits,omitempty" url:"limits,omitempty"`
-	// Advertised profiles, each `plane/version`. All-or-nothing: every
-	// required op of an advertised profile is implemented.
-	Profiles []string `json:"profiles" url:"profiles"`
 	// The protocol generation, currently `v0`.
 	ProtocolVersion string `json:"protocol_version" url:"protocol_version"`
 
@@ -43,6 +32,13 @@ type CapabilityDocument struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *CapabilityDocument) GetAPIGroups() []string {
+	if c == nil {
+		return nil
+	}
+	return c.APIGroups
 }
 
 func (c *CapabilityDocument) GetFeatures() map[string]bool {
@@ -57,13 +53,6 @@ func (c *CapabilityDocument) GetLimits() map[string]int64 {
 		return nil
 	}
 	return c.Limits
-}
-
-func (c *CapabilityDocument) GetProfiles() []string {
-	if c == nil {
-		return nil
-	}
-	return c.Profiles
 }
 
 func (c *CapabilityDocument) GetProtocolVersion() string {
@@ -87,6 +76,13 @@ func (c *CapabilityDocument) require(field *big.Int) {
 	c.explicitFields.Or(c.explicitFields, field)
 }
 
+// SetAPIGroups sets the APIGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CapabilityDocument) SetAPIGroups(apiGroups []string) {
+	c.APIGroups = apiGroups
+	c.require(capabilityDocumentFieldAPIGroups)
+}
+
 // SetFeatures sets the Features field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *CapabilityDocument) SetFeatures(features map[string]bool) {
@@ -99,13 +95,6 @@ func (c *CapabilityDocument) SetFeatures(features map[string]bool) {
 func (c *CapabilityDocument) SetLimits(limits map[string]int64) {
 	c.Limits = limits
 	c.require(capabilityDocumentFieldLimits)
-}
-
-// SetProfiles sets the Profiles field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CapabilityDocument) SetProfiles(profiles []string) {
-	c.Profiles = profiles
-	c.require(capabilityDocumentFieldProfiles)
 }
 
 // SetProtocolVersion sets the ProtocolVersion field and marks it as non-optional;

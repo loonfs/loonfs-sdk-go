@@ -300,8 +300,8 @@ type BeginDownloadByInodeResponse struct {
 	Access *ObjectTransferAccess `json:"access" url:"access"`
 	// Content identity, size, and checksum.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// Stable inode ID within a namespace
-	InodeID string `json:"inode_id" url:"inode_id"`
+	// File inode being read.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// Namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Revision being read.
@@ -328,7 +328,7 @@ func (b *BeginDownloadByInodeResponse) GetContentRef() *ContentRef {
 	return b.ContentRef
 }
 
-func (b *BeginDownloadByInodeResponse) GetInodeID() string {
+func (b *BeginDownloadByInodeResponse) GetInodeID() InodeID {
 	if b == nil {
 		return ""
 	}
@@ -379,7 +379,7 @@ func (b *BeginDownloadByInodeResponse) SetContentRef(contentRef *ContentRef) {
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadByInodeResponse) SetInodeID(inodeID string) {
+func (b *BeginDownloadByInodeResponse) SetInodeID(inodeID InodeID) {
 	b.InodeID = inodeID
 	b.require(beginDownloadByInodeResponseFieldInodeID)
 }
@@ -440,12 +440,7 @@ func (b *BeginDownloadByInodeResponse) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
-// One directory listing addressed by parent inode, and the namespace head
-// it was answered at.
-//
-// The envelope names the parent by its stable inode identity rather than a
-// path, so a page and its resumption always describe the same directory
-// even when the parent is concurrently renamed or moved.
+// One directory listing addressed by parent inode and the namespace head used to read it.
 var (
 	listInodeChildrenResponseFieldEntries       = big.NewInt(1 << 0)
 	listInodeChildrenResponseFieldHeadSeq       = big.NewInt(1 << 1)
@@ -455,10 +450,7 @@ var (
 )
 
 type ListInodeChildrenResponse struct {
-	// Directory entries for this page.
-	//
-	// Entries are returned in canonical name-key order. Higher-level display
-	// surfaces may sort entries separately for presentation.
+	// The directory entries in canonical name-key order.
 	Entries []*PathEntry `json:"entries" url:"entries"`
 	// Namespace head sequence this listing was read from.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
@@ -466,8 +458,8 @@ type ListInodeChildrenResponse struct {
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Cursor for the next page, if more entries remain.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
-	// Stable inode ID within a namespace
-	ParentInodeID string `json:"parent_inode_id" url:"parent_inode_id"`
+	// Directory inode whose children were returned.
+	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -504,7 +496,7 @@ func (l *ListInodeChildrenResponse) GetNextCursor() *string {
 	return l.NextCursor
 }
 
-func (l *ListInodeChildrenResponse) GetParentInodeID() string {
+func (l *ListInodeChildrenResponse) GetParentInodeID() InodeID {
 	if l == nil {
 		return ""
 	}
@@ -555,7 +547,7 @@ func (l *ListInodeChildrenResponse) SetNextCursor(nextCursor *string) {
 
 // SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListInodeChildrenResponse) SetParentInodeID(parentInodeID string) {
+func (l *ListInodeChildrenResponse) SetParentInodeID(parentInodeID InodeID) {
 	l.ParentInodeID = parentInodeID
 	l.require(listInodeChildrenResponseFieldParentInodeID)
 }
