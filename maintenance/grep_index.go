@@ -4,7 +4,7 @@ package maintenance
 
 import (
 	json "encoding/json"
-	internal "github.com/loonfs/loonfs-sdk-go/internal"
+	loonfssdkgo "github.com/loonfs/loonfs-sdk-go"
 	big "math/big"
 )
 
@@ -61,24 +61,19 @@ func (e *EnableGrepIndexRequest) SetNamespaceID(namespaceID string) {
 }
 
 var (
-	grepGcRequestFieldNamespaceID = big.NewInt(1 << 0)
-	grepGcRequestFieldCursor      = big.NewInt(1 << 1)
-	grepGcRequestFieldMaxObjects  = big.NewInt(1 << 2)
+	gcGrepIndexRequestFieldNamespaceID = big.NewInt(1 << 0)
 )
 
-type GrepGcRequest struct {
+type GcGrepIndexRequest struct {
 	// Namespace id
-	NamespaceID string `json:"-" url:"-"`
-	// The opaque `next_cursor` returned by an earlier pass for the same namespace.
-	Cursor *string `json:"cursor,omitempty" url:"-"`
-	// The maximum reads for this pass, or `None` for the server default.
-	MaxObjects *int64 `json:"max_objects,omitempty" url:"-"`
+	NamespaceID string                    `json:"-" url:"-"`
+	Body        loonfssdkgo.GrepGcRequest `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (g *GrepGcRequest) require(field *big.Int) {
+func (g *GcGrepIndexRequest) require(field *big.Int) {
 	if g.explicitFields == nil {
 		g.explicitFields = big.NewInt(0)
 	}
@@ -87,44 +82,22 @@ func (g *GrepGcRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcRequest) SetNamespaceID(namespaceID string) {
+func (g *GcGrepIndexRequest) SetNamespaceID(namespaceID string) {
 	g.NamespaceID = namespaceID
-	g.require(grepGcRequestFieldNamespaceID)
+	g.require(gcGrepIndexRequestFieldNamespaceID)
 }
 
-// SetCursor sets the Cursor field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcRequest) SetCursor(cursor *string) {
-	g.Cursor = cursor
-	g.require(grepGcRequestFieldCursor)
-}
-
-// SetMaxObjects sets the MaxObjects field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcRequest) SetMaxObjects(maxObjects *int64) {
-	g.MaxObjects = maxObjects
-	g.require(grepGcRequestFieldMaxObjects)
-}
-
-func (g *GrepGcRequest) UnmarshalJSON(data []byte) error {
-	type unmarshaler GrepGcRequest
-	var body unmarshaler
+func (g *GcGrepIndexRequest) UnmarshalJSON(data []byte) error {
+	var body loonfssdkgo.GrepGcRequest
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
-	*g = GrepGcRequest(body)
+	g.Body = body
 	return nil
 }
 
-func (g *GrepGcRequest) MarshalJSON() ([]byte, error) {
-	type embed GrepGcRequest
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*g),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, g.explicitFields)
-	return json.Marshal(explicitMarshaler)
+func (g *GcGrepIndexRequest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(g.Body)
 }
 
 var (

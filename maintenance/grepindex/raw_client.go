@@ -170,7 +170,7 @@ func (r *RawClient) Enable(
 
 func (r *RawClient) Gc(
 	ctx context.Context,
-	request *maintenance.GrepGcRequest,
+	request *maintenance.GcGrepIndexRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*loonfs.GrepGcResponse], error) {
 	options := core.NewRequestOptions(opts...)

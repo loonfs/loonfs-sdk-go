@@ -42,7 +42,7 @@ func NewClient(options *core.RequestOptions) *Client {
 //	    NamespaceID: "namespace_id",
 //	    AfterSeq: int64(1000000),
 //	    SnapshotID: loonfs.String(
-//	        "chk_00000000000000000000000000000002",
+//	        "pin_00000000000000000001-0000000000000002",
 //	    ),
 //	}
 //	client.Changes.List(

@@ -187,7 +187,7 @@ type Checkpoint struct {
 	CheckpointSeq ChangeSeq `json:"checkpoint_seq" url:"checkpoint_seq"`
 	// Time the checkpoint record was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// The automatic release time in Unix milliseconds, or `None` until an explicit release.
+	// Expiry in Unix milliseconds; collection waits one further grace window.
 	ExpiresAtMs *int64 `json:"expires_at_ms,omitempty" url:"expires_at_ms,omitempty"`
 	// Manifest pinned by the checkpoint.
 	ManifestNo ManifestNo `json:"manifest_no" url:"manifest_no"`
@@ -359,7 +359,7 @@ func (c *Checkpoint) String() string {
 
 // Durable checkpoint identifier.
 //
-// A checkpoint is a durable bookmark to a namespace manifest version.
+// The manifest number determines which namespace manifest it pins.
 type CheckpointID = string
 
 // A fork target retaining its source basis for one fork attempt.
@@ -1208,7 +1208,7 @@ var (
 )
 
 type DeletedObjectCounts struct {
-	// Released checkpoint records deleted after their grace window.
+	// Pin records deleted by this pass.
 	CheckpointRecords int64 `json:"checkpoint_records" url:"checkpoint_records"`
 	// Content reclaimed through completed upload sessions.
 	ContentObjects int64 `json:"content_objects" url:"content_objects"`
@@ -3535,31 +3535,28 @@ func (f *FilesystemChangeUndeleted) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
+// One explicit grep index garbage-collection pass (maintenance API group).
+type GrepGcRequest = map[string]any
+
 // Result of one explicit grep index garbage-collection pass (maintenance API group).
 var (
 	grepGcResponseFieldDeletedOtherObjects = big.NewInt(1 << 0)
 	grepGcResponseFieldDeletedSegments     = big.NewInt(1 << 1)
-	grepGcResponseFieldNamespaceDegraded   = big.NewInt(1 << 2)
-	grepGcResponseFieldNamespaceID         = big.NewInt(1 << 3)
-	grepGcResponseFieldNamespaceReaped     = big.NewInt(1 << 4)
-	grepGcResponseFieldNextCursor          = big.NewInt(1 << 5)
-	grepGcResponseFieldRetainedCandidates  = big.NewInt(1 << 6)
+	grepGcResponseFieldNamespaceID         = big.NewInt(1 << 2)
+	grepGcResponseFieldNamespaceReaped     = big.NewInt(1 << 3)
+	grepGcResponseFieldRetainedCandidates  = big.NewInt(1 << 4)
 )
 
 type GrepGcResponse struct {
 	// Other unreferenced grep objects deleted after the grace window.
 	DeletedOtherObjects int64 `json:"deleted_other_objects" url:"deleted_other_objects"`
-	// Unreferenced grep segments deleted after the grace window.
+	// Unreferenced grep segments older than the minimum segment age.
 	DeletedSegments int64 `json:"deleted_segments" url:"deleted_segments"`
-	// Whether unreadable namespace or grep state forced conservative retention.
-	NamespaceDegraded bool `json:"namespace_degraded" url:"namespace_degraded"`
 	// Namespace whose grep-owned keyspace was inspected.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Whether an absent or tombstoned namespace had extension state reaped.
 	NamespaceReaped bool `json:"namespace_reaped" url:"namespace_reaped"`
-	// Present when the budget stopped the pass with keys left to examine.
-	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
-	// Young or concurrently revived candidates retained by the pass.
+	// Referenced, young, or unrecognized candidates retained by the pass.
 	RetainedCandidates int64 `json:"retained_candidates" url:"retained_candidates"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3583,13 +3580,6 @@ func (g *GrepGcResponse) GetDeletedSegments() int64 {
 	return g.DeletedSegments
 }
 
-func (g *GrepGcResponse) GetNamespaceDegraded() bool {
-	if g == nil {
-		return false
-	}
-	return g.NamespaceDegraded
-}
-
 func (g *GrepGcResponse) GetNamespaceID() NamespaceID {
 	if g == nil {
 		return ""
@@ -3602,13 +3592,6 @@ func (g *GrepGcResponse) GetNamespaceReaped() bool {
 		return false
 	}
 	return g.NamespaceReaped
-}
-
-func (g *GrepGcResponse) GetNextCursor() *string {
-	if g == nil {
-		return nil
-	}
-	return g.NextCursor
 }
 
 func (g *GrepGcResponse) GetRetainedCandidates() int64 {
@@ -3646,13 +3629,6 @@ func (g *GrepGcResponse) SetDeletedSegments(deletedSegments int64) {
 	g.require(grepGcResponseFieldDeletedSegments)
 }
 
-// SetNamespaceDegraded sets the NamespaceDegraded field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetNamespaceDegraded(namespaceDegraded bool) {
-	g.NamespaceDegraded = namespaceDegraded
-	g.require(grepGcResponseFieldNamespaceDegraded)
-}
-
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (g *GrepGcResponse) SetNamespaceID(namespaceID NamespaceID) {
@@ -3665,13 +3641,6 @@ func (g *GrepGcResponse) SetNamespaceID(namespaceID NamespaceID) {
 func (g *GrepGcResponse) SetNamespaceReaped(namespaceReaped bool) {
 	g.NamespaceReaped = namespaceReaped
 	g.require(grepGcResponseFieldNamespaceReaped)
-}
-
-// SetNextCursor sets the NextCursor field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetNextCursor(nextCursor *string) {
-	g.NextCursor = nextCursor
-	g.require(grepGcResponseFieldNextCursor)
 }
 
 // SetRetainedCandidates sets the RetainedCandidates field and marks it as non-optional;
@@ -4632,7 +4601,6 @@ type MetadataCompactionOutcome struct {
 	Fenced                *MetadataCompactionOutcomeFenced
 	NotNeeded             *MetadataCompactionOutcomeNotNeeded
 	Published             *MetadataCompactionOutcomePublished
-	Superseded            *MetadataCompactionOutcomeSuperseded
 
 	rawJSON json.RawMessage
 }
@@ -4686,13 +4654,6 @@ func (m *MetadataCompactionOutcome) GetPublished() *MetadataCompactionOutcomePub
 	return m.Published
 }
 
-func (m *MetadataCompactionOutcome) GetSuperseded() *MetadataCompactionOutcomeSuperseded {
-	if m == nil {
-		return nil
-	}
-	return m.Superseded
-}
-
 func (m *MetadataCompactionOutcome) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Outcome string `json:"outcome"`
@@ -4741,12 +4702,6 @@ func (m *MetadataCompactionOutcome) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		m.Published = value
-	case "superseded":
-		value := new(MetadataCompactionOutcomeSuperseded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		m.Superseded = value
 	}
 	m.rawJSON = json.RawMessage(data)
 	return nil
@@ -4774,9 +4729,6 @@ func (m MetadataCompactionOutcome) MarshalJSON() ([]byte, error) {
 	if m.Published != nil {
 		return internal.MarshalJSONWithExtraProperty(m.Published, "outcome", "published")
 	}
-	if m.Superseded != nil {
-		return internal.MarshalJSONWithExtraProperty(m.Superseded, "outcome", "superseded")
-	}
 	if len(m.rawJSON) > 0 {
 		return m.rawJSON, nil
 	}
@@ -4790,7 +4742,6 @@ type MetadataCompactionOutcomeVisitor interface {
 	VisitFenced(*MetadataCompactionOutcomeFenced) error
 	VisitNotNeeded(*MetadataCompactionOutcomeNotNeeded) error
 	VisitPublished(*MetadataCompactionOutcomePublished) error
-	VisitSuperseded(*MetadataCompactionOutcomeSuperseded) error
 }
 
 func (m *MetadataCompactionOutcome) Accept(visitor MetadataCompactionOutcomeVisitor) error {
@@ -4811,9 +4762,6 @@ func (m *MetadataCompactionOutcome) Accept(visitor MetadataCompactionOutcomeVisi
 	}
 	if m.Published != nil {
 		return visitor.VisitPublished(m.Published)
-	}
-	if m.Superseded != nil {
-		return visitor.VisitSuperseded(m.Superseded)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", m)
 }
@@ -4841,9 +4789,6 @@ func (m *MetadataCompactionOutcome) validate() error {
 	if m.Published != nil {
 		fields = append(fields, "published")
 	}
-	if m.Superseded != nil {
-		fields = append(fields, "superseded")
-	}
 	if len(fields) == 0 {
 		if m.Outcome != "" {
 			if len(m.rawJSON) > 0 {
@@ -4870,7 +4815,7 @@ func (m *MetadataCompactionOutcome) validate() error {
 	return nil
 }
 
-// A run the job read changed under it; nothing was published.
+// Inputs changed, time ran out, or publication retries were exhausted.
 type MetadataCompactionOutcomeAbandoned struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5068,7 +5013,7 @@ func (m *MetadataCompactionOutcomeCancelled) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// The job lost its lease; nothing was published.
+// Another process claimed the namespace compactor role; nothing was published.
 type MetadataCompactionOutcomeFenced struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5357,72 +5302,6 @@ func (m *MetadataCompactionOutcomePublished) MarshalJSON() ([]byte, error) {
 }
 
 func (m *MetadataCompactionOutcomePublished) String() string {
-	if m == nil {
-		return "<nil>"
-	}
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
-// Every publication attempt lost the root race; nothing was published.
-type MetadataCompactionOutcomeSuperseded struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *MetadataCompactionOutcomeSuperseded) GetExtraProperties() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.extraProperties
-}
-
-func (m *MetadataCompactionOutcomeSuperseded) require(field *big.Int) {
-	if m.explicitFields == nil {
-		m.explicitFields = big.NewInt(0)
-	}
-	m.explicitFields.Or(m.explicitFields, field)
-}
-
-func (m *MetadataCompactionOutcomeSuperseded) UnmarshalJSON(data []byte) error {
-	type unmarshaler MetadataCompactionOutcomeSuperseded
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*m = MetadataCompactionOutcomeSuperseded(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *m)
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *MetadataCompactionOutcomeSuperseded) MarshalJSON() ([]byte, error) {
-	type embed MetadataCompactionOutcomeSuperseded
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*m),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (m *MetadataCompactionOutcomeSuperseded) String() string {
 	if m == nil {
 		return "<nil>"
 	}
@@ -6784,10 +6663,9 @@ func (r *ReleaseCheckpointResponse) String() string {
 
 // Checkpoint record counts released by one garbage-collection pass, grouped by reason.
 var (
-	releasedCheckpointCountsFieldExpired      = big.NewInt(1 << 0)
-	releasedCheckpointCountsFieldFork         = big.NewInt(1 << 1)
-	releasedCheckpointCountsFieldMissingBasis = big.NewInt(1 << 2)
-	releasedCheckpointCountsFieldSnapshot     = big.NewInt(1 << 3)
+	releasedCheckpointCountsFieldExpired  = big.NewInt(1 << 0)
+	releasedCheckpointCountsFieldFork     = big.NewInt(1 << 1)
+	releasedCheckpointCountsFieldSnapshot = big.NewInt(1 << 2)
 )
 
 type ReleasedCheckpointCounts struct {
@@ -6795,8 +6673,6 @@ type ReleasedCheckpointCounts struct {
 	Expired int64 `json:"expired" url:"expired"`
 	// Fork-owned records released because their target namespaces are gone.
 	Fork int64 `json:"fork" url:"fork"`
-	// Active records released because their basis manifests are gone.
-	MissingBasis int64 `json:"missing_basis" url:"missing_basis"`
 	// Snapshot-owned records released after expiry or terminal namespace deletion.
 	Snapshot int64 `json:"snapshot" url:"snapshot"`
 
@@ -6819,13 +6695,6 @@ func (r *ReleasedCheckpointCounts) GetFork() int64 {
 		return 0
 	}
 	return r.Fork
-}
-
-func (r *ReleasedCheckpointCounts) GetMissingBasis() int64 {
-	if r == nil {
-		return 0
-	}
-	return r.MissingBasis
 }
 
 func (r *ReleasedCheckpointCounts) GetSnapshot() int64 {
@@ -6861,13 +6730,6 @@ func (r *ReleasedCheckpointCounts) SetExpired(expired int64) {
 func (r *ReleasedCheckpointCounts) SetFork(fork int64) {
 	r.Fork = fork
 	r.require(releasedCheckpointCountsFieldFork)
-}
-
-// SetMissingBasis sets the MissingBasis field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *ReleasedCheckpointCounts) SetMissingBasis(missingBasis int64) {
-	r.MissingBasis = missingBasis
-	r.require(releasedCheckpointCountsFieldMissingBasis)
 }
 
 // SetSnapshot sets the Snapshot field and marks it as non-optional;
@@ -7359,26 +7221,20 @@ func (r *ReorganizeStepOutcomeUnitPublished) String() string {
 // Every field is present and contributes to [`GcResponse::retained_candidates`].
 var (
 	retainedCandidatesFieldCheckpointNotReleasable = big.NewInt(1 << 0)
-	retainedCandidatesFieldDegradedRoots           = big.NewInt(1 << 1)
-	retainedCandidatesFieldNoProviderTimestamp     = big.NewInt(1 << 2)
-	retainedCandidatesFieldNoReferenceManifest     = big.NewInt(1 << 3)
-	retainedCandidatesFieldReferenced              = big.NewInt(1 << 4)
-	retainedCandidatesFieldUnrecognizedKey         = big.NewInt(1 << 5)
-	retainedCandidatesFieldUploadSessionUndecided  = big.NewInt(1 << 6)
-	retainedCandidatesFieldUploadSessionWindow     = big.NewInt(1 << 7)
-	retainedCandidatesFieldWithinGraceWindow       = big.NewInt(1 << 8)
+	retainedCandidatesFieldNoProviderTimestamp     = big.NewInt(1 << 1)
+	retainedCandidatesFieldReferenced              = big.NewInt(1 << 2)
+	retainedCandidatesFieldUnrecognizedKey         = big.NewInt(1 << 3)
+	retainedCandidatesFieldUploadSessionUndecided  = big.NewInt(1 << 4)
+	retainedCandidatesFieldUploadSessionWindow     = big.NewInt(1 << 5)
+	retainedCandidatesFieldWithinGraceWindow       = big.NewInt(1 << 6)
 )
 
 type RetainedCandidates struct {
 	// Checkpoint records that could not be safely released or deleted.
 	CheckpointNotReleasable int64 `json:"checkpoint_not_releasable" url:"checkpoint_not_releasable"`
-	// Candidates retained because root resolution failed.
-	DegradedRoots int64 `json:"degraded_roots" url:"degraded_roots"`
 	// Unreachable candidates without provider timestamps.
 	NoProviderTimestamp int64 `json:"no_provider_timestamp" url:"no_provider_timestamp"`
-	// Unreachable candidates without a reference manifest old enough to cover the grace window.
-	NoReferenceManifest int64 `json:"no_reference_manifest" url:"no_reference_manifest"`
-	// Candidates found reachable during the final check before deletion.
+	// Candidates protected by current references or manifest discovery.
 	Referenced int64 `json:"referenced" url:"referenced"`
 	// Unrecognized keys retained from object families scanned by garbage collection.
 	UnrecognizedKey int64 `json:"unrecognized_key" url:"unrecognized_key"`
@@ -7403,25 +7259,11 @@ func (r *RetainedCandidates) GetCheckpointNotReleasable() int64 {
 	return r.CheckpointNotReleasable
 }
 
-func (r *RetainedCandidates) GetDegradedRoots() int64 {
-	if r == nil {
-		return 0
-	}
-	return r.DegradedRoots
-}
-
 func (r *RetainedCandidates) GetNoProviderTimestamp() int64 {
 	if r == nil {
 		return 0
 	}
 	return r.NoProviderTimestamp
-}
-
-func (r *RetainedCandidates) GetNoReferenceManifest() int64 {
-	if r == nil {
-		return 0
-	}
-	return r.NoReferenceManifest
 }
 
 func (r *RetainedCandidates) GetReferenced() int64 {
@@ -7480,25 +7322,11 @@ func (r *RetainedCandidates) SetCheckpointNotReleasable(checkpointNotReleasable 
 	r.require(retainedCandidatesFieldCheckpointNotReleasable)
 }
 
-// SetDegradedRoots sets the DegradedRoots field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RetainedCandidates) SetDegradedRoots(degradedRoots int64) {
-	r.DegradedRoots = degradedRoots
-	r.require(retainedCandidatesFieldDegradedRoots)
-}
-
 // SetNoProviderTimestamp sets the NoProviderTimestamp field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (r *RetainedCandidates) SetNoProviderTimestamp(noProviderTimestamp int64) {
 	r.NoProviderTimestamp = noProviderTimestamp
 	r.require(retainedCandidatesFieldNoProviderTimestamp)
-}
-
-// SetNoReferenceManifest sets the NoReferenceManifest field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RetainedCandidates) SetNoReferenceManifest(noReferenceManifest int64) {
-	r.NoReferenceManifest = noReferenceManifest
-	r.require(retainedCandidatesFieldNoReferenceManifest)
 }
 
 // SetReferenced sets the Referenced field and marks it as non-optional;
@@ -7756,24 +7584,15 @@ func (r *RunMaintenanceRequest) validate() error {
 	return nil
 }
 
-// Runs one bounded mark-and-sweep garbage-collection pass.
+// Collects aged, unreferenced objects.
 var (
-	runMaintenanceRequestGcFieldCursor        = big.NewInt(1 << 0)
-	runMaintenanceRequestGcFieldGraceWindowMs = big.NewInt(1 << 1)
-	runMaintenanceRequestGcFieldMaxSteps      = big.NewInt(1 << 2)
+	runMaintenanceRequestGcFieldGraceWindowMs = big.NewInt(1 << 0)
 )
 
 type RunMaintenanceRequestGc struct {
-	// The opaque `next_cursor` returned by an earlier call for this namespace.
-	// Omitting it joins any active run; scan positions remain server-owned.
-	Cursor *string `json:"cursor,omitempty" url:"cursor,omitempty"`
 	// The minimum object age for deletion in milliseconds, which must meet the
 	// server's advertised safety floor.
 	GraceWindowMs *int64 `json:"grace_window_ms,omitempty" url:"grace_window_ms,omitempty"`
-	// Maximum durable GC work steps in this call; the default is 1024.
-	// Even a budget of one saves progress through marking and sweeping.
-	// This is not a limit on object-store requests or memory.
-	MaxSteps *int64 `json:"max_steps,omitempty" url:"max_steps,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -7782,25 +7601,11 @@ type RunMaintenanceRequestGc struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceRequestGc) GetCursor() *string {
-	if r == nil {
-		return nil
-	}
-	return r.Cursor
-}
-
 func (r *RunMaintenanceRequestGc) GetGraceWindowMs() *int64 {
 	if r == nil {
 		return nil
 	}
 	return r.GraceWindowMs
-}
-
-func (r *RunMaintenanceRequestGc) GetMaxSteps() *int64 {
-	if r == nil {
-		return nil
-	}
-	return r.MaxSteps
 }
 
 func (r *RunMaintenanceRequestGc) GetExtraProperties() map[string]interface{} {
@@ -7817,25 +7622,11 @@ func (r *RunMaintenanceRequestGc) require(field *big.Int) {
 	r.explicitFields.Or(r.explicitFields, field)
 }
 
-// SetCursor sets the Cursor field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceRequestGc) SetCursor(cursor *string) {
-	r.Cursor = cursor
-	r.require(runMaintenanceRequestGcFieldCursor)
-}
-
 // SetGraceWindowMs sets the GraceWindowMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (r *RunMaintenanceRequestGc) SetGraceWindowMs(graceWindowMs *int64) {
 	r.GraceWindowMs = graceWindowMs
 	r.require(runMaintenanceRequestGcFieldGraceWindowMs)
-}
-
-// SetMaxSteps sets the MaxSteps field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceRequestGc) SetMaxSteps(maxSteps *int64) {
-	r.MaxSteps = maxSteps
-	r.require(runMaintenanceRequestGcFieldMaxSteps)
 }
 
 func (r *RunMaintenanceRequestGc) UnmarshalJSON(data []byte) error {
@@ -8273,32 +8064,22 @@ func (r *RunMaintenanceResponse) validate() error {
 	return nil
 }
 
-// Result of one bounded mark-and-sweep garbage-collection pass.
+// Counts and deadlines from one collection call.
 var (
-	runMaintenanceResponseGcFieldBudgetExhausted            = big.NewInt(1 << 0)
-	runMaintenanceResponseGcFieldContentReclamationDeferred = big.NewInt(1 << 1)
-	runMaintenanceResponseGcFieldDeleted                    = big.NewInt(1 << 2)
-	runMaintenanceResponseGcFieldNamespaceID                = big.NewInt(1 << 3)
-	runMaintenanceResponseGcFieldNextCursor                 = big.NewInt(1 << 4)
-	runMaintenanceResponseGcFieldNextReclamationAtMs        = big.NewInt(1 << 5)
-	runMaintenanceResponseGcFieldReclaimAfterMs             = big.NewInt(1 << 6)
-	runMaintenanceResponseGcFieldReleasedCheckpoints        = big.NewInt(1 << 7)
-	runMaintenanceResponseGcFieldRetained                   = big.NewInt(1 << 8)
-	runMaintenanceResponseGcFieldRetainedCandidates         = big.NewInt(1 << 9)
-	runMaintenanceResponseGcFieldRetentionDegraded          = big.NewInt(1 << 10)
+	runMaintenanceResponseGcFieldDeleted             = big.NewInt(1 << 0)
+	runMaintenanceResponseGcFieldNamespaceID         = big.NewInt(1 << 1)
+	runMaintenanceResponseGcFieldNextReclamationAtMs = big.NewInt(1 << 2)
+	runMaintenanceResponseGcFieldReclaimAfterMs      = big.NewInt(1 << 3)
+	runMaintenanceResponseGcFieldReleasedCheckpoints = big.NewInt(1 << 4)
+	runMaintenanceResponseGcFieldRetained            = big.NewInt(1 << 5)
+	runMaintenanceResponseGcFieldRetainedCandidates  = big.NewInt(1 << 6)
 )
 
 type RunMaintenanceResponseGc struct {
-	// Whether the pass reached `max_steps` before completion.
-	BudgetExhausted bool `json:"budget_exhausted" url:"budget_exhausted"`
-	// Whether reference marking is unfinished, so content reclamation has not started.
-	ContentReclamationDeferred bool `json:"content_reclamation_deferred" url:"content_reclamation_deferred"`
 	// Objects the pass deleted, split by object family.
 	Deleted *DeletedObjectCounts `json:"deleted" url:"deleted"`
 	// Namespace the pass ran against.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The opaque run token for remaining marking, sweeping, or cleanup work.
-	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
 	// The earliest known future reclamation time observed by this pass.
 	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
 	// The deleted head's irrevocable owner-prefix collection deadline.
@@ -8309,28 +8090,12 @@ type RunMaintenanceResponseGc struct {
 	Retained *RetainedCandidates `json:"retained" url:"retained"`
 	// The number of candidates retained at deletion time.
 	RetainedCandidates int64 `json:"retained_candidates" url:"retained_candidates"`
-	// True when ambiguous roots suppressed manifest/segment deletion.
-	RetentionDegraded bool `json:"retention_degraded" url:"retention_degraded"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (r *RunMaintenanceResponseGc) GetBudgetExhausted() bool {
-	if r == nil {
-		return false
-	}
-	return r.BudgetExhausted
-}
-
-func (r *RunMaintenanceResponseGc) GetContentReclamationDeferred() bool {
-	if r == nil {
-		return false
-	}
-	return r.ContentReclamationDeferred
 }
 
 func (r *RunMaintenanceResponseGc) GetDeleted() *DeletedObjectCounts {
@@ -8345,13 +8110,6 @@ func (r *RunMaintenanceResponseGc) GetNamespaceID() NamespaceID {
 		return ""
 	}
 	return r.NamespaceID
-}
-
-func (r *RunMaintenanceResponseGc) GetNextCursor() *string {
-	if r == nil {
-		return nil
-	}
-	return r.NextCursor
 }
 
 func (r *RunMaintenanceResponseGc) GetNextReclamationAtMs() *int64 {
@@ -8389,13 +8147,6 @@ func (r *RunMaintenanceResponseGc) GetRetainedCandidates() int64 {
 	return r.RetainedCandidates
 }
 
-func (r *RunMaintenanceResponseGc) GetRetentionDegraded() bool {
-	if r == nil {
-		return false
-	}
-	return r.RetentionDegraded
-}
-
 func (r *RunMaintenanceResponseGc) GetExtraProperties() map[string]interface{} {
 	if r == nil {
 		return nil
@@ -8410,20 +8161,6 @@ func (r *RunMaintenanceResponseGc) require(field *big.Int) {
 	r.explicitFields.Or(r.explicitFields, field)
 }
 
-// SetBudgetExhausted sets the BudgetExhausted field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetBudgetExhausted(budgetExhausted bool) {
-	r.BudgetExhausted = budgetExhausted
-	r.require(runMaintenanceResponseGcFieldBudgetExhausted)
-}
-
-// SetContentReclamationDeferred sets the ContentReclamationDeferred field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetContentReclamationDeferred(contentReclamationDeferred bool) {
-	r.ContentReclamationDeferred = contentReclamationDeferred
-	r.require(runMaintenanceResponseGcFieldContentReclamationDeferred)
-}
-
 // SetDeleted sets the Deleted field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (r *RunMaintenanceResponseGc) SetDeleted(deleted *DeletedObjectCounts) {
@@ -8436,13 +8173,6 @@ func (r *RunMaintenanceResponseGc) SetDeleted(deleted *DeletedObjectCounts) {
 func (r *RunMaintenanceResponseGc) SetNamespaceID(namespaceID NamespaceID) {
 	r.NamespaceID = namespaceID
 	r.require(runMaintenanceResponseGcFieldNamespaceID)
-}
-
-// SetNextCursor sets the NextCursor field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetNextCursor(nextCursor *string) {
-	r.NextCursor = nextCursor
-	r.require(runMaintenanceResponseGcFieldNextCursor)
 }
 
 // SetNextReclamationAtMs sets the NextReclamationAtMs field and marks it as non-optional;
@@ -8478,13 +8208,6 @@ func (r *RunMaintenanceResponseGc) SetRetained(retained *RetainedCandidates) {
 func (r *RunMaintenanceResponseGc) SetRetainedCandidates(retainedCandidates int64) {
 	r.RetainedCandidates = retainedCandidates
 	r.require(runMaintenanceResponseGcFieldRetainedCandidates)
-}
-
-// SetRetentionDegraded sets the RetentionDegraded field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetRetentionDegraded(retentionDegraded bool) {
-	r.RetentionDegraded = retentionDegraded
-	r.require(runMaintenanceResponseGcFieldRetentionDegraded)
 }
 
 func (r *RunMaintenanceResponseGc) UnmarshalJSON(data []byte) error {

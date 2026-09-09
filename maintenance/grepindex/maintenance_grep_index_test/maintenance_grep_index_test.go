@@ -166,8 +166,11 @@ func TestMaintenanceGrepIndexGcWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &maintenance.GrepGcRequest{
+	request := &maintenance.GcGrepIndexRequest{
 		NamespaceID: "namespace_id",
+		Body: map[string]any{
+			"key": "value",
+		},
 	}
 	_, invocationErr := client.Maintenance.GrepIndex.Gc(
 		context.TODO(),

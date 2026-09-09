@@ -31,7 +31,7 @@ func (b *BadRequestError) Unwrap() error {
 	return b.APIError
 }
 
-// Lost a grep root-pointer publication race; retry
+// Lost a grep manifest publication race; retry
 type ConflictError struct {
 	*core.APIError
 	Body *ErrorResponse

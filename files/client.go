@@ -71,7 +71,7 @@ func (c *Client) Content(
 //	request := &loonfs.BeginDownloadRequest{
 //	    NamespaceID: "namespace_id",
 //	    SnapshotID: loonfs.String(
-//	        "chk_00000000000000000000000000000002",
+//	        "pin_00000000000000000001-0000000000000002",
 //	    ),
 //	    Path: "/docs/report.txt",
 //	}
@@ -103,7 +103,7 @@ func (c *Client) CreateDownload(
 //	    NamespaceID: "namespace_id",
 //	    Path: "path",
 //	    SnapshotID: loonfs.String(
-//	        "chk_00000000000000000000000000000002",
+//	        "pin_00000000000000000001-0000000000000002",
 //	    ),
 //	}
 //	client.Files.List(
@@ -181,7 +181,7 @@ func (c *Client) List(
 //	    NamespaceID: "namespace_id",
 //	    Path: "path",
 //	    SnapshotID: loonfs.String(
-//	        "chk_00000000000000000000000000000002",
+//	        "pin_00000000000000000001-0000000000000002",
 //	    ),
 //	}
 //	client.Files.Retrieve(
@@ -279,7 +279,7 @@ func (c *Client) ListRevisions(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Searches file content with a regular expression, accelerated by the namespace's grep index. Matches are verified against the real pattern and returned in ascending `(inode_id, byte_offset)` order; revisions committed after the index watermark are scanned exhaustively unless `allow_stale` skips them. Requires this deployment to serve grep and the namespace to carry a materialized active grep root.
+// Searches file content with a regular expression, accelerated by the namespace's grep index. Matches are verified against the real pattern and returned in ascending `(inode_id, byte_offset)` order; revisions committed after the index watermark are scanned exhaustively unless `allow_stale` skips them. Requires this deployment to serve grep and the namespace to carry a materialized active grep index.
 //
 // Example:
 //
