@@ -339,7 +339,7 @@ request := &loonfs.ListChangesRequest{
     NamespaceID: "namespace_id",
     AfterSeq: int64(1000000),
     SnapshotID: loonfs.String(
-        "chk_00000000000000000000000000000002",
+        "pin_00000000000000000001-0000000000000002",
     ),
 }
 client.Changes.List(
@@ -634,7 +634,7 @@ Authorizes one direct read of a file's content object and returns a short-lived 
 request := &loonfs.BeginDownloadRequest{
     NamespaceID: "namespace_id",
     SnapshotID: loonfs.String(
-        "chk_00000000000000000000000000000002",
+        "pin_00000000000000000001-0000000000000002",
     ),
     Path: "/docs/report.txt",
 }
@@ -723,7 +723,7 @@ request := &loonfs.ListPathEntriesRequest{
     NamespaceID: "namespace_id",
     Path: "path",
     SnapshotID: loonfs.String(
-        "chk_00000000000000000000000000000002",
+        "pin_00000000000000000001-0000000000000002",
     ),
 }
 client.Files.List(
@@ -827,7 +827,7 @@ request := &loonfs.GetPathEntryRequest{
     NamespaceID: "namespace_id",
     Path: "path",
     SnapshotID: loonfs.String(
-        "chk_00000000000000000000000000000002",
+        "pin_00000000000000000001-0000000000000002",
     ),
 }
 client.Files.Retrieve(
@@ -981,7 +981,7 @@ client.Files.ListRevisions(
 <dl>
 <dd>
 
-Searches file content with a regular expression, accelerated by the namespace's grep index. Matches are verified against the real pattern and returned in ascending `(inode_id, byte_offset)` order; revisions committed after the index watermark are scanned exhaustively unless `allow_stale` skips them. Requires this deployment to serve grep and the namespace to carry a materialized active grep root.
+Searches file content with a regular expression, accelerated by the namespace's grep index. Matches are verified against the real pattern and returned in ascending `(inode_id, byte_offset)` order; revisions committed after the index watermark are scanned exhaustively unless `allow_stale` skips them. Requires this deployment to serve grep and the namespace to carry a materialized active grep index.
 </dd>
 </dl>
 </dd>
@@ -1831,7 +1831,7 @@ client.Snapshots.Extend(
 <dl>
 <dd>
 
-Releases a snapshot by id. Repeated releases succeed.
+Deletes a snapshot pin. A missing id returns snapshot_not_found.
 </dd>
 </dl>
 </dd>
@@ -2295,7 +2295,7 @@ client.Uploads.SignParts(
 <dl>
 <dd>
 
-Lists one page of active checkpoints in checkpoint-id order. Expired checkpoints remain visible until collection releases them. Released checkpoints are omitted. The cursor resumes a live listing and does not create a snapshot.
+Lists existing pins in checkpoint-id order. Expired pins remain visible until collection deletes them after expiry plus grace. The cursor resumes a live listing.
 </dd>
 </dl>
 </dd>
@@ -2448,7 +2448,7 @@ client.Maintenance.Checkpoints.Create(
 <dl>
 <dd>
 
-Releases a user-owned checkpoint pin by id. Idempotent: releasing an already-released or reaped record succeeds. The record is reaped by a later garbage-collection pass; its pinned data becomes collectable only on the pass after that.
+Deletes a user-owned checkpoint pin. A missing id returns checkpoint_not_found. Garbage collection can reclaim its unreferenced manifest and runs.
 </dd>
 </dl>
 </dd>
@@ -2639,7 +2639,7 @@ client.Maintenance.GrepIndex.Retrieve(
 <dl>
 <dd>
 
-Disables the namespace's grep root and clears its segment references with one durable compare-and-swap; index maintenance stops on its own once a step reads the disabled root. Explicit grep garbage collection later reclaims the segments. Idempotent. Requires this deployment to maintain the grep index.
+Disables the namespace's grep index by publishing the next manifest number with no segment references. Index maintenance stops when a step reads the disabled manifest. Explicit grep garbage collection later reclaims the segments. Idempotent. Requires this deployment to maintain the grep index.
 </dd>
 </dl>
 </dd>
@@ -2699,7 +2699,7 @@ client.Maintenance.GrepIndex.Disable(
 <dl>
 <dd>
 
-Enables the namespace's grep root and asks this deployment's maintenance runner for the backfill's first step. The response reports the lifecycle and bookkeeping read after the transition: a fresh enable is `backfilling` with the sequence its checkpoint captured, while an already-enabled namespace answers with its current status. Idempotent. Requires this deployment to maintain the grep index.
+Enables the namespace's grep index and asks this deployment's maintenance runner for the backfill's first step. The response reports the lifecycle and bookkeeping read after the transition: a fresh enable is `backfilling` with the sequence its checkpoint captured, while an already-enabled namespace answers with its current status. Idempotent. Requires this deployment to maintain the grep index.
 </dd>
 </dl>
 </dd>
@@ -2759,7 +2759,7 @@ client.Maintenance.GrepIndex.Enable(
 <dl>
 <dd>
 
-Runs one explicit garbage-collection pass over only this namespace's grep-owned extension keyspace. A tombstoned or absent namespace has aged extension state reaped; no grep garbage collection runs implicitly. `max_objects` bounds the reads the pass spends and returns a `next_cursor` when keys remain; resuming re-reads liveness and the grep root, so a cursor only skips enumeration. Requires this deployment to maintain the grep index.
+Runs one explicit garbage-collection pass over only this namespace's grep-owned extension keyspace. A tombstoned or absent namespace has aged extension state reaped. Every call reads durable roots and completes one pass. Unreadable or invalid roots fail before deletion. Requires this deployment to maintain the grep index.
 </dd>
 </dl>
 </dd>
@@ -2774,8 +2774,11 @@ Runs one explicit garbage-collection pass over only this namespace's grep-owned 
 <dd>
 
 ```go
-request := &maintenance.GrepGcRequest{
+request := &maintenance.GcGrepIndexRequest{
     NamespaceID: "namespace_id",
+    Body: map[string]any{
+        "key": "value",
+    },
 }
 client.Maintenance.GrepIndex.Gc(
     context.TODO(),
@@ -2803,15 +2806,7 @@ client.Maintenance.GrepIndex.Gc(
 <dl>
 <dd>
 
-**cursor:** `*string` — The opaque `next_cursor` returned by an earlier pass for the same namespace.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**maxObjects:** `*int64` — The maximum reads for this pass, or `None` for the server default.
+**request:** `loonfs.GrepGcRequest` 
     
 </dd>
 </dl>
@@ -2836,7 +2831,7 @@ client.Maintenance.GrepIndex.Gc(
 <dl>
 <dd>
 
-Runs one maintenance job for the namespace. The body names the job with `kind`: `metadata`, `metadata_compaction`, `gc`, or `retention`. The response carries the same `kind` and that job's result. A deleted namespace accepts only `gc`. A `gc` call performs up to 1024 durable work steps unless `max_steps` says otherwise, and returns a cursor when work remains. Steps include marking, merging, and sweeping; the budget does not count object-store requests.
+Runs one maintenance job for the namespace. The body names the job with `kind`: `metadata`, `metadata_compaction`, `gc`, or `retention`. The response carries the same `kind` and that job's result. A deleted namespace accepts only `gc`. A `gc` call reads current roots, then sweeps every family to the end. Each listing starts at the beginning. The call keeps no continuation.
 </dd>
 </dl>
 </dd>

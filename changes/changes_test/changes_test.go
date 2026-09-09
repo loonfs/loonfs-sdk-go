@@ -92,7 +92,7 @@ func TestChangesListWithWireMock(
 		NamespaceID: "namespace_id",
 		AfterSeq:    int64(1000000),
 		SnapshotID: loonfs.String(
-			"chk_00000000000000000000000000000002",
+			"pin_00000000000000000001-0000000000000002",
 		),
 	}
 	_, invocationErr := client.Changes.List(
@@ -104,5 +104,5 @@ func TestChangesListWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestChangesListWithWireMock", "GET", "/v0/namespaces/namespace_id/changes", map[string]interface{}{"after_seq": "1000000", "snapshot_id": "chk_00000000000000000000000000000002"}, 1)
+	VerifyRequestCount(t, "TestChangesListWithWireMock", "GET", "/v0/namespaces/namespace_id/changes", map[string]interface{}{"after_seq": "1000000", "snapshot_id": "pin_00000000000000000001-0000000000000002"}, 1)
 }

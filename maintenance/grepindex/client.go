@@ -62,7 +62,7 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Disables the namespace's grep root and clears its segment references with one durable compare-and-swap; index maintenance stops on its own once a step reads the disabled root. Explicit grep garbage collection later reclaims the segments. Idempotent. Requires this deployment to maintain the grep index.
+// Disables the namespace's grep index by publishing the next manifest number with no segment references. Index maintenance stops when a step reads the disabled manifest. Explicit grep garbage collection later reclaims the segments. Idempotent. Requires this deployment to maintain the grep index.
 //
 // Example:
 //
@@ -89,7 +89,7 @@ func (c *Client) Disable(
 	return response.Body, nil
 }
 
-// Enables the namespace's grep root and asks this deployment's maintenance runner for the backfill's first step. The response reports the lifecycle and bookkeeping read after the transition: a fresh enable is `backfilling` with the sequence its checkpoint captured, while an already-enabled namespace answers with its current status. Idempotent. Requires this deployment to maintain the grep index.
+// Enables the namespace's grep index and asks this deployment's maintenance runner for the backfill's first step. The response reports the lifecycle and bookkeeping read after the transition: a fresh enable is `backfilling` with the sequence its checkpoint captured, while an already-enabled namespace answers with its current status. Idempotent. Requires this deployment to maintain the grep index.
 //
 // Example:
 //
@@ -116,12 +116,15 @@ func (c *Client) Enable(
 	return response.Body, nil
 }
 
-// Runs one explicit garbage-collection pass over only this namespace's grep-owned extension keyspace. A tombstoned or absent namespace has aged extension state reaped; no grep garbage collection runs implicitly. `max_objects` bounds the reads the pass spends and returns a `next_cursor` when keys remain; resuming re-reads liveness and the grep root, so a cursor only skips enumeration. Requires this deployment to maintain the grep index.
+// Runs one explicit garbage-collection pass over only this namespace's grep-owned extension keyspace. A tombstoned or absent namespace has aged extension state reaped. Every call reads durable roots and completes one pass. Unreadable or invalid roots fail before deletion. Requires this deployment to maintain the grep index.
 //
 // Example:
 //
-//	request := &maintenance.GrepGcRequest{
+//	request := &maintenance.GcGrepIndexRequest{
 //	    NamespaceID: "namespace_id",
+//	    Body: map[string]any{
+//	        "key": "value",
+//	    },
 //	}
 //	client.Maintenance.GrepIndex.Gc(
 //	    context.TODO(),
@@ -129,7 +132,7 @@ func (c *Client) Enable(
 //	)
 func (c *Client) Gc(
 	ctx context.Context,
-	request *maintenance.GrepGcRequest,
+	request *maintenance.GcGrepIndexRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.GrepGcResponse, error) {
 	response, err := c.WithRawResponse.Gc(

@@ -461,7 +461,7 @@ var (
 type Snapshot struct {
 	// Time the snapshot record was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// When the snapshot lease expires, in Unix milliseconds.
+	// When the snapshot expires, in Unix milliseconds.
 	ExpiresAtMs int64 `json:"expires_at_ms" url:"expires_at_ms"`
 	// Namespace sequence captured by the snapshot.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`

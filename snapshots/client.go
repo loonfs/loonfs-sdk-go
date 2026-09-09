@@ -167,7 +167,7 @@ func (c *Client) Extend(
 	return response.Body, nil
 }
 
-// Releases a snapshot by id. Repeated releases succeed.
+// Deletes a snapshot pin. A missing id returns snapshot_not_found.
 //
 // Example:
 //

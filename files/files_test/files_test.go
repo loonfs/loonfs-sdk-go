@@ -91,7 +91,7 @@ func TestFilesCreateDownloadWithWireMock(
 	request := &loonfs.BeginDownloadRequest{
 		NamespaceID: "namespace_id",
 		SnapshotID: loonfs.String(
-			"chk_00000000000000000000000000000002",
+			"pin_00000000000000000001-0000000000000002",
 		),
 		Path: "/docs/report.txt",
 	}
@@ -104,7 +104,7 @@ func TestFilesCreateDownloadWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFilesCreateDownloadWithWireMock", "POST", "/v0/namespaces/namespace_id/filesystem/downloads", map[string]interface{}{"snapshot_id": "chk_00000000000000000000000000000002"}, 1)
+	VerifyRequestCount(t, "TestFilesCreateDownloadWithWireMock", "POST", "/v0/namespaces/namespace_id/filesystem/downloads", map[string]interface{}{"snapshot_id": "pin_00000000000000000001-0000000000000002"}, 1)
 }
 
 func TestFilesListWithWireMock(
@@ -122,7 +122,7 @@ func TestFilesListWithWireMock(
 		NamespaceID: "namespace_id",
 		Path:        "path",
 		SnapshotID: loonfs.String(
-			"chk_00000000000000000000000000000002",
+			"pin_00000000000000000001-0000000000000002",
 		),
 	}
 	_, invocationErr := client.Files.List(
@@ -134,7 +134,7 @@ func TestFilesListWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFilesListWithWireMock", "GET", "/v0/namespaces/namespace_id/filesystem/entries", map[string]interface{}{"path": "path", "snapshot_id": "chk_00000000000000000000000000000002"}, 1)
+	VerifyRequestCount(t, "TestFilesListWithWireMock", "GET", "/v0/namespaces/namespace_id/filesystem/entries", map[string]interface{}{"path": "path", "snapshot_id": "pin_00000000000000000001-0000000000000002"}, 1)
 }
 
 func TestFilesRetrieveWithWireMock(
@@ -152,7 +152,7 @@ func TestFilesRetrieveWithWireMock(
 		NamespaceID: "namespace_id",
 		Path:        "path",
 		SnapshotID: loonfs.String(
-			"chk_00000000000000000000000000000002",
+			"pin_00000000000000000001-0000000000000002",
 		),
 	}
 	_, invocationErr := client.Files.Retrieve(
@@ -164,7 +164,7 @@ func TestFilesRetrieveWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFilesRetrieveWithWireMock", "GET", "/v0/namespaces/namespace_id/filesystem/entry", map[string]interface{}{"path": "path", "snapshot_id": "chk_00000000000000000000000000000002"}, 1)
+	VerifyRequestCount(t, "TestFilesRetrieveWithWireMock", "GET", "/v0/namespaces/namespace_id/filesystem/entry", map[string]interface{}{"path": "path", "snapshot_id": "pin_00000000000000000001-0000000000000002"}, 1)
 }
 
 func TestFilesListRevisionsWithWireMock(
