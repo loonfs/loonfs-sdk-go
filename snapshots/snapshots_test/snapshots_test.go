@@ -131,6 +131,33 @@ func TestSnapshotsCreateWithWireMock(
 	VerifyRequestCount(t, "TestSnapshotsCreateWithWireMock", "POST", "/v0/namespaces/namespace_id/snapshots", nil, 1)
 }
 
+func TestSnapshotsDeleteWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := server.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &loonfs.DeleteSnapshotRequest{
+		NamespaceID: "namespace_id",
+		SnapshotID:  "snapshot_id",
+	}
+	_, invocationErr := client.Snapshots.Delete(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestSnapshotsDeleteWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestSnapshotsDeleteWithWireMock", "DELETE", "/v0/namespaces/namespace_id/snapshots/snapshot_id", nil, 1)
+}
+
 func TestSnapshotsExtendWithWireMock(
 	t *testing.T,
 ) {
@@ -157,31 +184,4 @@ func TestSnapshotsExtendWithWireMock(
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestSnapshotsExtendWithWireMock", "POST", "/v0/namespaces/namespace_id/snapshots/snapshot_id/extend", nil, 1)
-}
-
-func TestSnapshotsReleaseWithWireMock(
-	t *testing.T,
-) {
-	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
-	if WireMockBaseURL == "" {
-		WireMockBaseURL = "http://localhost:8080"
-	}
-	client := server.NewClient(
-		option.WithBaseURL(WireMockBaseURL),
-		option.WithToken("test-token"),
-	)
-	request := &loonfs.ReleaseSnapshotRequest{
-		NamespaceID: "namespace_id",
-		SnapshotID:  "snapshot_id",
-	}
-	_, invocationErr := client.Snapshots.Release(
-		context.TODO(),
-		request,
-		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestSnapshotsReleaseWithWireMock"}},
-		),
-	)
-
-	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestSnapshotsReleaseWithWireMock", "POST", "/v0/namespaces/namespace_id/snapshots/snapshot_id/release", nil, 1)
 }

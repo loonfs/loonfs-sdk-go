@@ -130,7 +130,7 @@ func TestMaintenanceCheckpointsCreateWithWireMock(
 	VerifyRequestCount(t, "TestMaintenanceCheckpointsCreateWithWireMock", "POST", "/v0/maintenance/namespaces/namespace_id/checkpoints", nil, 1)
 }
 
-func TestMaintenanceCheckpointsReleaseWithWireMock(
+func TestMaintenanceCheckpointsDeleteWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -141,18 +141,18 @@ func TestMaintenanceCheckpointsReleaseWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &maintenance.ReleaseCheckpointRequest{
+	request := &maintenance.DeleteCheckpointRequest{
 		NamespaceID:  "namespace_id",
 		CheckpointID: "checkpoint_id",
 	}
-	_, invocationErr := client.Maintenance.Checkpoints.Release(
+	_, invocationErr := client.Maintenance.Checkpoints.Delete(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestMaintenanceCheckpointsReleaseWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestMaintenanceCheckpointsDeleteWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestMaintenanceCheckpointsReleaseWithWireMock", "POST", "/v0/maintenance/namespaces/namespace_id/checkpoints/checkpoint_id/release", nil, 1)
+	VerifyRequestCount(t, "TestMaintenanceCheckpointsDeleteWithWireMock", "DELETE", "/v0/maintenance/namespaces/namespace_id/checkpoints/checkpoint_id", nil, 1)
 }

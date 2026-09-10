@@ -11,7 +11,7 @@ import (
 
 var (
 	commitRequestFieldNamespaceID   = big.NewInt(1 << 0)
-	commitRequestFieldActor         = big.NewInt(1 << 1)
+	commitRequestFieldActorID       = big.NewInt(1 << 1)
 	commitRequestFieldAssertions    = big.NewInt(1 << 2)
 	commitRequestFieldCommitID      = big.NewInt(1 << 3)
 	commitRequestFieldContentTokens = big.NewInt(1 << 4)
@@ -23,7 +23,7 @@ type CommitRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// Actor responsible for the commit, as supplied by the application.
-	Actor *ActorRef `json:"actor" url:"-"`
+	ActorID ActorID `json:"actor_id" url:"-"`
 	// Ordered admission conditions evaluated before any operations.
 	Assertions []*CommitAssertion `json:"assertions,omitempty" url:"-"`
 	// Caller-supplied idempotency key for the whole request.
@@ -53,11 +53,11 @@ func (c *CommitRequest) SetNamespaceID(namespaceID string) {
 	c.require(commitRequestFieldNamespaceID)
 }
 
-// SetActor sets the Actor field and marks it as non-optional;
+// SetActorID sets the ActorID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitRequest) SetActor(actor *ActorRef) {
-	c.Actor = actor
-	c.require(commitRequestFieldActor)
+func (c *CommitRequest) SetActorID(actorID ActorID) {
+	c.ActorID = actorID
+	c.require(commitRequestFieldActorID)
 }
 
 // SetAssertions sets the Assertions field and marks it as non-optional;
@@ -728,7 +728,7 @@ type CommitResponse struct {
 	// The commit time in Unix milliseconds; `committed_seq` defines commit order.
 	CommittedAtMs int64 `json:"committed_at_ms" url:"committed_at_ms"`
 	// Actor responsible for the commit, as supplied by the application.
-	CommittedBy *ActorRef `json:"committed_by" url:"committed_by"`
+	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
 	// Sequence number where the commit became visible.
 	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
 	// The filesystem events in commit order, or `None` when replaying a commit
@@ -760,9 +760,9 @@ func (c *CommitResponse) GetCommittedAtMs() int64 {
 	return c.CommittedAtMs
 }
 
-func (c *CommitResponse) GetCommittedBy() *ActorRef {
+func (c *CommitResponse) GetCommittedBy() ActorID {
 	if c == nil {
-		return nil
+		return ""
 	}
 	return c.CommittedBy
 }
@@ -825,7 +825,7 @@ func (c *CommitResponse) SetCommittedAtMs(committedAtMs int64) {
 
 // SetCommittedBy sets the CommittedBy field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitResponse) SetCommittedBy(committedBy *ActorRef) {
+func (c *CommitResponse) SetCommittedBy(committedBy ActorID) {
 	c.CommittedBy = committedBy
 	c.require(commitResponseFieldCommittedBy)
 }

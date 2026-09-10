@@ -426,10 +426,7 @@ Applies one commit: an ordered, non-empty list of path operations that commit to
 ```go
 request := &loonfs.CommitRequest{
     NamespaceID: "namespace_id",
-    Actor: &loonfs.ActorRef{
-        ID: "usr_8f3c",
-        Kind: loonfs.ActorKindUser,
-    },
+    ActorID: "usr_8f3c",
     CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
     Operations: []*loonfs.FilesystemOperation{
         &loonfs.FilesystemOperation{
@@ -466,7 +463,7 @@ client.Commits.Create(
 <dl>
 <dd>
 
-**actor:** `*loonfs.ActorRef` — Actor responsible for the commit, as supplied by the application.
+**actorID:** `loonfs.ActorID` — Actor responsible for the commit, as supplied by the application.
     
 </dd>
 </dl>
@@ -1599,7 +1596,7 @@ client.Inodes.CreateDownload(
 <dl>
 <dd>
 
-Lists live snapshots in snapshot-id order. Released and expired snapshots are omitted.
+Lists live snapshots in snapshot-id order. Deleted and expired snapshots are omitted.
 </dd>
 </dl>
 </dd>
@@ -1741,6 +1738,75 @@ client.Snapshots.Create(
 </dl>
 </details>
 
+<details><summary><code>client.Snapshots.Delete(NamespaceID, SnapshotID) -> *loonfs.DeleteSnapshotResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a snapshot pin. A missing id returns snapshot_not_found.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.DeleteSnapshotRequest{
+    NamespaceID: "namespace_id",
+    SnapshotID: "snapshot_id",
+}
+client.Snapshots.Delete(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — Namespace id
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `string` — Snapshot id
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Snapshots.Extend(NamespaceID, SnapshotID, request) -> *loonfs.Snapshot</code></summary>
 <dl>
 <dd>
@@ -1808,75 +1874,6 @@ client.Snapshots.Extend(
 <dd>
 
 **ttlMs:** `int64` — Requested lifetime from the server's current time, in milliseconds.
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Snapshots.Release(NamespaceID, SnapshotID) -> *loonfs.ReleaseSnapshotResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Deletes a snapshot pin. A missing id returns snapshot_not_found.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &loonfs.ReleaseSnapshotRequest{
-    NamespaceID: "namespace_id",
-    SnapshotID: "snapshot_id",
-}
-client.Snapshots.Release(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**snapshotID:** `string` — Snapshot id
     
 </dd>
 </dl>
@@ -2371,7 +2368,7 @@ client.Maintenance.Checkpoints.List(
 <dl>
 <dd>
 
-Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is released, so routine maintenance should flush the WAL instead. This is a maintenance operation, not a file mutation.
+Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is deleted, so routine maintenance should flush the WAL instead. This is a maintenance operation, not a file mutation.
 </dd>
 </dl>
 </dd>
@@ -2424,7 +2421,7 @@ client.Maintenance.Checkpoints.Create(
 <dl>
 <dd>
 
-**ttlMs:** `*int64` — The checkpoint lifetime in milliseconds, or `None` for an explicit release only.
+**ttlMs:** `*int64` — The checkpoint lifetime in milliseconds, or `None` for an explicit deletion only.
     
 </dd>
 </dl>
@@ -2436,7 +2433,7 @@ client.Maintenance.Checkpoints.Create(
 </dl>
 </details>
 
-<details><summary><code>client.Maintenance.Checkpoints.Release(NamespaceID, CheckpointID) -> *loonfs.ReleaseCheckpointResponse</code></summary>
+<details><summary><code>client.Maintenance.Checkpoints.Delete(NamespaceID, CheckpointID) -> *loonfs.DeleteCheckpointResponse</code></summary>
 <dl>
 <dd>
 
@@ -2463,11 +2460,11 @@ Deletes a user-owned checkpoint pin. A missing id returns checkpoint_not_found. 
 <dd>
 
 ```go
-request := &maintenance.ReleaseCheckpointRequest{
+request := &maintenance.DeleteCheckpointRequest{
     NamespaceID: "namespace_id",
     CheckpointID: "checkpoint_id",
 }
-client.Maintenance.Checkpoints.Release(
+client.Maintenance.Checkpoints.Delete(
     context.TODO(),
     request,
 )
@@ -2831,7 +2828,7 @@ client.Maintenance.GrepIndex.Gc(
 <dl>
 <dd>
 
-Runs one maintenance job for the namespace. The body names the job with `kind`: `metadata`, `metadata_compaction`, `gc`, or `retention`. The response carries the same `kind` and that job's result. A deleted namespace accepts only `gc`. A `gc` call reads current roots, then sweeps every family to the end. Each listing starts at the beginning. The call keeps no continuation.
+Runs one maintenance job for the namespace. The body names the job with `kind`: `metadata`, `metadata_compaction`, `gc`, or `retention`. The response carries the same `kind` and that job's result. A deleted namespace accepts only `gc`. A `gc` call reads the current manifest and lists pins, then sweeps every family to the end. Each listing starts at the beginning. The call keeps no continuation.
 </dd>
 </dl>
 </dd>

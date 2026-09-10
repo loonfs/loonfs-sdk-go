@@ -81,7 +81,7 @@ type CommittedChange struct {
 	// The commit time in Unix milliseconds; `committed_seq` defines commit order.
 	CommittedAtMs int64 `json:"committed_at_ms" url:"committed_at_ms"`
 	// Actor responsible for the commit, as supplied by the application.
-	CommittedBy *ActorRef `json:"committed_by" url:"committed_by"`
+	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
 	// Namespace sequence for this logical commit.
 	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
 	// The filesystem events for this commit in commit order.
@@ -110,9 +110,9 @@ func (c *CommittedChange) GetCommittedAtMs() int64 {
 	return c.CommittedAtMs
 }
 
-func (c *CommittedChange) GetCommittedBy() *ActorRef {
+func (c *CommittedChange) GetCommittedBy() ActorID {
 	if c == nil {
-		return nil
+		return ""
 	}
 	return c.CommittedBy
 }
@@ -168,7 +168,7 @@ func (c *CommittedChange) SetCommittedAtMs(committedAtMs int64) {
 
 // SetCommittedBy sets the CommittedBy field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommittedChange) SetCommittedBy(committedBy *ActorRef) {
+func (c *CommittedChange) SetCommittedBy(committedBy ActorID) {
 	c.CommittedBy = committedBy
 	c.require(committedChangeFieldCommittedBy)
 }

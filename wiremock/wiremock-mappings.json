@@ -198,7 +198,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"attributes\": {\n            \"key\": \"platform\"\n          },\n          \"attributes_revision_no\": 1000000,\n          \"inode_id\": \"ino_123\",\n          \"kind\": \"attributes_changed\"\n        }\n      ],\n      \"message\": \"message\"\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"through_seq\": 1000000\n}",
+        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"attributes\": {\n            \"key\": \"platform\"\n          },\n          \"attributes_revision_no\": 1000000,\n          \"inode_id\": \"ino_123\",\n          \"kind\": \"attributes_changed\"\n        }\n      ],\n      \"message\": \"message\"\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"through_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -234,7 +234,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n  \"committed_at_ms\": 1000000,\n  \"committed_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"committed_seq\": 1000000,\n  \"events\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"kind\": \"attributes_changed\"\n    }\n  ],\n  \"message\": \"message\",\n  \"namespace_id\": \"demo\"\n}",
+        "body": "{\n  \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n  \"committed_at_ms\": 1000000,\n  \"committed_by\": \"usr_8f3c\",\n  \"committed_seq\": 1000000,\n  \"events\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"kind\": \"attributes_changed\"\n    }\n  ],\n  \"message\": \"message\",\n  \"namespace_id\": \"demo\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -360,7 +360,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"binding_generation\": \"binding_generation\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"path\": \"/docs/report.txt\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_generation\": \"binding_generation\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"path\": \"/docs/report.txt\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -404,7 +404,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"binding_generation\": \"binding_generation\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_generation\": \"binding_generation\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -445,7 +445,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"sha256\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n        \"kind\": \"blob_v1\",\n        \"owner_namespace_id\": \"demo\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_123\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
+        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"sha256\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n        \"kind\": \"blob_v1\",\n        \"owner_namespace_id\": \"demo\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_123\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -522,7 +522,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_binding\": {\n        \"display_name\": \"report.txt\",\n        \"name_key\": \"report.txt\",\n        \"parent_inode_id\": \"ino_123\"\n      },\n      \"deleted_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"deletion_seq\": 1000000,\n      \"inode_id\": \"ino_123\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_binding\": {\n        \"display_name\": \"report.txt\",\n        \"name_key\": \"report.txt\",\n        \"parent_inode_id\": \"ino_123\"\n      },\n      \"deleted_by\": \"usr_8f3c\",\n      \"deletion_seq\": 1000000,\n      \"inode_id\": \"ino_123\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -561,7 +561,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"binding_generation\": \"binding_generation\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": {\n    \"id\": \"usr_8f3c\",\n    \"kind\": \"user\"\n  },\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_generation\": \"binding_generation\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -600,7 +600,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"binding_generation\": \"binding_generation\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"parent_inode_id\": \"ino_123\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_generation\": \"binding_generation\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"parent_inode_id\": \"ino_123\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -639,7 +639,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": {\n        \"id\": \"usr_8f3c\",\n        \"kind\": \"user\"\n      },\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"sha256\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n        \"kind\": \"blob_v1\",\n        \"owner_namespace_id\": \"demo\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_123\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
+        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"sha256\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n        \"kind\": \"blob_v1\",\n        \"owner_namespace_id\": \"demo\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_123\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -813,6 +813,45 @@
       }
     },
     {
+      "id": "5e769a80-8dd6-4455-bf86-a65abb953ebb",
+      "name": "Delete snapshot - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots/{snapshot_id}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "snapshot_id": {
+            "equalTo": "snapshot_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"pin_00000000000000000001-0000000000000002\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "5e769a80-8dd6-4455-bf86-a65abb953ebb",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "42695787-5df8-4366-8155-7b842baabd41",
       "name": "Extend snapshot - default",
       "request": {
@@ -840,45 +879,6 @@
         }
       },
       "uuid": "42695787-5df8-4366-8155-7b842baabd41",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "ef1c4696-806a-458f-a497-418189c7ac0d",
-      "name": "Release snapshot - default",
-      "request": {
-        "urlPathTemplate": "/v0/namespaces/{namespace_id}/snapshots/{snapshot_id}/release",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          },
-          "snapshot_id": {
-            "equalTo": "snapshot_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"pin_00000000000000000001-0000000000000002\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "ef1c4696-806a-458f-a497-418189c7ac0d",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1155,11 +1155,11 @@
       }
     },
     {
-      "id": "a5aa9a6c-18d7-4d2e-be10-c7fc75ac3c1b",
-      "name": "Release checkpoint - default",
+      "id": "d6740e8b-ed75-4e20-a95d-929cad20d2e9",
+      "name": "Delete checkpoint - default",
       "request": {
-        "urlPathTemplate": "/v0/maintenance/namespaces/{namespace_id}/checkpoints/{checkpoint_id}/release",
-        "method": "POST",
+        "urlPathTemplate": "/v0/maintenance/namespaces/{namespace_id}/checkpoints/{checkpoint_id}",
+        "method": "DELETE",
         "headers": {
           "Authorization": {
             "matches": "Bearer .+"
@@ -1181,7 +1181,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "a5aa9a6c-18d7-4d2e-be10-c7fc75ac3c1b",
+      "uuid": "d6740e8b-ed75-4e20-a95d-929cad20d2e9",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1392,7 +1392,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"deleted\": {\n    \"checkpoint_records\": 1000000,\n    \"content_objects\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_segments\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaim_after_ms\": 1000000,\n  \"released_checkpoints\": {\n    \"expired\": 1000000,\n    \"fork\": 1000000,\n    \"snapshot\": 1000000\n  },\n  \"retained\": {\n    \"checkpoint_not_releasable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"retained_candidates\": 1000000,\n  \"kind\": \"gc\"\n}",
+        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_segments\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"expired\": 1000000,\n    \"fork\": 1000000,\n    \"snapshot\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaim_after_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"retained_candidates\": 1000000,\n  \"kind\": \"gc\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
