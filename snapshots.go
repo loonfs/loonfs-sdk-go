@@ -77,6 +77,42 @@ func (c *CreateSnapshotRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	deleteSnapshotRequestFieldNamespaceID = big.NewInt(1 << 0)
+	deleteSnapshotRequestFieldSnapshotID  = big.NewInt(1 << 1)
+)
+
+type DeleteSnapshotRequest struct {
+	// Namespace id
+	NamespaceID string `json:"-" url:"-"`
+	// Snapshot id
+	SnapshotID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (d *DeleteSnapshotRequest) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteSnapshotRequest) SetNamespaceID(namespaceID string) {
+	d.NamespaceID = namespaceID
+	d.require(deleteSnapshotRequestFieldNamespaceID)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteSnapshotRequest) SetSnapshotID(snapshotID string) {
+	d.SnapshotID = snapshotID
+	d.require(deleteSnapshotRequestFieldSnapshotID)
+}
+
+var (
 	extendSnapshotRequestFieldNamespaceID = big.NewInt(1 << 0)
 	extendSnapshotRequestFieldSnapshotID  = big.NewInt(1 << 1)
 	extendSnapshotRequestFieldTTLMs       = big.NewInt(1 << 2)
@@ -189,40 +225,107 @@ func (l *ListSnapshotsRequest) SetCursor(cursor *string) {
 	l.require(listSnapshotsRequestFieldCursor)
 }
 
+// Identifies the snapshot record that was deleted.
 var (
-	releaseSnapshotRequestFieldNamespaceID = big.NewInt(1 << 0)
-	releaseSnapshotRequestFieldSnapshotID  = big.NewInt(1 << 1)
+	deleteSnapshotResponseFieldNamespaceID = big.NewInt(1 << 0)
+	deleteSnapshotResponseFieldSnapshotID  = big.NewInt(1 << 1)
 )
 
-type ReleaseSnapshotRequest struct {
-	// Namespace id
-	NamespaceID string `json:"-" url:"-"`
-	// Snapshot id
-	SnapshotID string `json:"-" url:"-"`
+type DeleteSnapshotResponse struct {
+	// Namespace the snapshot belonged to.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// Deleted snapshot record.
+	SnapshotID CheckpointID `json:"snapshot_id" url:"snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (r *ReleaseSnapshotRequest) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
+func (d *DeleteSnapshotResponse) GetNamespaceID() NamespaceID {
+	if d == nil {
+		return ""
 	}
-	r.explicitFields.Or(r.explicitFields, field)
+	return d.NamespaceID
+}
+
+func (d *DeleteSnapshotResponse) GetSnapshotID() CheckpointID {
+	if d == nil {
+		return ""
+	}
+	return d.SnapshotID
+}
+
+func (d *DeleteSnapshotResponse) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeleteSnapshotResponse) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *ReleaseSnapshotRequest) SetNamespaceID(namespaceID string) {
-	r.NamespaceID = namespaceID
-	r.require(releaseSnapshotRequestFieldNamespaceID)
+func (d *DeleteSnapshotResponse) SetNamespaceID(namespaceID NamespaceID) {
+	d.NamespaceID = namespaceID
+	d.require(deleteSnapshotResponseFieldNamespaceID)
 }
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *ReleaseSnapshotRequest) SetSnapshotID(snapshotID string) {
-	r.SnapshotID = snapshotID
-	r.require(releaseSnapshotRequestFieldSnapshotID)
+func (d *DeleteSnapshotResponse) SetSnapshotID(snapshotID CheckpointID) {
+	d.SnapshotID = snapshotID
+	d.require(deleteSnapshotResponseFieldSnapshotID)
+}
+
+func (d *DeleteSnapshotResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeleteSnapshotResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeleteSnapshotResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeleteSnapshotResponse) MarshalJSON() ([]byte, error) {
+	type embed DeleteSnapshotResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeleteSnapshotResponse) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
 }
 
 // One page of live read snapshots.
@@ -343,109 +446,6 @@ func (l *ListSnapshotsResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", l)
-}
-
-// Result of releasing a read snapshot.
-var (
-	releaseSnapshotResponseFieldNamespaceID = big.NewInt(1 << 0)
-	releaseSnapshotResponseFieldSnapshotID  = big.NewInt(1 << 1)
-)
-
-type ReleaseSnapshotResponse struct {
-	// Namespace the snapshot belonged to.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Released snapshot id.
-	SnapshotID CheckpointID `json:"snapshot_id" url:"snapshot_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *ReleaseSnapshotResponse) GetNamespaceID() NamespaceID {
-	if r == nil {
-		return ""
-	}
-	return r.NamespaceID
-}
-
-func (r *ReleaseSnapshotResponse) GetSnapshotID() CheckpointID {
-	if r == nil {
-		return ""
-	}
-	return r.SnapshotID
-}
-
-func (r *ReleaseSnapshotResponse) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *ReleaseSnapshotResponse) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *ReleaseSnapshotResponse) SetNamespaceID(namespaceID NamespaceID) {
-	r.NamespaceID = namespaceID
-	r.require(releaseSnapshotResponseFieldNamespaceID)
-}
-
-// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *ReleaseSnapshotResponse) SetSnapshotID(snapshotID CheckpointID) {
-	r.SnapshotID = snapshotID
-	r.require(releaseSnapshotResponseFieldSnapshotID)
-}
-
-func (r *ReleaseSnapshotResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler ReleaseSnapshotResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = ReleaseSnapshotResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *ReleaseSnapshotResponse) MarshalJSON() ([]byte, error) {
-	type embed ReleaseSnapshotResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *ReleaseSnapshotResponse) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
 }
 
 // A live snapshot.

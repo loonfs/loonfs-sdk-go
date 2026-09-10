@@ -207,7 +207,7 @@ type TrashEntry struct {
 	// Directory binding removed by the deletion.
 	DeletedBinding *DirectoryBinding `json:"deleted_binding" url:"deleted_binding"`
 	// Actor responsible for the deletion.
-	DeletedBy *ActorRef `json:"deleted_by" url:"deleted_by"`
+	DeletedBy ActorID `json:"deleted_by" url:"deleted_by"`
 	// Commit sequence that identifies this deletion.
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
 	// Inode hidden by the deletion.
@@ -234,9 +234,9 @@ func (t *TrashEntry) GetDeletedBinding() *DirectoryBinding {
 	return t.DeletedBinding
 }
 
-func (t *TrashEntry) GetDeletedBy() *ActorRef {
+func (t *TrashEntry) GetDeletedBy() ActorID {
 	if t == nil {
-		return nil
+		return ""
 	}
 	return t.DeletedBy
 }
@@ -285,7 +285,7 @@ func (t *TrashEntry) SetDeletedBinding(deletedBinding *DirectoryBinding) {
 
 // SetDeletedBy sets the DeletedBy field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TrashEntry) SetDeletedBy(deletedBy *ActorRef) {
+func (t *TrashEntry) SetDeletedBy(deletedBy ActorID) {
 	t.DeletedBy = deletedBy
 	t.require(trashEntryFieldDeletedBy)
 }

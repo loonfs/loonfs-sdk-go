@@ -79,6 +79,52 @@ func (r *RawClient) Create(
 	}, nil
 }
 
+func (r *RawClient) Delete(
+	ctx context.Context,
+	request *loonfs.DeleteSnapshotRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*loonfs.DeleteSnapshotResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/namespaces/%v/snapshots/%v",
+		request.NamespaceID,
+		request.SnapshotID,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	var response *loonfs.DeleteSnapshotResponse
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodDelete,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*loonfs.DeleteSnapshotResponse]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
 func (r *RawClient) Extend(
 	ctx context.Context,
 	request *loonfs.ExtendSnapshotRequest,
@@ -121,52 +167,6 @@ func (r *RawClient) Extend(
 		return nil, err
 	}
 	return &core.Response[*loonfs.Snapshot]{
-		StatusCode: raw.StatusCode,
-		Header:     raw.Header,
-		Body:       response,
-	}, nil
-}
-
-func (r *RawClient) Release(
-	ctx context.Context,
-	request *loonfs.ReleaseSnapshotRequest,
-	opts ...option.RequestOption,
-) (*core.Response[*loonfs.ReleaseSnapshotResponse], error) {
-	options := core.NewRequestOptions(opts...)
-	baseURL := internal.ResolveBaseURL(
-		options.BaseURL,
-		r.baseURL,
-		"",
-	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/v0/namespaces/%v/snapshots/%v/release",
-		request.NamespaceID,
-		request.SnapshotID,
-	)
-	headers := internal.MergeHeaders(
-		r.options.ToHeader(),
-		options.ToHeader(),
-	)
-	var response *loonfs.ReleaseSnapshotResponse
-	raw, err := r.caller.Call(
-		ctx,
-		&internal.CallParams{
-			URL:             endpointURL,
-			Method:          http.MethodPost,
-			Headers:         headers,
-			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
-			BodyProperties:  options.BodyProperties,
-			QueryParameters: options.QueryParameters,
-			Client:          options.HTTPClient,
-			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &core.Response[*loonfs.ReleaseSnapshotResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

@@ -35,7 +35,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Lists live snapshots in snapshot-id order. Released and expired snapshots are omitted.
+// Lists live snapshots in snapshot-id order. Deleted and expired snapshots are omitted.
 //
 // Example:
 //
@@ -138,6 +138,34 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// Deletes a snapshot pin. A missing id returns snapshot_not_found.
+//
+// Example:
+//
+//	request := &loonfs.DeleteSnapshotRequest{
+//	    NamespaceID: "namespace_id",
+//	    SnapshotID: "snapshot_id",
+//	}
+//	client.Snapshots.Delete(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Delete(
+	ctx context.Context,
+	request *loonfs.DeleteSnapshotRequest,
+	opts ...option.RequestOption,
+) (*loonfs.DeleteSnapshotResponse, error) {
+	response, err := c.WithRawResponse.Delete(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
 // Extends a live snapshot without passing its lifetime limit. Repeating the request has the same result.
 //
 // Example:
@@ -157,34 +185,6 @@ func (c *Client) Extend(
 	opts ...option.RequestOption,
 ) (*loonfs.Snapshot, error) {
 	response, err := c.WithRawResponse.Extend(
-		ctx,
-		request,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
-}
-
-// Deletes a snapshot pin. A missing id returns snapshot_not_found.
-//
-// Example:
-//
-//	request := &loonfs.ReleaseSnapshotRequest{
-//	    NamespaceID: "namespace_id",
-//	    SnapshotID: "snapshot_id",
-//	}
-//	client.Snapshots.Release(
-//	    context.TODO(),
-//	    request,
-//	)
-func (c *Client) Release(
-	ctx context.Context,
-	request *loonfs.ReleaseSnapshotRequest,
-	opts ...option.RequestOption,
-) (*loonfs.ReleaseSnapshotResponse, error) {
-	response, err := c.WithRawResponse.Release(
 		ctx,
 		request,
 		opts...,

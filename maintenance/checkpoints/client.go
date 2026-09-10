@@ -110,7 +110,7 @@ func (c *Client) List(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is released, so routine maintenance should flush the WAL instead. This is a maintenance operation, not a file mutation.
+// Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is deleted, so routine maintenance should flush the WAL instead. This is a maintenance operation, not a file mutation.
 //
 // Example:
 //
@@ -142,20 +142,20 @@ func (c *Client) Create(
 //
 // Example:
 //
-//	request := &maintenance.ReleaseCheckpointRequest{
+//	request := &maintenance.DeleteCheckpointRequest{
 //	    NamespaceID: "namespace_id",
 //	    CheckpointID: "checkpoint_id",
 //	}
-//	client.Maintenance.Checkpoints.Release(
+//	client.Maintenance.Checkpoints.Delete(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) Release(
+func (c *Client) Delete(
 	ctx context.Context,
-	request *maintenance.ReleaseCheckpointRequest,
+	request *maintenance.DeleteCheckpointRequest,
 	opts ...option.RequestOption,
-) (*loonfs.ReleaseCheckpointResponse, error) {
-	response, err := c.WithRawResponse.Release(
+) (*loonfs.DeleteCheckpointResponse, error) {
+	response, err := c.WithRawResponse.Delete(
 		ctx,
 		request,
 		opts...,

@@ -19,7 +19,7 @@ type CreateCheckpointRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// The non-unique label recorded on the checkpoint.
 	Name string `json:"name" url:"-"`
-	// The checkpoint lifetime in milliseconds, or `None` for an explicit release only.
+	// The checkpoint lifetime in milliseconds, or `None` for an explicit deletion only.
 	TTLMs *int64 `json:"ttl_ms,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -76,6 +76,42 @@ func (c *CreateCheckpointRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	deleteCheckpointRequestFieldNamespaceID  = big.NewInt(1 << 0)
+	deleteCheckpointRequestFieldCheckpointID = big.NewInt(1 << 1)
+)
+
+type DeleteCheckpointRequest struct {
+	// Namespace id
+	NamespaceID string `json:"-" url:"-"`
+	// Checkpoint id
+	CheckpointID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (d *DeleteCheckpointRequest) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteCheckpointRequest) SetNamespaceID(namespaceID string) {
+	d.NamespaceID = namespaceID
+	d.require(deleteCheckpointRequestFieldNamespaceID)
+}
+
+// SetCheckpointID sets the CheckpointID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteCheckpointRequest) SetCheckpointID(checkpointID string) {
+	d.CheckpointID = checkpointID
+	d.require(deleteCheckpointRequestFieldCheckpointID)
+}
+
+var (
 	listCheckpointsRequestFieldNamespaceID = big.NewInt(1 << 0)
 	listCheckpointsRequestFieldLimit       = big.NewInt(1 << 1)
 	listCheckpointsRequestFieldCursor      = big.NewInt(1 << 2)
@@ -119,40 +155,4 @@ func (l *ListCheckpointsRequest) SetLimit(limit *int) {
 func (l *ListCheckpointsRequest) SetCursor(cursor *string) {
 	l.Cursor = cursor
 	l.require(listCheckpointsRequestFieldCursor)
-}
-
-var (
-	releaseCheckpointRequestFieldNamespaceID  = big.NewInt(1 << 0)
-	releaseCheckpointRequestFieldCheckpointID = big.NewInt(1 << 1)
-)
-
-type ReleaseCheckpointRequest struct {
-	// Namespace id
-	NamespaceID string `json:"-" url:"-"`
-	// Checkpoint id
-	CheckpointID string `json:"-" url:"-"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-}
-
-func (r *ReleaseCheckpointRequest) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *ReleaseCheckpointRequest) SetNamespaceID(namespaceID string) {
-	r.NamespaceID = namespaceID
-	r.require(releaseCheckpointRequestFieldNamespaceID)
-}
-
-// SetCheckpointID sets the CheckpointID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *ReleaseCheckpointRequest) SetCheckpointID(checkpointID string) {
-	r.CheckpointID = checkpointID
-	r.require(releaseCheckpointRequestFieldCheckpointID)
 }

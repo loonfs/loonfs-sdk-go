@@ -80,11 +80,11 @@ func (r *RawClient) Create(
 	}, nil
 }
 
-func (r *RawClient) Release(
+func (r *RawClient) Delete(
 	ctx context.Context,
-	request *maintenance.ReleaseCheckpointRequest,
+	request *maintenance.DeleteCheckpointRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.ReleaseCheckpointResponse], error) {
+) (*core.Response[*loonfs.DeleteCheckpointResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -92,7 +92,7 @@ func (r *RawClient) Release(
 		"",
 	)
 	endpointURL := internal.EncodeURL(
-		baseURL+"/v0/maintenance/namespaces/%v/checkpoints/%v/release",
+		baseURL+"/v0/maintenance/namespaces/%v/checkpoints/%v",
 		request.NamespaceID,
 		request.CheckpointID,
 	)
@@ -100,12 +100,12 @@ func (r *RawClient) Release(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.ReleaseCheckpointResponse
+	var response *loonfs.DeleteCheckpointResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
 			URL:             endpointURL,
-			Method:          http.MethodPost,
+			Method:          http.MethodDelete,
 			Headers:         headers,
 			MaxAttempts:     options.MaxAttempts,
 			DisableRetries:  options.DisableRetries,
@@ -119,7 +119,7 @@ func (r *RawClient) Release(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.ReleaseCheckpointResponse]{
+	return &core.Response[*loonfs.DeleteCheckpointResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

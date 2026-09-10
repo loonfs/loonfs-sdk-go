@@ -90,11 +90,8 @@ func TestCommitsCreateWithWireMock(
 	)
 	request := &loonfs.CommitRequest{
 		NamespaceID: "namespace_id",
-		Actor: &loonfs.ActorRef{
-			ID:   "usr_8f3c",
-			Kind: loonfs.ActorKindUser,
-		},
-		CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
+		ActorID:     "usr_8f3c",
+		CommitID:    "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
 		Operations: []*loonfs.FilesystemOperation{
 			&loonfs.FilesystemOperation{
 				CopyPath: &loonfs.FilesystemOperationCopyPath{
