@@ -1587,25 +1587,27 @@ var (
 	errorDetailsFieldActiveWriter                 = big.NewInt(1 << 1)
 	errorDetailsFieldActiveWriterEpoch            = big.NewInt(1 << 2)
 	errorDetailsFieldActualAttributesRevisionNo   = big.NewInt(1 << 3)
-	errorDetailsFieldActualDeletionSeq            = big.NewInt(1 << 4)
-	errorDetailsFieldActualHeadSeq                = big.NewInt(1 << 5)
-	errorDetailsFieldActualInodeID                = big.NewInt(1 << 6)
-	errorDetailsFieldActualRevisionNo             = big.NewInt(1 << 7)
-	errorDetailsFieldAfterSeq                     = big.NewInt(1 << 8)
-	errorDetailsFieldAssertionIndex               = big.NewInt(1 << 9)
+	errorDetailsFieldActualBindingGeneration      = big.NewInt(1 << 4)
+	errorDetailsFieldActualDeletionSeq            = big.NewInt(1 << 5)
+	errorDetailsFieldActualHeadSeq                = big.NewInt(1 << 6)
+	errorDetailsFieldActualInodeID                = big.NewInt(1 << 7)
+	errorDetailsFieldActualRevisionNo             = big.NewInt(1 << 8)
+	errorDetailsFieldAfterSeq                     = big.NewInt(1 << 9)
 	errorDetailsFieldCommitID                     = big.NewInt(1 << 10)
 	errorDetailsFieldCommittedFingerprint         = big.NewInt(1 << 11)
 	errorDetailsFieldCommittedSeq                 = big.NewInt(1 << 12)
 	errorDetailsFieldExpectedAttributesRevisionNo = big.NewInt(1 << 13)
-	errorDetailsFieldExpectedDeletionSeq          = big.NewInt(1 << 14)
-	errorDetailsFieldExpectedHeadSeq              = big.NewInt(1 << 15)
-	errorDetailsFieldExpectedInodeID              = big.NewInt(1 << 16)
-	errorDetailsFieldExpectedRevisionNo           = big.NewInt(1 << 17)
-	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 18)
-	errorDetailsFieldInodeID                      = big.NewInt(1 << 19)
-	errorDetailsFieldMaxWriterSessions            = big.NewInt(1 << 20)
-	errorDetailsFieldOperationIndex               = big.NewInt(1 << 21)
-	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 22)
+	errorDetailsFieldExpectedBindingGeneration    = big.NewInt(1 << 14)
+	errorDetailsFieldExpectedDeletionSeq          = big.NewInt(1 << 15)
+	errorDetailsFieldExpectedHeadSeq              = big.NewInt(1 << 16)
+	errorDetailsFieldExpectedInodeID              = big.NewInt(1 << 17)
+	errorDetailsFieldExpectedRevisionNo           = big.NewInt(1 << 18)
+	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 19)
+	errorDetailsFieldInodeID                      = big.NewInt(1 << 20)
+	errorDetailsFieldMaxWriterSessions            = big.NewInt(1 << 21)
+	errorDetailsFieldOperationIndex               = big.NewInt(1 << 22)
+	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 23)
+	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 24)
 )
 
 type ErrorDetails struct {
@@ -1617,6 +1619,8 @@ type ErrorDetails struct {
 	ActiveWriterEpoch *WriterEpoch `json:"active_writer_epoch,omitempty" url:"active_writer_epoch,omitempty"`
 	// Attribute revision that is actually current for the inode.
 	ActualAttributesRevisionNo *AttributeRevisionNo `json:"actual_attributes_revision_no,omitempty" url:"actual_attributes_revision_no,omitempty"`
+	// Current binding token; absent for the root, which has no binding.
+	ActualBindingGeneration *BindingGeneration `json:"actual_binding_generation,omitempty" url:"actual_binding_generation,omitempty"`
 	// Deletion generation actually active for the inode.
 	ActualDeletionSeq *ChangeSeq `json:"actual_deletion_seq,omitempty" url:"actual_deletion_seq,omitempty"`
 	// The actual namespace head sequence.
@@ -1627,8 +1631,6 @@ type ErrorDetails struct {
 	ActualRevisionNo *RevisionNo `json:"actual_revision_no,omitempty" url:"actual_revision_no,omitempty"`
 	// Change-feed cursor the request asked to resume after.
 	AfterSeq *ChangeSeq `json:"after_seq,omitempty" url:"after_seq,omitempty"`
-	// Zero-based position of the failed request assertion.
-	AssertionIndex *int `json:"assertion_index,omitempty" url:"assertion_index,omitempty"`
 	// Idempotency key of the commit the error concerns.
 	CommitID *CommitID `json:"commit_id,omitempty" url:"commit_id,omitempty"`
 	// The fingerprint of the mutation that landed under `commit_id`, present with `committed_seq`.
@@ -1637,6 +1639,8 @@ type ErrorDetails struct {
 	CommittedSeq *ChangeSeq `json:"committed_seq,omitempty" url:"committed_seq,omitempty"`
 	// Attribute revision the request expected to be current.
 	ExpectedAttributesRevisionNo *AttributeRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
+	// Opaque binding token supplied by the request.
+	ExpectedBindingGeneration *BindingGeneration `json:"expected_binding_generation,omitempty" url:"expected_binding_generation,omitempty"`
 	// Deletion generation the undelete expected to be active.
 	ExpectedDeletionSeq *ChangeSeq `json:"expected_deletion_seq,omitempty" url:"expected_deletion_seq,omitempty"`
 	// The head sequence required by the request.
@@ -1653,6 +1657,8 @@ type ErrorDetails struct {
 	MaxWriterSessions *int `json:"max_writer_sessions,omitempty" url:"max_writer_sessions,omitempty"`
 	// The index of the failed operation in the request.
 	OperationIndex *int `json:"operation_index,omitempty" url:"operation_index,omitempty"`
+	// Zero-based position of the failed request precondition.
+	PreconditionIndex *int `json:"precondition_index,omitempty" url:"precondition_index,omitempty"`
 	// Oldest sequence still promised for incremental replay.
 	RetentionFloorSeq *ChangeSeq `json:"retention_floor_seq,omitempty" url:"retention_floor_seq,omitempty"`
 
@@ -1691,6 +1697,13 @@ func (e *ErrorDetails) GetActualAttributesRevisionNo() *AttributeRevisionNo {
 	return e.ActualAttributesRevisionNo
 }
 
+func (e *ErrorDetails) GetActualBindingGeneration() *BindingGeneration {
+	if e == nil {
+		return nil
+	}
+	return e.ActualBindingGeneration
+}
+
 func (e *ErrorDetails) GetActualDeletionSeq() *ChangeSeq {
 	if e == nil {
 		return nil
@@ -1726,13 +1739,6 @@ func (e *ErrorDetails) GetAfterSeq() *ChangeSeq {
 	return e.AfterSeq
 }
 
-func (e *ErrorDetails) GetAssertionIndex() *int {
-	if e == nil {
-		return nil
-	}
-	return e.AssertionIndex
-}
-
 func (e *ErrorDetails) GetCommitID() *CommitID {
 	if e == nil {
 		return nil
@@ -1759,6 +1765,13 @@ func (e *ErrorDetails) GetExpectedAttributesRevisionNo() *AttributeRevisionNo {
 		return nil
 	}
 	return e.ExpectedAttributesRevisionNo
+}
+
+func (e *ErrorDetails) GetExpectedBindingGeneration() *BindingGeneration {
+	if e == nil {
+		return nil
+	}
+	return e.ExpectedBindingGeneration
 }
 
 func (e *ErrorDetails) GetExpectedDeletionSeq() *ChangeSeq {
@@ -1817,6 +1830,13 @@ func (e *ErrorDetails) GetOperationIndex() *int {
 	return e.OperationIndex
 }
 
+func (e *ErrorDetails) GetPreconditionIndex() *int {
+	if e == nil {
+		return nil
+	}
+	return e.PreconditionIndex
+}
+
 func (e *ErrorDetails) GetRetentionFloorSeq() *ChangeSeq {
 	if e == nil {
 		return nil
@@ -1866,6 +1886,13 @@ func (e *ErrorDetails) SetActualAttributesRevisionNo(actualAttributesRevisionNo 
 	e.require(errorDetailsFieldActualAttributesRevisionNo)
 }
 
+// SetActualBindingGeneration sets the ActualBindingGeneration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetActualBindingGeneration(actualBindingGeneration *BindingGeneration) {
+	e.ActualBindingGeneration = actualBindingGeneration
+	e.require(errorDetailsFieldActualBindingGeneration)
+}
+
 // SetActualDeletionSeq sets the ActualDeletionSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (e *ErrorDetails) SetActualDeletionSeq(actualDeletionSeq *ChangeSeq) {
@@ -1901,13 +1928,6 @@ func (e *ErrorDetails) SetAfterSeq(afterSeq *ChangeSeq) {
 	e.require(errorDetailsFieldAfterSeq)
 }
 
-// SetAssertionIndex sets the AssertionIndex field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetAssertionIndex(assertionIndex *int) {
-	e.AssertionIndex = assertionIndex
-	e.require(errorDetailsFieldAssertionIndex)
-}
-
 // SetCommitID sets the CommitID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (e *ErrorDetails) SetCommitID(commitID *CommitID) {
@@ -1934,6 +1954,13 @@ func (e *ErrorDetails) SetCommittedSeq(committedSeq *ChangeSeq) {
 func (e *ErrorDetails) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo *AttributeRevisionNo) {
 	e.ExpectedAttributesRevisionNo = expectedAttributesRevisionNo
 	e.require(errorDetailsFieldExpectedAttributesRevisionNo)
+}
+
+// SetExpectedBindingGeneration sets the ExpectedBindingGeneration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetExpectedBindingGeneration(expectedBindingGeneration *BindingGeneration) {
+	e.ExpectedBindingGeneration = expectedBindingGeneration
+	e.require(errorDetailsFieldExpectedBindingGeneration)
 }
 
 // SetExpectedDeletionSeq sets the ExpectedDeletionSeq field and marks it as non-optional;
@@ -1990,6 +2017,13 @@ func (e *ErrorDetails) SetMaxWriterSessions(maxWriterSessions *int) {
 func (e *ErrorDetails) SetOperationIndex(operationIndex *int) {
 	e.OperationIndex = operationIndex
 	e.require(errorDetailsFieldOperationIndex)
+}
+
+// SetPreconditionIndex sets the PreconditionIndex field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetPreconditionIndex(preconditionIndex *int) {
+	e.PreconditionIndex = preconditionIndex
+	e.require(errorDetailsFieldPreconditionIndex)
 }
 
 // SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
@@ -3303,27 +3337,27 @@ func (f *FilesystemChangeFileCreated) String() string {
 
 // An inode moved to a new parent directory or name.
 var (
-	filesystemChangeMovedFieldBindingGeneration = big.NewInt(1 << 0)
-	filesystemChangeMovedFieldFromDisplayName   = big.NewInt(1 << 1)
-	filesystemChangeMovedFieldFromParentInodeID = big.NewInt(1 << 2)
-	filesystemChangeMovedFieldInodeID           = big.NewInt(1 << 3)
-	filesystemChangeMovedFieldToDisplayName     = big.NewInt(1 << 4)
-	filesystemChangeMovedFieldToParentInodeID   = big.NewInt(1 << 5)
+	filesystemChangeMovedFieldBindingGeneration        = big.NewInt(1 << 0)
+	filesystemChangeMovedFieldDestinationDisplayName   = big.NewInt(1 << 1)
+	filesystemChangeMovedFieldDestinationParentInodeID = big.NewInt(1 << 2)
+	filesystemChangeMovedFieldInodeID                  = big.NewInt(1 << 3)
+	filesystemChangeMovedFieldSourceDisplayName        = big.NewInt(1 << 4)
+	filesystemChangeMovedFieldSourceParentInodeID      = big.NewInt(1 << 5)
 )
 
 type FilesystemChangeMoved struct {
 	// Opaque identifier for the binding created by this event.
 	BindingGeneration BindingGeneration `json:"binding_generation" url:"binding_generation"`
-	// Spelling of the old binding.
-	FromDisplayName DisplayName `json:"from_display_name" url:"from_display_name"`
-	// Directory that held the old binding.
-	FromParentInodeID InodeID `json:"from_parent_inode_id" url:"from_parent_inode_id"`
+	// Spelling of the new binding.
+	DestinationDisplayName DisplayName `json:"destination_display_name" url:"destination_display_name"`
+	// Directory holding the new binding.
+	DestinationParentInodeID InodeID `json:"destination_parent_inode_id" url:"destination_parent_inode_id"`
 	// Inode whose binding changed.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Spelling of the new binding.
-	ToDisplayName DisplayName `json:"to_display_name" url:"to_display_name"`
-	// Directory holding the new binding.
-	ToParentInodeID InodeID `json:"to_parent_inode_id" url:"to_parent_inode_id"`
+	// Spelling of the removed binding.
+	SourceDisplayName DisplayName `json:"source_display_name" url:"source_display_name"`
+	// Directory that held the removed binding.
+	SourceParentInodeID InodeID `json:"source_parent_inode_id" url:"source_parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -3339,18 +3373,18 @@ func (f *FilesystemChangeMoved) GetBindingGeneration() BindingGeneration {
 	return f.BindingGeneration
 }
 
-func (f *FilesystemChangeMoved) GetFromDisplayName() DisplayName {
+func (f *FilesystemChangeMoved) GetDestinationDisplayName() DisplayName {
 	if f == nil {
 		return ""
 	}
-	return f.FromDisplayName
+	return f.DestinationDisplayName
 }
 
-func (f *FilesystemChangeMoved) GetFromParentInodeID() InodeID {
+func (f *FilesystemChangeMoved) GetDestinationParentInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
-	return f.FromParentInodeID
+	return f.DestinationParentInodeID
 }
 
 func (f *FilesystemChangeMoved) GetInodeID() InodeID {
@@ -3360,18 +3394,18 @@ func (f *FilesystemChangeMoved) GetInodeID() InodeID {
 	return f.InodeID
 }
 
-func (f *FilesystemChangeMoved) GetToDisplayName() DisplayName {
+func (f *FilesystemChangeMoved) GetSourceDisplayName() DisplayName {
 	if f == nil {
 		return ""
 	}
-	return f.ToDisplayName
+	return f.SourceDisplayName
 }
 
-func (f *FilesystemChangeMoved) GetToParentInodeID() InodeID {
+func (f *FilesystemChangeMoved) GetSourceParentInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
-	return f.ToParentInodeID
+	return f.SourceParentInodeID
 }
 
 func (f *FilesystemChangeMoved) GetExtraProperties() map[string]interface{} {
@@ -3395,18 +3429,18 @@ func (f *FilesystemChangeMoved) SetBindingGeneration(bindingGeneration BindingGe
 	f.require(filesystemChangeMovedFieldBindingGeneration)
 }
 
-// SetFromDisplayName sets the FromDisplayName field and marks it as non-optional;
+// SetDestinationDisplayName sets the DestinationDisplayName field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetFromDisplayName(fromDisplayName DisplayName) {
-	f.FromDisplayName = fromDisplayName
-	f.require(filesystemChangeMovedFieldFromDisplayName)
+func (f *FilesystemChangeMoved) SetDestinationDisplayName(destinationDisplayName DisplayName) {
+	f.DestinationDisplayName = destinationDisplayName
+	f.require(filesystemChangeMovedFieldDestinationDisplayName)
 }
 
-// SetFromParentInodeID sets the FromParentInodeID field and marks it as non-optional;
+// SetDestinationParentInodeID sets the DestinationParentInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetFromParentInodeID(fromParentInodeID InodeID) {
-	f.FromParentInodeID = fromParentInodeID
-	f.require(filesystemChangeMovedFieldFromParentInodeID)
+func (f *FilesystemChangeMoved) SetDestinationParentInodeID(destinationParentInodeID InodeID) {
+	f.DestinationParentInodeID = destinationParentInodeID
+	f.require(filesystemChangeMovedFieldDestinationParentInodeID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
@@ -3416,18 +3450,18 @@ func (f *FilesystemChangeMoved) SetInodeID(inodeID InodeID) {
 	f.require(filesystemChangeMovedFieldInodeID)
 }
 
-// SetToDisplayName sets the ToDisplayName field and marks it as non-optional;
+// SetSourceDisplayName sets the SourceDisplayName field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetToDisplayName(toDisplayName DisplayName) {
-	f.ToDisplayName = toDisplayName
-	f.require(filesystemChangeMovedFieldToDisplayName)
+func (f *FilesystemChangeMoved) SetSourceDisplayName(sourceDisplayName DisplayName) {
+	f.SourceDisplayName = sourceDisplayName
+	f.require(filesystemChangeMovedFieldSourceDisplayName)
 }
 
-// SetToParentInodeID sets the ToParentInodeID field and marks it as non-optional;
+// SetSourceParentInodeID sets the SourceParentInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetToParentInodeID(toParentInodeID InodeID) {
-	f.ToParentInodeID = toParentInodeID
-	f.require(filesystemChangeMovedFieldToParentInodeID)
+func (f *FilesystemChangeMoved) SetSourceParentInodeID(sourceParentInodeID InodeID) {
+	f.SourceParentInodeID = sourceParentInodeID
+	f.require(filesystemChangeMovedFieldSourceParentInodeID)
 }
 
 func (f *FilesystemChangeMoved) UnmarshalJSON(data []byte) error {

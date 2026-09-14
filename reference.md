@@ -409,7 +409,7 @@ client.Changes.List(
 <dl>
 <dd>
 
-Applies one commit: an ordered, non-empty list of path operations that commit together as one logical commit, under one commit id that makes retries idempotent. Request assertions check the pre-state after receipt resolution and before operations; a failed assertion names its position in `details.assertion_index`. A single-operation call is the one-element case. The first operation that fails aborts the whole request, and a request carrying more than one operation names that operation's position in `details.operation_index`.
+Applies one commit: an ordered, non-empty list of path operations that commit together as one logical commit, under one commit id that makes retries idempotent. Request preconditions check the pre-state after receipt resolution and before operations; a failed precondition names its position in `details.precondition_index`. A single-operation call is the one-element case. The first operation that fails aborts the whole request, and a request carrying more than one operation names that operation's position in `details.operation_index`.
 </dd>
 </dl>
 </dd>
@@ -431,8 +431,8 @@ request := &loonfs.CommitRequest{
     Operations: []*loonfs.FilesystemOperation{
         &loonfs.FilesystemOperation{
             CopyPath: &loonfs.FilesystemOperationCopyPath{
-                FromPath: "/docs/report.txt",
-                ToPath: "/docs/report.txt",
+                DestinationPath: "/docs/report.txt",
+                SourcePath: "/docs/report.txt",
             },
         },
     },
@@ -471,14 +471,6 @@ client.Commits.Create(
 <dl>
 <dd>
 
-**assertions:** `[]*loonfs.CommitAssertion` — Ordered admission conditions evaluated before any operations.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
 **commitID:** `loonfs.CommitID` — Caller-supplied idempotency key for the whole request.
     
 </dd>
@@ -504,6 +496,14 @@ client.Commits.Create(
 <dd>
 
 **operations:** `[]*loonfs.FilesystemOperation` — The non-empty ordered operations to commit atomically.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**preconditions:** `[]*loonfs.CommitPrecondition` — Ordered admission conditions evaluated before any operations.
     
 </dd>
 </dl>
