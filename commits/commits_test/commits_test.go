@@ -95,8 +95,8 @@ func TestCommitsCreateWithWireMock(
 		Operations: []*loonfs.FilesystemOperation{
 			&loonfs.FilesystemOperation{
 				CopyPath: &loonfs.FilesystemOperationCopyPath{
-					FromPath: "/docs/report.txt",
-					ToPath:   "/docs/report.txt",
+					DestinationPath: "/docs/report.txt",
+					SourcePath:      "/docs/report.txt",
 				},
 			},
 		},
