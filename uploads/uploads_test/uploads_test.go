@@ -90,8 +90,8 @@ func TestUploadsCreateWithWireMock(
 	)
 	request := &loonfs.CreateUploadRequest{
 		NamespaceID: "namespace_id",
-		Body: &loonfs.BeginUploadRequest{
-			DirectMultipart: &loonfs.BeginUploadDirectMultipart{},
+		Body: &loonfs.CreateUploadBody{
+			DirectMultipart: &loonfs.CreateUploadBodyDirectMultipart{},
 		},
 	}
 	_, invocationErr := client.Uploads.Create(
@@ -174,8 +174,8 @@ func TestUploadsCompleteWithWireMock(
 	request := &loonfs.CompleteUploadRequest{
 		NamespaceID: "namespace_id",
 		UploadID:    "upload_id",
-		Body: &loonfs.UploadCompletion{
-			DirectMultipart: &loonfs.CompleteUploadDirectMultipart{
+		Body: &loonfs.CompleteUploadBody{
+			DirectMultipart: &loonfs.CompleteUploadBodyDirectMultipart{
 				Content: &loonfs.UploadContentClaim{
 					Checksum: &loonfs.Checksum{
 						Algorithm: loonfs.ChecksumAlgorithmSha256,

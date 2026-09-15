@@ -2,6 +2,7 @@
 package proxy
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,11 +10,36 @@ import (
 	"strings"
 )
 
+type RouteContext struct {
+	Method         string
+	Template       string
+	NamespaceAlias string // Empty for routes without an alias.
+	NamespaceID    string
+}
+
+type Authorization struct {
+	ActorID string // Sent upstream in Loonfs-Actor when non-empty.
+}
+
+// Refusal is returned from Authorize as the error to send the refusal back.
+type Refusal struct {
+	Status      int
+	ContentType string
+	Body        []byte
+}
+
+func (r *Refusal) Error() string {
+	return fmt.Sprintf("proxy: authorization refused with status %d", r.Status)
+}
+
 // Config defines a proxy handler.
 type Config struct {
 	ServerBaseURL    string
 	Token            string
 	NamespaceAliases map[string]string
+	// Authorize runs before every forwarded request. A *Refusal error is sent
+	// back as the response; any other error answers 500.
+	Authorize func(r *http.Request, c RouteContext) (Authorization, error)
 }
 
 type handler struct {
@@ -21,6 +47,7 @@ type handler struct {
 	target           *url.URL
 	token            string
 	transport        http.RoundTripper
+	authorize        func(*http.Request, RouteContext) (Authorization, error)
 }
 
 type route struct {
@@ -96,6 +123,7 @@ func NewHandler(config Config) (http.Handler, error) {
 		target:           target,
 		token:            config.Token,
 		transport:        transport,
+		authorize:        config.Authorize,
 	}, nil
 }
 
@@ -134,10 +162,25 @@ func validNamespaceID(namespaceID string) bool {
 }
 
 func (h *handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
-	rewrittenPath, ok := h.rewritePath(request.Method, request.URL.Path)
+	rewrittenPath, routeContext, ok := h.resolveRoute(request.Method, request.URL.Path)
 	if !ok {
 		responseWriter.WriteHeader(http.StatusNotFound)
 		return
+	}
+
+	var authorization Authorization
+	if h.authorize != nil {
+		var err error
+		authorization, err = h.authorize(request, routeContext)
+		if err != nil {
+			var refusal *Refusal
+			if errors.As(err, &refusal) {
+				refusal.write(responseWriter)
+			} else {
+				responseWriter.WriteHeader(http.StatusInternalServerError)
+			}
+			return
+		}
 	}
 
 	outgoing := request.Clone(request.Context())
@@ -156,6 +199,10 @@ func (h *handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 	outgoing.Header.Set("Authorization", "Bearer "+h.token)
 	if outgoing.Header.Get("User-Agent") == "" {
 		outgoing.Header.Set("User-Agent", "")
+	}
+	outgoing.Header.Del("Loonfs-Actor")
+	if authorization.ActorID != "" {
+		outgoing.Header.Set("Loonfs-Actor", authorization.ActorID)
 	}
 
 	response, err := h.transport.RoundTrip(outgoing)
@@ -178,7 +225,15 @@ func (h *handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 	}
 }
 
-func (h *handler) rewritePath(method, path string) (string, bool) {
+func (r *Refusal) write(responseWriter http.ResponseWriter) {
+	if r.ContentType != "" {
+		responseWriter.Header().Set("Content-Type", r.ContentType)
+	}
+	responseWriter.WriteHeader(r.Status)
+	_, _ = responseWriter.Write(r.Body)
+}
+
+func (h *handler) resolveRoute(method, path string) (string, RouteContext, bool) {
 	for _, candidate := range routes {
 		if candidate.method != method {
 			continue
@@ -187,17 +242,19 @@ func (h *handler) rewritePath(method, path string) (string, bool) {
 		if !ok {
 			continue
 		}
+		context := RouteContext{Method: method, Template: candidate.pattern, NamespaceAlias: namespaceAlias}
 		if namespaceAlias == "" {
-			return path, true
+			return path, context, true
 		}
 		namespaceID, ok := h.namespaceAliases[namespaceAlias]
 		if !ok {
-			return "", false
+			return "", RouteContext{}, false
 		}
+		context.NamespaceID = namespaceID
 		prefix := "/v0/namespace-aliases/" + namespaceAlias
-		return "/v0/namespaces/" + namespaceID + strings.TrimPrefix(path, prefix), true
+		return "/v0/namespaces/" + namespaceID + strings.TrimPrefix(path, prefix), context, true
 	}
-	return "", false
+	return "", RouteContext{}, false
 }
 
 func matchPattern(pattern, path string) (string, bool) {

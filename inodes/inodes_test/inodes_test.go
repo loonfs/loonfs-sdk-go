@@ -91,6 +91,9 @@ func TestInodesRetrieveWithWireMock(
 	request := &loonfs.GetInodeRequest{
 		NamespaceID: "namespace_id",
 		InodeID:     "ino_123",
+		SnapshotID: loonfs.String(
+			"pin_00000000000000000001-0000000000000002",
+		),
 	}
 	_, invocationErr := client.Inodes.Retrieve(
 		context.TODO(),
@@ -101,7 +104,7 @@ func TestInodesRetrieveWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestInodesRetrieveWithWireMock", "GET", "/v0/namespaces/namespace_id/inodes/ino_123", nil, 1)
+	VerifyRequestCount(t, "TestInodesRetrieveWithWireMock", "GET", "/v0/namespaces/namespace_id/inodes/ino_123", map[string]interface{}{"snapshot_id": "pin_00000000000000000001-0000000000000002"}, 1)
 }
 
 func TestInodesListChildrenWithWireMock(
@@ -118,6 +121,9 @@ func TestInodesListChildrenWithWireMock(
 	request := &loonfs.ListInodeChildrenRequest{
 		NamespaceID: "namespace_id",
 		InodeID:     "ino_123",
+		SnapshotID: loonfs.String(
+			"pin_00000000000000000001-0000000000000002",
+		),
 	}
 	_, invocationErr := client.Inodes.ListChildren(
 		context.TODO(),
@@ -128,7 +134,7 @@ func TestInodesListChildrenWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestInodesListChildrenWithWireMock", "GET", "/v0/namespaces/namespace_id/inodes/ino_123/children", nil, 1)
+	VerifyRequestCount(t, "TestInodesListChildrenWithWireMock", "GET", "/v0/namespaces/namespace_id/inodes/ino_123/children", map[string]interface{}{"snapshot_id": "pin_00000000000000000001-0000000000000002"}, 1)
 }
 
 func TestInodesListRevisionsWithWireMock(
@@ -173,9 +179,6 @@ func TestInodesCreateDownloadWithWireMock(
 		NamespaceID: "namespace_id",
 		InodeID:     "ino_123",
 		RevisionNo:  int64(1000000),
-		Body: map[string]any{
-			"key": "value",
-		},
 	}
 	_, invocationErr := client.Inodes.CreateDownload(
 		context.TODO(),

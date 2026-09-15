@@ -54,8 +54,8 @@ type CompleteUploadRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// Upload session id
-	UploadID string            `json:"-" url:"-"`
-	Body     *UploadCompletion `json:"-" url:"-"`
+	UploadID string              `json:"-" url:"-"`
+	Body     *CompleteUploadBody `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -83,7 +83,7 @@ func (c *CompleteUploadRequest) SetUploadID(uploadID string) {
 }
 
 func (c *CompleteUploadRequest) UnmarshalJSON(data []byte) error {
-	body := new(UploadCompletion)
+	body := new(CompleteUploadBody)
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -101,8 +101,8 @@ var (
 
 type CreateUploadRequest struct {
 	// Namespace id
-	NamespaceID string              `json:"-" url:"-"`
-	Body        *BeginUploadRequest `json:"-" url:"-"`
+	NamespaceID string            `json:"-" url:"-"`
+	Body        *CreateUploadBody `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -123,7 +123,7 @@ func (c *CreateUploadRequest) SetNamespaceID(namespaceID string) {
 }
 
 func (c *CreateUploadRequest) UnmarshalJSON(data []byte) error {
-	body := new(BeginUploadRequest)
+	body := new(CreateUploadBody)
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -238,930 +238,164 @@ func (s *SignUploadPartsRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-// Write the object in parts through presigned part uploads.
-var (
-	beginUploadDirectMultipartFieldPartSizeBytes = big.NewInt(1 << 0)
-)
-
-type BeginUploadDirectMultipart struct {
-	// The byte length of every part except the last, or `None` for the server default.
-	PartSizeBytes *int64 `json:"part_size_bytes,omitempty" url:"part_size_bytes,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (b *BeginUploadDirectMultipart) GetPartSizeBytes() *int64 {
-	if b == nil {
-		return nil
-	}
-	return b.PartSizeBytes
-}
-
-func (b *BeginUploadDirectMultipart) GetExtraProperties() map[string]interface{} {
-	if b == nil {
-		return nil
-	}
-	return b.extraProperties
-}
-
-func (b *BeginUploadDirectMultipart) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
-	}
-	b.explicitFields.Or(b.explicitFields, field)
-}
-
-// SetPartSizeBytes sets the PartSizeBytes field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadDirectMultipart) SetPartSizeBytes(partSizeBytes *int64) {
-	b.PartSizeBytes = partSizeBytes
-	b.require(beginUploadDirectMultipartFieldPartSizeBytes)
-}
-
-func (b *BeginUploadDirectMultipart) UnmarshalJSON(data []byte) error {
-	type unmarshaler BeginUploadDirectMultipart
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*b = BeginUploadDirectMultipart(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
-	if err != nil {
-		return err
-	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b *BeginUploadDirectMultipart) MarshalJSON() ([]byte, error) {
-	type embed BeginUploadDirectMultipart
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*b),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (b *BeginUploadDirectMultipart) String() string {
-	if b == nil {
-		return "<nil>"
-	}
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(b); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", b)
-}
-
-// Write the whole object through one presigned request.
-var (
-	beginUploadDirectPutFieldSizeBytes = big.NewInt(1 << 0)
-)
-
-type BeginUploadDirectPut struct {
-	// Advisory byte length for an early provider-limit check.
-	SizeBytes *int64 `json:"size_bytes,omitempty" url:"size_bytes,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (b *BeginUploadDirectPut) GetSizeBytes() *int64 {
-	if b == nil {
-		return nil
-	}
-	return b.SizeBytes
-}
-
-func (b *BeginUploadDirectPut) GetExtraProperties() map[string]interface{} {
-	if b == nil {
-		return nil
-	}
-	return b.extraProperties
-}
-
-func (b *BeginUploadDirectPut) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
-	}
-	b.explicitFields.Or(b.explicitFields, field)
-}
-
-// SetSizeBytes sets the SizeBytes field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadDirectPut) SetSizeBytes(sizeBytes *int64) {
-	b.SizeBytes = sizeBytes
-	b.require(beginUploadDirectPutFieldSizeBytes)
-}
-
-func (b *BeginUploadDirectPut) UnmarshalJSON(data []byte) error {
-	type unmarshaler BeginUploadDirectPut
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*b = BeginUploadDirectPut(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
-	if err != nil {
-		return err
-	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b *BeginUploadDirectPut) MarshalJSON() ([]byte, error) {
-	type embed BeginUploadDirectPut
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*b),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (b *BeginUploadDirectPut) String() string {
-	if b == nil {
-		return "<nil>"
-	}
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(b); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", b)
-}
-
-// A request to start an upload session for one required transport mode.
-type BeginUploadRequest struct {
+// Completes an upload using the mode that started it.
+type CompleteUploadBody struct {
 	Mode            string
-	DirectMultipart *BeginUploadDirectMultipart
-	DirectPut       *BeginUploadDirectPut
-	ServiceProxied  *BeginUploadServiceProxied
+	DirectMultipart *CompleteUploadBodyDirectMultipart
+	DirectPut       *CompleteUploadBodyDirectPut
+	ServiceProxied  *CompleteUploadBodyServiceProxied
 
 	rawJSON json.RawMessage
 }
 
-func (b *BeginUploadRequest) GetMode() string {
-	if b == nil {
+func (c *CompleteUploadBody) GetMode() string {
+	if c == nil {
 		return ""
 	}
-	return b.Mode
+	return c.Mode
 }
 
-func (b *BeginUploadRequest) GetDirectMultipart() *BeginUploadDirectMultipart {
-	if b == nil {
+func (c *CompleteUploadBody) GetDirectMultipart() *CompleteUploadBodyDirectMultipart {
+	if c == nil {
 		return nil
 	}
-	return b.DirectMultipart
+	return c.DirectMultipart
 }
 
-func (b *BeginUploadRequest) GetDirectPut() *BeginUploadDirectPut {
-	if b == nil {
+func (c *CompleteUploadBody) GetDirectPut() *CompleteUploadBodyDirectPut {
+	if c == nil {
 		return nil
 	}
-	return b.DirectPut
+	return c.DirectPut
 }
 
-func (b *BeginUploadRequest) GetServiceProxied() *BeginUploadServiceProxied {
-	if b == nil {
+func (c *CompleteUploadBody) GetServiceProxied() *CompleteUploadBodyServiceProxied {
+	if c == nil {
 		return nil
 	}
-	return b.ServiceProxied
+	return c.ServiceProxied
 }
 
-func (b *BeginUploadRequest) UnmarshalJSON(data []byte) error {
+func (c *CompleteUploadBody) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Mode string `json:"mode"`
 	}
 	if err := json.Unmarshal(data, &unmarshaler); err != nil {
 		return err
 	}
-	b.Mode = unmarshaler.Mode
+	c.Mode = unmarshaler.Mode
 	if unmarshaler.Mode == "" {
-		return fmt.Errorf("%T did not include discriminant mode", b)
+		return fmt.Errorf("%T did not include discriminant mode", c)
 	}
 	switch unmarshaler.Mode {
 	case "direct_multipart":
-		value := new(BeginUploadDirectMultipart)
+		value := new(CompleteUploadBodyDirectMultipart)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		b.DirectMultipart = value
+		c.DirectMultipart = value
 	case "direct_put":
-		value := new(BeginUploadDirectPut)
+		value := new(CompleteUploadBodyDirectPut)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		b.DirectPut = value
+		c.DirectPut = value
 	case "service_proxied":
-		value := new(BeginUploadServiceProxied)
+		value := new(CompleteUploadBodyServiceProxied)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		b.ServiceProxied = value
+		c.ServiceProxied = value
 	}
-	b.rawJSON = json.RawMessage(data)
+	c.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (b BeginUploadRequest) MarshalJSON() ([]byte, error) {
-	if err := b.validate(); err != nil {
+func (c CompleteUploadBody) MarshalJSON() ([]byte, error) {
+	if err := c.validate(); err != nil {
 		return nil, err
 	}
-	if b.DirectMultipart != nil {
-		return internal.MarshalJSONWithExtraProperty(b.DirectMultipart, "mode", "direct_multipart")
+	if c.DirectMultipart != nil {
+		return internal.MarshalJSONWithExtraProperty(c.DirectMultipart, "mode", "direct_multipart")
 	}
-	if b.DirectPut != nil {
-		return internal.MarshalJSONWithExtraProperty(b.DirectPut, "mode", "direct_put")
+	if c.DirectPut != nil {
+		return internal.MarshalJSONWithExtraProperty(c.DirectPut, "mode", "direct_put")
 	}
-	if b.ServiceProxied != nil {
-		return internal.MarshalJSONWithExtraProperty(b.ServiceProxied, "mode", "service_proxied")
+	if c.ServiceProxied != nil {
+		return internal.MarshalJSONWithExtraProperty(c.ServiceProxied, "mode", "service_proxied")
 	}
-	if len(b.rawJSON) > 0 {
-		return b.rawJSON, nil
+	if len(c.rawJSON) > 0 {
+		return c.rawJSON, nil
 	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", b)
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
 }
 
-type BeginUploadRequestVisitor interface {
-	VisitDirectMultipart(*BeginUploadDirectMultipart) error
-	VisitDirectPut(*BeginUploadDirectPut) error
-	VisitServiceProxied(*BeginUploadServiceProxied) error
+type CompleteUploadBodyVisitor interface {
+	VisitDirectMultipart(*CompleteUploadBodyDirectMultipart) error
+	VisitDirectPut(*CompleteUploadBodyDirectPut) error
+	VisitServiceProxied(*CompleteUploadBodyServiceProxied) error
 }
 
-func (b *BeginUploadRequest) Accept(visitor BeginUploadRequestVisitor) error {
-	if b.DirectMultipart != nil {
-		return visitor.VisitDirectMultipart(b.DirectMultipart)
+func (c *CompleteUploadBody) Accept(visitor CompleteUploadBodyVisitor) error {
+	if c.DirectMultipart != nil {
+		return visitor.VisitDirectMultipart(c.DirectMultipart)
 	}
-	if b.DirectPut != nil {
-		return visitor.VisitDirectPut(b.DirectPut)
+	if c.DirectPut != nil {
+		return visitor.VisitDirectPut(c.DirectPut)
 	}
-	if b.ServiceProxied != nil {
-		return visitor.VisitServiceProxied(b.ServiceProxied)
+	if c.ServiceProxied != nil {
+		return visitor.VisitServiceProxied(c.ServiceProxied)
 	}
-	return fmt.Errorf("type %T does not define a non-empty union type", b)
+	return fmt.Errorf("type %T does not define a non-empty union type", c)
 }
 
-func (b *BeginUploadRequest) validate() error {
-	if b == nil {
-		return fmt.Errorf("type %T is nil", b)
+func (c *CompleteUploadBody) validate() error {
+	if c == nil {
+		return fmt.Errorf("type %T is nil", c)
 	}
 	var fields []string
-	if b.DirectMultipart != nil {
+	if c.DirectMultipart != nil {
 		fields = append(fields, "direct_multipart")
 	}
-	if b.DirectPut != nil {
+	if c.DirectPut != nil {
 		fields = append(fields, "direct_put")
 	}
-	if b.ServiceProxied != nil {
+	if c.ServiceProxied != nil {
 		fields = append(fields, "service_proxied")
 	}
 	if len(fields) == 0 {
-		if b.Mode != "" {
-			if len(b.rawJSON) > 0 {
+		if c.Mode != "" {
+			if len(c.rawJSON) > 0 {
 				return nil
 			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", b, b.Mode)
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Mode)
 		}
-		return fmt.Errorf("type %T is empty", b)
+		return fmt.Errorf("type %T is empty", c)
 	}
 	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", b, fields)
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
 	}
-	if b.Mode != "" {
+	if c.Mode != "" {
 		field := fields[0]
-		if b.Mode != field {
+		if c.Mode != field {
 			return fmt.Errorf(
 				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				b,
-				b.Mode,
-				b,
+				c,
+				c.Mode,
+				c,
 			)
 		}
 	}
 	return nil
-}
-
-// The response from starting an upload session for one transport mode.
-type BeginUploadResponse struct {
-	Mode            string
-	DirectMultipart *BeginUploadResponseDirectMultipart
-	DirectPut       *BeginUploadResponseDirectPut
-	ServiceProxied  *BeginUploadResponseServiceProxied
-
-	rawJSON json.RawMessage
-}
-
-func (b *BeginUploadResponse) GetMode() string {
-	if b == nil {
-		return ""
-	}
-	return b.Mode
-}
-
-func (b *BeginUploadResponse) GetDirectMultipart() *BeginUploadResponseDirectMultipart {
-	if b == nil {
-		return nil
-	}
-	return b.DirectMultipart
-}
-
-func (b *BeginUploadResponse) GetDirectPut() *BeginUploadResponseDirectPut {
-	if b == nil {
-		return nil
-	}
-	return b.DirectPut
-}
-
-func (b *BeginUploadResponse) GetServiceProxied() *BeginUploadResponseServiceProxied {
-	if b == nil {
-		return nil
-	}
-	return b.ServiceProxied
-}
-
-func (b *BeginUploadResponse) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Mode string `json:"mode"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	b.Mode = unmarshaler.Mode
-	if unmarshaler.Mode == "" {
-		return fmt.Errorf("%T did not include discriminant mode", b)
-	}
-	switch unmarshaler.Mode {
-	case "direct_multipart":
-		value := new(BeginUploadResponseDirectMultipart)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		b.DirectMultipart = value
-	case "direct_put":
-		value := new(BeginUploadResponseDirectPut)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		b.DirectPut = value
-	case "service_proxied":
-		value := new(BeginUploadResponseServiceProxied)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		b.ServiceProxied = value
-	}
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b BeginUploadResponse) MarshalJSON() ([]byte, error) {
-	if err := b.validate(); err != nil {
-		return nil, err
-	}
-	if b.DirectMultipart != nil {
-		return internal.MarshalJSONWithExtraProperty(b.DirectMultipart, "mode", "direct_multipart")
-	}
-	if b.DirectPut != nil {
-		return internal.MarshalJSONWithExtraProperty(b.DirectPut, "mode", "direct_put")
-	}
-	if b.ServiceProxied != nil {
-		return internal.MarshalJSONWithExtraProperty(b.ServiceProxied, "mode", "service_proxied")
-	}
-	if len(b.rawJSON) > 0 {
-		return b.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", b)
-}
-
-type BeginUploadResponseVisitor interface {
-	VisitDirectMultipart(*BeginUploadResponseDirectMultipart) error
-	VisitDirectPut(*BeginUploadResponseDirectPut) error
-	VisitServiceProxied(*BeginUploadResponseServiceProxied) error
-}
-
-func (b *BeginUploadResponse) Accept(visitor BeginUploadResponseVisitor) error {
-	if b.DirectMultipart != nil {
-		return visitor.VisitDirectMultipart(b.DirectMultipart)
-	}
-	if b.DirectPut != nil {
-		return visitor.VisitDirectPut(b.DirectPut)
-	}
-	if b.ServiceProxied != nil {
-		return visitor.VisitServiceProxied(b.ServiceProxied)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", b)
-}
-
-func (b *BeginUploadResponse) validate() error {
-	if b == nil {
-		return fmt.Errorf("type %T is nil", b)
-	}
-	var fields []string
-	if b.DirectMultipart != nil {
-		fields = append(fields, "direct_multipart")
-	}
-	if b.DirectPut != nil {
-		fields = append(fields, "direct_put")
-	}
-	if b.ServiceProxied != nil {
-		fields = append(fields, "service_proxied")
-	}
-	if len(fields) == 0 {
-		if b.Mode != "" {
-			if len(b.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", b, b.Mode)
-		}
-		return fmt.Errorf("type %T is empty", b)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", b, fields)
-	}
-	if b.Mode != "" {
-		field := fields[0]
-		if b.Mode != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				b,
-				b.Mode,
-				b,
-			)
-		}
-	}
-	return nil
-}
-
-// Presigned part uploads assemble the object.
-var (
-	beginUploadResponseDirectMultipartFieldChecksumAlgorithm = big.NewInt(1 << 0)
-	beginUploadResponseDirectMultipartFieldNamespaceID       = big.NewInt(1 << 1)
-	beginUploadResponseDirectMultipartFieldPartSizeBytes     = big.NewInt(1 << 2)
-	beginUploadResponseDirectMultipartFieldUploadID          = big.NewInt(1 << 3)
-)
-
-type BeginUploadResponseDirectMultipart struct {
-	// Checksum algorithm for every part and for the complete payload.
-	ChecksumAlgorithm ChecksumAlgorithm `json:"checksum_algorithm" url:"checksum_algorithm"`
-	// Namespace authorized to consume the eventual staged content.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The byte length of every part except the last, with at most 10,000 parts allowed.
-	PartSizeBytes int64 `json:"part_size_bytes" url:"part_size_bytes"`
-	// The session identity used by later part-signing and completion calls.
-	UploadID UploadID `json:"upload_id" url:"upload_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (b *BeginUploadResponseDirectMultipart) GetChecksumAlgorithm() ChecksumAlgorithm {
-	if b == nil {
-		return ""
-	}
-	return b.ChecksumAlgorithm
-}
-
-func (b *BeginUploadResponseDirectMultipart) GetNamespaceID() NamespaceID {
-	if b == nil {
-		return ""
-	}
-	return b.NamespaceID
-}
-
-func (b *BeginUploadResponseDirectMultipart) GetPartSizeBytes() int64 {
-	if b == nil {
-		return 0
-	}
-	return b.PartSizeBytes
-}
-
-func (b *BeginUploadResponseDirectMultipart) GetUploadID() UploadID {
-	if b == nil {
-		return ""
-	}
-	return b.UploadID
-}
-
-func (b *BeginUploadResponseDirectMultipart) GetExtraProperties() map[string]interface{} {
-	if b == nil {
-		return nil
-	}
-	return b.extraProperties
-}
-
-func (b *BeginUploadResponseDirectMultipart) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
-	}
-	b.explicitFields.Or(b.explicitFields, field)
-}
-
-// SetChecksumAlgorithm sets the ChecksumAlgorithm field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseDirectMultipart) SetChecksumAlgorithm(checksumAlgorithm ChecksumAlgorithm) {
-	b.ChecksumAlgorithm = checksumAlgorithm
-	b.require(beginUploadResponseDirectMultipartFieldChecksumAlgorithm)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseDirectMultipart) SetNamespaceID(namespaceID NamespaceID) {
-	b.NamespaceID = namespaceID
-	b.require(beginUploadResponseDirectMultipartFieldNamespaceID)
-}
-
-// SetPartSizeBytes sets the PartSizeBytes field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseDirectMultipart) SetPartSizeBytes(partSizeBytes int64) {
-	b.PartSizeBytes = partSizeBytes
-	b.require(beginUploadResponseDirectMultipartFieldPartSizeBytes)
-}
-
-// SetUploadID sets the UploadID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseDirectMultipart) SetUploadID(uploadID UploadID) {
-	b.UploadID = uploadID
-	b.require(beginUploadResponseDirectMultipartFieldUploadID)
-}
-
-func (b *BeginUploadResponseDirectMultipart) UnmarshalJSON(data []byte) error {
-	type unmarshaler BeginUploadResponseDirectMultipart
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*b = BeginUploadResponseDirectMultipart(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
-	if err != nil {
-		return err
-	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b *BeginUploadResponseDirectMultipart) MarshalJSON() ([]byte, error) {
-	type embed BeginUploadResponseDirectMultipart
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*b),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (b *BeginUploadResponseDirectMultipart) String() string {
-	if b == nil {
-		return "<nil>"
-	}
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(b); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", b)
-}
-
-// One presigned request writes the whole object.
-var (
-	beginUploadResponseDirectPutFieldAccess            = big.NewInt(1 << 0)
-	beginUploadResponseDirectPutFieldChecksumAlgorithm = big.NewInt(1 << 1)
-	beginUploadResponseDirectPutFieldNamespaceID       = big.NewInt(1 << 2)
-	beginUploadResponseDirectPutFieldUploadID          = big.NewInt(1 << 3)
-)
-
-type BeginUploadResponseDirectPut struct {
-	// Short-lived permission to write the object.
-	Access *ObjectTransferAccess `json:"access" url:"access"`
-	// Checksum algorithm the client must use for its completion claim.
-	ChecksumAlgorithm ChecksumAlgorithm `json:"checksum_algorithm" url:"checksum_algorithm"`
-	// Namespace authorized to consume the eventual staged content.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Durable session identity used by subsequent completion calls.
-	UploadID UploadID `json:"upload_id" url:"upload_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (b *BeginUploadResponseDirectPut) GetAccess() *ObjectTransferAccess {
-	if b == nil {
-		return nil
-	}
-	return b.Access
-}
-
-func (b *BeginUploadResponseDirectPut) GetChecksumAlgorithm() ChecksumAlgorithm {
-	if b == nil {
-		return ""
-	}
-	return b.ChecksumAlgorithm
-}
-
-func (b *BeginUploadResponseDirectPut) GetNamespaceID() NamespaceID {
-	if b == nil {
-		return ""
-	}
-	return b.NamespaceID
-}
-
-func (b *BeginUploadResponseDirectPut) GetUploadID() UploadID {
-	if b == nil {
-		return ""
-	}
-	return b.UploadID
-}
-
-func (b *BeginUploadResponseDirectPut) GetExtraProperties() map[string]interface{} {
-	if b == nil {
-		return nil
-	}
-	return b.extraProperties
-}
-
-func (b *BeginUploadResponseDirectPut) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
-	}
-	b.explicitFields.Or(b.explicitFields, field)
-}
-
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseDirectPut) SetAccess(access *ObjectTransferAccess) {
-	b.Access = access
-	b.require(beginUploadResponseDirectPutFieldAccess)
-}
-
-// SetChecksumAlgorithm sets the ChecksumAlgorithm field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseDirectPut) SetChecksumAlgorithm(checksumAlgorithm ChecksumAlgorithm) {
-	b.ChecksumAlgorithm = checksumAlgorithm
-	b.require(beginUploadResponseDirectPutFieldChecksumAlgorithm)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseDirectPut) SetNamespaceID(namespaceID NamespaceID) {
-	b.NamespaceID = namespaceID
-	b.require(beginUploadResponseDirectPutFieldNamespaceID)
-}
-
-// SetUploadID sets the UploadID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseDirectPut) SetUploadID(uploadID UploadID) {
-	b.UploadID = uploadID
-	b.require(beginUploadResponseDirectPutFieldUploadID)
-}
-
-func (b *BeginUploadResponseDirectPut) UnmarshalJSON(data []byte) error {
-	type unmarshaler BeginUploadResponseDirectPut
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*b = BeginUploadResponseDirectPut(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
-	if err != nil {
-		return err
-	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b *BeginUploadResponseDirectPut) MarshalJSON() ([]byte, error) {
-	type embed BeginUploadResponseDirectPut
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*b),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (b *BeginUploadResponseDirectPut) String() string {
-	if b == nil {
-		return "<nil>"
-	}
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(b); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", b)
-}
-
-// The service will receive the bytes and write the content object.
-var (
-	beginUploadResponseServiceProxiedFieldNamespaceID = big.NewInt(1 << 0)
-	beginUploadResponseServiceProxiedFieldUploadID    = big.NewInt(1 << 1)
-)
-
-type BeginUploadResponseServiceProxied struct {
-	// Namespace authorized to consume the eventual staged content.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The session identity used by later append and completion calls.
-	UploadID UploadID `json:"upload_id" url:"upload_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (b *BeginUploadResponseServiceProxied) GetNamespaceID() NamespaceID {
-	if b == nil {
-		return ""
-	}
-	return b.NamespaceID
-}
-
-func (b *BeginUploadResponseServiceProxied) GetUploadID() UploadID {
-	if b == nil {
-		return ""
-	}
-	return b.UploadID
-}
-
-func (b *BeginUploadResponseServiceProxied) GetExtraProperties() map[string]interface{} {
-	if b == nil {
-		return nil
-	}
-	return b.extraProperties
-}
-
-func (b *BeginUploadResponseServiceProxied) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
-	}
-	b.explicitFields.Or(b.explicitFields, field)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseServiceProxied) SetNamespaceID(namespaceID NamespaceID) {
-	b.NamespaceID = namespaceID
-	b.require(beginUploadResponseServiceProxiedFieldNamespaceID)
-}
-
-// SetUploadID sets the UploadID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginUploadResponseServiceProxied) SetUploadID(uploadID UploadID) {
-	b.UploadID = uploadID
-	b.require(beginUploadResponseServiceProxiedFieldUploadID)
-}
-
-func (b *BeginUploadResponseServiceProxied) UnmarshalJSON(data []byte) error {
-	type unmarshaler BeginUploadResponseServiceProxied
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*b = BeginUploadResponseServiceProxied(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
-	if err != nil {
-		return err
-	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b *BeginUploadResponseServiceProxied) MarshalJSON() ([]byte, error) {
-	type embed BeginUploadResponseServiceProxied
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*b),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (b *BeginUploadResponseServiceProxied) String() string {
-	if b == nil {
-		return "<nil>"
-	}
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(b); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", b)
-}
-
-// Send the bytes to the service, which writes the content object.
-type BeginUploadServiceProxied struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (b *BeginUploadServiceProxied) GetExtraProperties() map[string]interface{} {
-	if b == nil {
-		return nil
-	}
-	return b.extraProperties
-}
-
-func (b *BeginUploadServiceProxied) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
-	}
-	b.explicitFields.Or(b.explicitFields, field)
-}
-
-func (b *BeginUploadServiceProxied) UnmarshalJSON(data []byte) error {
-	type unmarshaler BeginUploadServiceProxied
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*b = BeginUploadServiceProxied(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
-	if err != nil {
-		return err
-	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b *BeginUploadServiceProxied) MarshalJSON() ([]byte, error) {
-	type embed BeginUploadServiceProxied
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*b),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (b *BeginUploadServiceProxied) String() string {
-	if b == nil {
-		return "<nil>"
-	}
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(b); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", b)
 }
 
 // Complete a direct multipart upload.
 var (
-	completeUploadDirectMultipartFieldContent = big.NewInt(1 << 0)
-	completeUploadDirectMultipartFieldParts   = big.NewInt(1 << 1)
+	completeUploadBodyDirectMultipartFieldContent = big.NewInt(1 << 0)
+	completeUploadBodyDirectMultipartFieldParts   = big.NewInt(1 << 1)
 )
 
-type CompleteUploadDirectMultipart struct {
+type CompleteUploadBodyDirectMultipart struct {
 	// Expected length and checksum of the assembled object.
 	Content *UploadContentClaim `json:"content" url:"content"`
 	// Uploaded parts in ascending part order.
@@ -1174,28 +408,28 @@ type CompleteUploadDirectMultipart struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *CompleteUploadDirectMultipart) GetContent() *UploadContentClaim {
+func (c *CompleteUploadBodyDirectMultipart) GetContent() *UploadContentClaim {
 	if c == nil {
 		return nil
 	}
 	return c.Content
 }
 
-func (c *CompleteUploadDirectMultipart) GetParts() []*CompletedUploadPart {
+func (c *CompleteUploadBodyDirectMultipart) GetParts() []*CompletedUploadPart {
 	if c == nil {
 		return nil
 	}
 	return c.Parts
 }
 
-func (c *CompleteUploadDirectMultipart) GetExtraProperties() map[string]interface{} {
+func (c *CompleteUploadBodyDirectMultipart) GetExtraProperties() map[string]interface{} {
 	if c == nil {
 		return nil
 	}
 	return c.extraProperties
 }
 
-func (c *CompleteUploadDirectMultipart) require(field *big.Int) {
+func (c *CompleteUploadBodyDirectMultipart) require(field *big.Int) {
 	if c.explicitFields == nil {
 		c.explicitFields = big.NewInt(0)
 	}
@@ -1204,25 +438,25 @@ func (c *CompleteUploadDirectMultipart) require(field *big.Int) {
 
 // SetContent sets the Content field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CompleteUploadDirectMultipart) SetContent(content *UploadContentClaim) {
+func (c *CompleteUploadBodyDirectMultipart) SetContent(content *UploadContentClaim) {
 	c.Content = content
-	c.require(completeUploadDirectMultipartFieldContent)
+	c.require(completeUploadBodyDirectMultipartFieldContent)
 }
 
 // SetParts sets the Parts field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CompleteUploadDirectMultipart) SetParts(parts []*CompletedUploadPart) {
+func (c *CompleteUploadBodyDirectMultipart) SetParts(parts []*CompletedUploadPart) {
 	c.Parts = parts
-	c.require(completeUploadDirectMultipartFieldParts)
+	c.require(completeUploadBodyDirectMultipartFieldParts)
 }
 
-func (c *CompleteUploadDirectMultipart) UnmarshalJSON(data []byte) error {
-	type unmarshaler CompleteUploadDirectMultipart
+func (c *CompleteUploadBodyDirectMultipart) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompleteUploadBodyDirectMultipart
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = CompleteUploadDirectMultipart(value)
+	*c = CompleteUploadBodyDirectMultipart(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *c)
 	if err != nil {
 		return err
@@ -1232,8 +466,8 @@ func (c *CompleteUploadDirectMultipart) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *CompleteUploadDirectMultipart) MarshalJSON() ([]byte, error) {
-	type embed CompleteUploadDirectMultipart
+func (c *CompleteUploadBodyDirectMultipart) MarshalJSON() ([]byte, error) {
+	type embed CompleteUploadBodyDirectMultipart
 	var marshaler = struct {
 		embed
 	}{
@@ -1243,7 +477,7 @@ func (c *CompleteUploadDirectMultipart) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (c *CompleteUploadDirectMultipart) String() string {
+func (c *CompleteUploadBodyDirectMultipart) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -1260,10 +494,10 @@ func (c *CompleteUploadDirectMultipart) String() string {
 
 // Complete a direct-PUT upload.
 var (
-	completeUploadDirectPutFieldContent = big.NewInt(1 << 0)
+	completeUploadBodyDirectPutFieldContent = big.NewInt(1 << 0)
 )
 
-type CompleteUploadDirectPut struct {
+type CompleteUploadBodyDirectPut struct {
 	// Expected length and checksum of the stored object.
 	Content *UploadContentClaim `json:"content" url:"content"`
 
@@ -1274,21 +508,21 @@ type CompleteUploadDirectPut struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *CompleteUploadDirectPut) GetContent() *UploadContentClaim {
+func (c *CompleteUploadBodyDirectPut) GetContent() *UploadContentClaim {
 	if c == nil {
 		return nil
 	}
 	return c.Content
 }
 
-func (c *CompleteUploadDirectPut) GetExtraProperties() map[string]interface{} {
+func (c *CompleteUploadBodyDirectPut) GetExtraProperties() map[string]interface{} {
 	if c == nil {
 		return nil
 	}
 	return c.extraProperties
 }
 
-func (c *CompleteUploadDirectPut) require(field *big.Int) {
+func (c *CompleteUploadBodyDirectPut) require(field *big.Int) {
 	if c.explicitFields == nil {
 		c.explicitFields = big.NewInt(0)
 	}
@@ -1297,18 +531,18 @@ func (c *CompleteUploadDirectPut) require(field *big.Int) {
 
 // SetContent sets the Content field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CompleteUploadDirectPut) SetContent(content *UploadContentClaim) {
+func (c *CompleteUploadBodyDirectPut) SetContent(content *UploadContentClaim) {
 	c.Content = content
-	c.require(completeUploadDirectPutFieldContent)
+	c.require(completeUploadBodyDirectPutFieldContent)
 }
 
-func (c *CompleteUploadDirectPut) UnmarshalJSON(data []byte) error {
-	type unmarshaler CompleteUploadDirectPut
+func (c *CompleteUploadBodyDirectPut) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompleteUploadBodyDirectPut
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = CompleteUploadDirectPut(value)
+	*c = CompleteUploadBodyDirectPut(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *c)
 	if err != nil {
 		return err
@@ -1318,8 +552,8 @@ func (c *CompleteUploadDirectPut) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *CompleteUploadDirectPut) MarshalJSON() ([]byte, error) {
-	type embed CompleteUploadDirectPut
+func (c *CompleteUploadBodyDirectPut) MarshalJSON() ([]byte, error) {
+	type embed CompleteUploadBodyDirectPut
 	var marshaler = struct {
 		embed
 	}{
@@ -1329,7 +563,7 @@ func (c *CompleteUploadDirectPut) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (c *CompleteUploadDirectPut) String() string {
+func (c *CompleteUploadBodyDirectPut) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -1345,7 +579,7 @@ func (c *CompleteUploadDirectPut) String() string {
 }
 
 // Complete a service-proxied upload.
-type CompleteUploadServiceProxied struct {
+type CompleteUploadBodyServiceProxied struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1354,27 +588,27 @@ type CompleteUploadServiceProxied struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *CompleteUploadServiceProxied) GetExtraProperties() map[string]interface{} {
+func (c *CompleteUploadBodyServiceProxied) GetExtraProperties() map[string]interface{} {
 	if c == nil {
 		return nil
 	}
 	return c.extraProperties
 }
 
-func (c *CompleteUploadServiceProxied) require(field *big.Int) {
+func (c *CompleteUploadBodyServiceProxied) require(field *big.Int) {
 	if c.explicitFields == nil {
 		c.explicitFields = big.NewInt(0)
 	}
 	c.explicitFields.Or(c.explicitFields, field)
 }
 
-func (c *CompleteUploadServiceProxied) UnmarshalJSON(data []byte) error {
-	type unmarshaler CompleteUploadServiceProxied
+func (c *CompleteUploadBodyServiceProxied) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompleteUploadBodyServiceProxied
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = CompleteUploadServiceProxied(value)
+	*c = CompleteUploadBodyServiceProxied(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *c)
 	if err != nil {
 		return err
@@ -1384,8 +618,8 @@ func (c *CompleteUploadServiceProxied) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *CompleteUploadServiceProxied) MarshalJSON() ([]byte, error) {
-	type embed CompleteUploadServiceProxied
+func (c *CompleteUploadBodyServiceProxied) MarshalJSON() ([]byte, error) {
+	type embed CompleteUploadBodyServiceProxied
 	var marshaler = struct {
 		embed
 	}{
@@ -1395,7 +629,7 @@ func (c *CompleteUploadServiceProxied) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (c *CompleteUploadServiceProxied) String() string {
+func (c *CompleteUploadBodyServiceProxied) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -1516,6 +750,395 @@ func (c *CompletedUploadPart) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CompletedUploadPart) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// Selects the transport for a new upload session.
+type CreateUploadBody struct {
+	Mode            string
+	DirectMultipart *CreateUploadBodyDirectMultipart
+	DirectPut       *CreateUploadBodyDirectPut
+	ServiceProxied  *CreateUploadBodyServiceProxied
+
+	rawJSON json.RawMessage
+}
+
+func (c *CreateUploadBody) GetMode() string {
+	if c == nil {
+		return ""
+	}
+	return c.Mode
+}
+
+func (c *CreateUploadBody) GetDirectMultipart() *CreateUploadBodyDirectMultipart {
+	if c == nil {
+		return nil
+	}
+	return c.DirectMultipart
+}
+
+func (c *CreateUploadBody) GetDirectPut() *CreateUploadBodyDirectPut {
+	if c == nil {
+		return nil
+	}
+	return c.DirectPut
+}
+
+func (c *CreateUploadBody) GetServiceProxied() *CreateUploadBodyServiceProxied {
+	if c == nil {
+		return nil
+	}
+	return c.ServiceProxied
+}
+
+func (c *CreateUploadBody) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Mode string `json:"mode"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	c.Mode = unmarshaler.Mode
+	if unmarshaler.Mode == "" {
+		return fmt.Errorf("%T did not include discriminant mode", c)
+	}
+	switch unmarshaler.Mode {
+	case "direct_multipart":
+		value := new(CreateUploadBodyDirectMultipart)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.DirectMultipart = value
+	case "direct_put":
+		value := new(CreateUploadBodyDirectPut)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.DirectPut = value
+	case "service_proxied":
+		value := new(CreateUploadBodyServiceProxied)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.ServiceProxied = value
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c CreateUploadBody) MarshalJSON() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	if c.DirectMultipart != nil {
+		return internal.MarshalJSONWithExtraProperty(c.DirectMultipart, "mode", "direct_multipart")
+	}
+	if c.DirectPut != nil {
+		return internal.MarshalJSONWithExtraProperty(c.DirectPut, "mode", "direct_put")
+	}
+	if c.ServiceProxied != nil {
+		return internal.MarshalJSONWithExtraProperty(c.ServiceProxied, "mode", "service_proxied")
+	}
+	if len(c.rawJSON) > 0 {
+		return c.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+type CreateUploadBodyVisitor interface {
+	VisitDirectMultipart(*CreateUploadBodyDirectMultipart) error
+	VisitDirectPut(*CreateUploadBodyDirectPut) error
+	VisitServiceProxied(*CreateUploadBodyServiceProxied) error
+}
+
+func (c *CreateUploadBody) Accept(visitor CreateUploadBodyVisitor) error {
+	if c.DirectMultipart != nil {
+		return visitor.VisitDirectMultipart(c.DirectMultipart)
+	}
+	if c.DirectPut != nil {
+		return visitor.VisitDirectPut(c.DirectPut)
+	}
+	if c.ServiceProxied != nil {
+		return visitor.VisitServiceProxied(c.ServiceProxied)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+func (c *CreateUploadBody) validate() error {
+	if c == nil {
+		return fmt.Errorf("type %T is nil", c)
+	}
+	var fields []string
+	if c.DirectMultipart != nil {
+		fields = append(fields, "direct_multipart")
+	}
+	if c.DirectPut != nil {
+		fields = append(fields, "direct_put")
+	}
+	if c.ServiceProxied != nil {
+		fields = append(fields, "service_proxied")
+	}
+	if len(fields) == 0 {
+		if c.Mode != "" {
+			if len(c.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Mode)
+		}
+		return fmt.Errorf("type %T is empty", c)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
+	}
+	if c.Mode != "" {
+		field := fields[0]
+		if c.Mode != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				c,
+				c.Mode,
+				c,
+			)
+		}
+	}
+	return nil
+}
+
+// Write the object in parts through presigned part uploads.
+var (
+	createUploadBodyDirectMultipartFieldPartSizeBytes = big.NewInt(1 << 0)
+)
+
+type CreateUploadBodyDirectMultipart struct {
+	// The byte length of every part except the last, or `None` for the server default.
+	PartSizeBytes *int64 `json:"part_size_bytes,omitempty" url:"part_size_bytes,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateUploadBodyDirectMultipart) GetPartSizeBytes() *int64 {
+	if c == nil {
+		return nil
+	}
+	return c.PartSizeBytes
+}
+
+func (c *CreateUploadBodyDirectMultipart) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateUploadBodyDirectMultipart) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetPartSizeBytes sets the PartSizeBytes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateUploadBodyDirectMultipart) SetPartSizeBytes(partSizeBytes *int64) {
+	c.PartSizeBytes = partSizeBytes
+	c.require(createUploadBodyDirectMultipartFieldPartSizeBytes)
+}
+
+func (c *CreateUploadBodyDirectMultipart) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateUploadBodyDirectMultipart
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateUploadBodyDirectMultipart(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateUploadBodyDirectMultipart) MarshalJSON() ([]byte, error) {
+	type embed CreateUploadBodyDirectMultipart
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateUploadBodyDirectMultipart) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// Write the whole object through one presigned request.
+var (
+	createUploadBodyDirectPutFieldSizeBytes = big.NewInt(1 << 0)
+)
+
+type CreateUploadBodyDirectPut struct {
+	// Advisory byte length for an early provider-limit check.
+	SizeBytes *int64 `json:"size_bytes,omitempty" url:"size_bytes,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateUploadBodyDirectPut) GetSizeBytes() *int64 {
+	if c == nil {
+		return nil
+	}
+	return c.SizeBytes
+}
+
+func (c *CreateUploadBodyDirectPut) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateUploadBodyDirectPut) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetSizeBytes sets the SizeBytes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateUploadBodyDirectPut) SetSizeBytes(sizeBytes *int64) {
+	c.SizeBytes = sizeBytes
+	c.require(createUploadBodyDirectPutFieldSizeBytes)
+}
+
+func (c *CreateUploadBodyDirectPut) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateUploadBodyDirectPut
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateUploadBodyDirectPut(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateUploadBodyDirectPut) MarshalJSON() ([]byte, error) {
+	type embed CreateUploadBodyDirectPut
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateUploadBodyDirectPut) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// Send the bytes to the service, which writes the content object.
+type CreateUploadBodyServiceProxied struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateUploadBodyServiceProxied) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateUploadBodyServiceProxied) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+func (c *CreateUploadBodyServiceProxied) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateUploadBodyServiceProxied
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateUploadBodyServiceProxied(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateUploadBodyServiceProxied) MarshalJSON() ([]byte, error) {
+	type embed CreateUploadBodyServiceProxied
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateUploadBodyServiceProxied) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -1753,157 +1376,6 @@ func (s *SignedUploadPart) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// A request to complete an upload session using the mode that started it.
-type UploadCompletion struct {
-	Mode            string
-	DirectMultipart *CompleteUploadDirectMultipart
-	DirectPut       *CompleteUploadDirectPut
-	ServiceProxied  *CompleteUploadServiceProxied
-
-	rawJSON json.RawMessage
-}
-
-func (u *UploadCompletion) GetMode() string {
-	if u == nil {
-		return ""
-	}
-	return u.Mode
-}
-
-func (u *UploadCompletion) GetDirectMultipart() *CompleteUploadDirectMultipart {
-	if u == nil {
-		return nil
-	}
-	return u.DirectMultipart
-}
-
-func (u *UploadCompletion) GetDirectPut() *CompleteUploadDirectPut {
-	if u == nil {
-		return nil
-	}
-	return u.DirectPut
-}
-
-func (u *UploadCompletion) GetServiceProxied() *CompleteUploadServiceProxied {
-	if u == nil {
-		return nil
-	}
-	return u.ServiceProxied
-}
-
-func (u *UploadCompletion) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Mode string `json:"mode"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	u.Mode = unmarshaler.Mode
-	if unmarshaler.Mode == "" {
-		return fmt.Errorf("%T did not include discriminant mode", u)
-	}
-	switch unmarshaler.Mode {
-	case "direct_multipart":
-		value := new(CompleteUploadDirectMultipart)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.DirectMultipart = value
-	case "direct_put":
-		value := new(CompleteUploadDirectPut)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.DirectPut = value
-	case "service_proxied":
-		value := new(CompleteUploadServiceProxied)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.ServiceProxied = value
-	}
-	u.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (u UploadCompletion) MarshalJSON() ([]byte, error) {
-	if err := u.validate(); err != nil {
-		return nil, err
-	}
-	if u.DirectMultipart != nil {
-		return internal.MarshalJSONWithExtraProperty(u.DirectMultipart, "mode", "direct_multipart")
-	}
-	if u.DirectPut != nil {
-		return internal.MarshalJSONWithExtraProperty(u.DirectPut, "mode", "direct_put")
-	}
-	if u.ServiceProxied != nil {
-		return internal.MarshalJSONWithExtraProperty(u.ServiceProxied, "mode", "service_proxied")
-	}
-	if len(u.rawJSON) > 0 {
-		return u.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", u)
-}
-
-type UploadCompletionVisitor interface {
-	VisitDirectMultipart(*CompleteUploadDirectMultipart) error
-	VisitDirectPut(*CompleteUploadDirectPut) error
-	VisitServiceProxied(*CompleteUploadServiceProxied) error
-}
-
-func (u *UploadCompletion) Accept(visitor UploadCompletionVisitor) error {
-	if u.DirectMultipart != nil {
-		return visitor.VisitDirectMultipart(u.DirectMultipart)
-	}
-	if u.DirectPut != nil {
-		return visitor.VisitDirectPut(u.DirectPut)
-	}
-	if u.ServiceProxied != nil {
-		return visitor.VisitServiceProxied(u.ServiceProxied)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", u)
-}
-
-func (u *UploadCompletion) validate() error {
-	if u == nil {
-		return fmt.Errorf("type %T is nil", u)
-	}
-	var fields []string
-	if u.DirectMultipart != nil {
-		fields = append(fields, "direct_multipart")
-	}
-	if u.DirectPut != nil {
-		fields = append(fields, "direct_put")
-	}
-	if u.ServiceProxied != nil {
-		fields = append(fields, "service_proxied")
-	}
-	if len(fields) == 0 {
-		if u.Mode != "" {
-			if len(u.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", u, u.Mode)
-		}
-		return fmt.Errorf("type %T is empty", u)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", u, fields)
-	}
-	if u.Mode != "" {
-		field := fields[0]
-		if u.Mode != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				u,
-				u.Mode,
-				u,
-			)
-		}
-	}
-	return nil
-}
-
 // The size and checksum reported for a complete direct-upload payload.
 var (
 	uploadContentClaimFieldChecksum  = big.NewInt(1 << 0)
@@ -1993,126 +1465,6 @@ func (u *UploadContentClaim) MarshalJSON() ([]byte, error) {
 }
 
 func (u *UploadContentClaim) String() string {
-	if u == nil {
-		return "<nil>"
-	}
-	if len(u.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(u); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", u)
-}
-
-// Response after uploading bytes into a session.
-var (
-	uploadContentResponseFieldContentRef  = big.NewInt(1 << 0)
-	uploadContentResponseFieldNamespaceID = big.NewInt(1 << 1)
-	uploadContentResponseFieldUploadID    = big.NewInt(1 << 2)
-)
-
-type UploadContentResponse struct {
-	// Digest and byte length computed from the accepted body.
-	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// Namespace that owns the upload session.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Session into which the service staged these bytes.
-	UploadID UploadID `json:"upload_id" url:"upload_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (u *UploadContentResponse) GetContentRef() *ContentRef {
-	if u == nil {
-		return nil
-	}
-	return u.ContentRef
-}
-
-func (u *UploadContentResponse) GetNamespaceID() NamespaceID {
-	if u == nil {
-		return ""
-	}
-	return u.NamespaceID
-}
-
-func (u *UploadContentResponse) GetUploadID() UploadID {
-	if u == nil {
-		return ""
-	}
-	return u.UploadID
-}
-
-func (u *UploadContentResponse) GetExtraProperties() map[string]interface{} {
-	if u == nil {
-		return nil
-	}
-	return u.extraProperties
-}
-
-func (u *UploadContentResponse) require(field *big.Int) {
-	if u.explicitFields == nil {
-		u.explicitFields = big.NewInt(0)
-	}
-	u.explicitFields.Or(u.explicitFields, field)
-}
-
-// SetContentRef sets the ContentRef field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UploadContentResponse) SetContentRef(contentRef *ContentRef) {
-	u.ContentRef = contentRef
-	u.require(uploadContentResponseFieldContentRef)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UploadContentResponse) SetNamespaceID(namespaceID NamespaceID) {
-	u.NamespaceID = namespaceID
-	u.require(uploadContentResponseFieldNamespaceID)
-}
-
-// SetUploadID sets the UploadID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UploadContentResponse) SetUploadID(uploadID UploadID) {
-	u.UploadID = uploadID
-	u.require(uploadContentResponseFieldUploadID)
-}
-
-func (u *UploadContentResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler UploadContentResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*u = UploadContentResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *u)
-	if err != nil {
-		return err
-	}
-	u.extraProperties = extraProperties
-	u.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (u *UploadContentResponse) MarshalJSON() ([]byte, error) {
-	type embed UploadContentResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*u),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (u *UploadContentResponse) String() string {
 	if u == nil {
 		return "<nil>"
 	}
@@ -2720,19 +2072,31 @@ func (u *UploadSessionStatusCompleted) String() string {
 
 // Accepting content until its lease passes.
 var (
-	uploadSessionStatusOpenFieldExpiresAtMs = big.NewInt(1 << 0)
-	uploadSessionStatusOpenFieldMode        = big.NewInt(1 << 1)
-	uploadSessionStatusOpenFieldNamespaceID = big.NewInt(1 << 2)
-	uploadSessionStatusOpenFieldUploadID    = big.NewInt(1 << 3)
+	uploadSessionStatusOpenFieldAccess            = big.NewInt(1 << 0)
+	uploadSessionStatusOpenFieldChecksumAlgorithm = big.NewInt(1 << 1)
+	uploadSessionStatusOpenFieldContentRef        = big.NewInt(1 << 2)
+	uploadSessionStatusOpenFieldExpiresAtMs       = big.NewInt(1 << 3)
+	uploadSessionStatusOpenFieldMode              = big.NewInt(1 << 4)
+	uploadSessionStatusOpenFieldNamespaceID       = big.NewInt(1 << 5)
+	uploadSessionStatusOpenFieldPartSizeBytes     = big.NewInt(1 << 6)
+	uploadSessionStatusOpenFieldUploadID          = big.NewInt(1 << 7)
 )
 
 type UploadSessionStatusOpen struct {
+	// Present for `direct_put` sessions; minted fresh on every read.
+	Access *ObjectTransferAccess `json:"access,omitempty" url:"access,omitempty"`
+	// Present for `direct_put` and `direct_multipart` sessions.
+	ChecksumAlgorithm *ChecksumAlgorithm `json:"checksum_algorithm,omitempty" url:"checksum_algorithm,omitempty"`
+	// Present after content is staged in a `service_proxied` session.
+	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The Unix-millisecond time after which cleanup may abort the session.
 	ExpiresAtMs int64 `json:"expires_at_ms" url:"expires_at_ms"`
 	// Transport selected when the session began.
 	Mode UploadMode `json:"mode" url:"mode"`
 	// Namespace that owns the session.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// Present for `direct_multipart` sessions.
+	PartSizeBytes *int64 `json:"part_size_bytes,omitempty" url:"part_size_bytes,omitempty"`
 	// Session represented by this view.
 	UploadID UploadID `json:"upload_id" url:"upload_id"`
 
@@ -2741,6 +2105,27 @@ type UploadSessionStatusOpen struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (u *UploadSessionStatusOpen) GetAccess() *ObjectTransferAccess {
+	if u == nil {
+		return nil
+	}
+	return u.Access
+}
+
+func (u *UploadSessionStatusOpen) GetChecksumAlgorithm() *ChecksumAlgorithm {
+	if u == nil {
+		return nil
+	}
+	return u.ChecksumAlgorithm
+}
+
+func (u *UploadSessionStatusOpen) GetContentRef() *ContentRef {
+	if u == nil {
+		return nil
+	}
+	return u.ContentRef
 }
 
 func (u *UploadSessionStatusOpen) GetExpiresAtMs() int64 {
@@ -2764,6 +2149,13 @@ func (u *UploadSessionStatusOpen) GetNamespaceID() NamespaceID {
 	return u.NamespaceID
 }
 
+func (u *UploadSessionStatusOpen) GetPartSizeBytes() *int64 {
+	if u == nil {
+		return nil
+	}
+	return u.PartSizeBytes
+}
+
 func (u *UploadSessionStatusOpen) GetUploadID() UploadID {
 	if u == nil {
 		return ""
@@ -2785,6 +2177,27 @@ func (u *UploadSessionStatusOpen) require(field *big.Int) {
 	u.explicitFields.Or(u.explicitFields, field)
 }
 
+// SetAccess sets the Access field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UploadSessionStatusOpen) SetAccess(access *ObjectTransferAccess) {
+	u.Access = access
+	u.require(uploadSessionStatusOpenFieldAccess)
+}
+
+// SetChecksumAlgorithm sets the ChecksumAlgorithm field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UploadSessionStatusOpen) SetChecksumAlgorithm(checksumAlgorithm *ChecksumAlgorithm) {
+	u.ChecksumAlgorithm = checksumAlgorithm
+	u.require(uploadSessionStatusOpenFieldChecksumAlgorithm)
+}
+
+// SetContentRef sets the ContentRef field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UploadSessionStatusOpen) SetContentRef(contentRef *ContentRef) {
+	u.ContentRef = contentRef
+	u.require(uploadSessionStatusOpenFieldContentRef)
+}
+
 // SetExpiresAtMs sets the ExpiresAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (u *UploadSessionStatusOpen) SetExpiresAtMs(expiresAtMs int64) {
@@ -2804,6 +2217,13 @@ func (u *UploadSessionStatusOpen) SetMode(mode UploadMode) {
 func (u *UploadSessionStatusOpen) SetNamespaceID(namespaceID NamespaceID) {
 	u.NamespaceID = namespaceID
 	u.require(uploadSessionStatusOpenFieldNamespaceID)
+}
+
+// SetPartSizeBytes sets the PartSizeBytes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UploadSessionStatusOpen) SetPartSizeBytes(partSizeBytes *int64) {
+	u.PartSizeBytes = partSizeBytes
+	u.require(uploadSessionStatusOpenFieldPartSizeBytes)
 }
 
 // SetUploadID sets the UploadID field and marks it as non-optional;

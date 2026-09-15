@@ -12,6 +12,7 @@ import (
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
 	"github.com/loonfs/loonfs-sdk-go/capabilities"
+	"github.com/loonfs/loonfs-sdk-go/core"
 	"github.com/loonfs/loonfs-sdk-go/option"
 	"github.com/loonfs/loonfs-sdk-go/uploads"
 )
@@ -24,34 +25,35 @@ type StreamUploadInput struct {
 	Path               loonfs.AbsolutePath
 	Content            io.Reader
 	SizeBytes          *int64
-	ActorID            loonfs.ActorID
 	CommitID           loonfs.CommitID
 	Message            *string
 	Behavior           loonfs.DestinationBehavior
-	ExpectedInodeID    *string
+	ExpectedInodeID    *loonfs.InodeID
 	ExpectedRevisionNo *loonfs.RevisionNo
 }
 
-func (c *Client) UploadStream(ctx context.Context, in StreamUploadInput) (*UploadResult, error) {
-	if in.ActorID == "" || in.CommitID == "" {
-		return nil, fmt.Errorf("transfers: actor_id and commit_id are required")
-	}
-	ctx, cancel := transferContext(ctx)
-	defer cancel()
-	prepared, err := c.PrepareFileStream(ctx, in.NamespaceID, in.Content, in.SizeBytes)
+// Pass CommitID explicitly if you may retry. The caller owns Content.
+func (c *Client) UploadStream(ctx context.Context, in StreamUploadInput, opts ...core.RequestOption) (*loonfs.Commit, error) {
+	commitID, err := c.publicationIDs(in.CommitID)
 	if err != nil {
 		return nil, err
 	}
-	return c.PutFilePrepared(ctx, PreparedUploadInput{
+	ctx, cancel := transferContext(ctx)
+	defer cancel()
+	prepared, err := c.PrepareStream(ctx, in.NamespaceID, in.Content, in.SizeBytes)
+	if err != nil {
+		return nil, err
+	}
+	return c.UploadPrepared(ctx, PreparedUploadInput{
 		NamespaceID: in.NamespaceID, Path: in.Path, Prepared: prepared,
-		ActorID: in.ActorID, CommitID: in.CommitID, Message: in.Message, Behavior: in.Behavior,
+		CommitID: commitID, Message: in.Message, Behavior: in.Behavior,
 		ExpectedInodeID: in.ExpectedInodeID, ExpectedRevisionNo: in.ExpectedRevisionNo,
-	})
+	}, opts...)
 }
 
-// PrepareFileStream stages a source once with bounded memory and no payload
-// retries. Retain its result for PutFilePrepared publication retries.
-func (c *Client) PrepareFileStream(ctx context.Context, namespaceID loonfs.NamespaceID, source io.Reader, sizeBytes *int64) (*PreparedFileContent, error) {
+// PrepareStream stages a source once with bounded memory and no payload
+// retries. Retain its result for UploadPrepared publication retries.
+func (c *Client) PrepareStream(ctx context.Context, namespaceID loonfs.NamespaceID, source io.Reader, sizeBytes *int64) (*PreparedContent, error) {
 	if c == nil {
 		return nil, fmt.Errorf("transfers: client is nil")
 	}
@@ -101,11 +103,11 @@ func (c *Client) PrepareFileStream(ctx context.Context, namespaceID loonfs.Names
 			return nil, err
 		}
 	} else {
-		body := &loonfs.BeginUploadRequest{}
+		body := &loonfs.CreateUploadBody{}
 		if capabilities.Features[featureDirectMultipart] {
-			body.DirectMultipart = &loonfs.BeginUploadDirectMultipart{}
+			body.DirectMultipart = &loonfs.CreateUploadBodyDirectMultipart{}
 		} else {
-			body.ServiceProxied = &loonfs.BeginUploadServiceProxied{}
+			body.ServiceProxied = &loonfs.CreateUploadBodyServiceProxied{}
 		}
 		request = &loonfs.CreateUploadRequest{NamespaceID: string(namespaceID), Body: body}
 	}
@@ -114,39 +116,41 @@ func (c *Client) PrepareFileStream(ctx context.Context, namespaceID loonfs.Names
 	if err != nil {
 		return nil, err
 	}
-	if begin == nil {
-		return nil, fmt.Errorf("transfers: no upload session")
+	if begin == nil || begin.Open == nil {
+		return nil, fmt.Errorf("transfers: created upload session is not open")
 	}
+	session := begin.Open
 	reader := &uploadReader{ctx: ctx, source: source, expected: sizeBytes}
-	var uploadID loonfs.UploadID
-	var completion *loonfs.UploadCompletion
-	switch {
-	case begin.ServiceProxied != nil:
-		uploadID = begin.ServiceProxied.UploadID
+	uploadID := session.UploadID
+	var completion *loonfs.CompleteUploadBody
+	switch session.Mode {
+	case loonfs.UploadModeServiceProxied:
 		if limit, ok := capabilities.Limits[limitUploadMaximumBytes]; ok {
 			reader.limit = &limit
 		}
 		_, err = uploadsClient.PutContent(ctx, string(namespaceID), string(uploadID), reader,
 			option.WithHTTPHeader(http.Header{"Content-Type": {"application/octet-stream"}}), option.WithMaxAttempts(1))
-		completion = &loonfs.UploadCompletion{ServiceProxied: &loonfs.CompleteUploadServiceProxied{}}
-	case begin.DirectPut != nil:
-		uploadID = begin.DirectPut.UploadID
-		reader.digest, err = newChecksum(begin.DirectPut.ChecksumAlgorithm)
+		completion = &loonfs.CompleteUploadBody{ServiceProxied: &loonfs.CompleteUploadBodyServiceProxied{}}
+	case loonfs.UploadModeDirectPut:
+		if session.Access == nil || session.ChecksumAlgorithm == nil {
+			err = fmt.Errorf("transfers: direct_put session lacks access or checksum_algorithm")
+			break
+		}
+		reader.digest, err = newChecksum(*session.ChecksumAlgorithm)
 		if err == nil {
 			length := int64(-1)
 			if sizeBytes != nil {
 				length = *sizeBytes
 			}
-			_, err = c.putStream(ctx, begin.DirectPut.Access, reader, length)
+			_, err = c.putStream(ctx, session.Access, reader, length)
 		}
 		if err == nil {
-			completion = &loonfs.UploadCompletion{DirectPut: &loonfs.CompleteUploadDirectPut{Content: reader.claim(begin.DirectPut.ChecksumAlgorithm)}}
+			completion = &loonfs.CompleteUploadBody{DirectPut: &loonfs.CompleteUploadBodyDirectPut{Content: reader.claim(*session.ChecksumAlgorithm)}}
 		}
-	case begin.DirectMultipart != nil:
-		uploadID = begin.DirectMultipart.UploadID
-		completion, err = c.streamMultipart(ctx, uploadsClient, namespaceID, begin.DirectMultipart, reader)
+	case loonfs.UploadModeDirectMultipart:
+		completion, err = c.streamMultipart(ctx, uploadsClient, namespaceID, session, reader)
 	default:
-		return nil, fmt.Errorf("transfers: unsupported upload mode %q", begin.Mode)
+		err = fmt.Errorf("transfers: unsupported upload mode %q", session.Mode)
 	}
 	if err == nil {
 		err = reader.finish()
@@ -170,7 +174,7 @@ func (c *Client) PrepareFileStream(ctx context.Context, namespaceID loonfs.Names
 	if status.ContentRef.SizeBytes != reader.count {
 		return nil, fmt.Errorf("transfers: completed upload size mismatch")
 	}
-	return &PreparedFileContent{ContentRef: status.ContentRef, ContentToken: status.ContentToken}, nil
+	return &PreparedContent{ContentRef: status.ContentRef, ContentToken: status.ContentToken}, nil
 }
 
 func (c *Client) putStream(ctx context.Context, access *loonfs.ObjectTransferAccess, source io.Reader, length int64) (string, error) {
@@ -188,12 +192,15 @@ func (c *Client) putStream(ctx context.Context, access *loonfs.ObjectTransferAcc
 	return response.Header.Get("ETag"), nil
 }
 
-func (c *Client) streamMultipart(ctx context.Context, client *uploads.Client, namespaceID loonfs.NamespaceID, begin *loonfs.BeginUploadResponseDirectMultipart, reader *uploadReader) (*loonfs.UploadCompletion, error) {
-	partSize := int(begin.PartSizeBytes)
-	if partSize <= 0 || int64(partSize) != begin.PartSizeBytes {
+func (c *Client) streamMultipart(ctx context.Context, client *uploads.Client, namespaceID loonfs.NamespaceID, begin *loonfs.UploadSessionStatusOpen, reader *uploadReader) (*loonfs.CompleteUploadBody, error) {
+	if begin.PartSizeBytes == nil || begin.ChecksumAlgorithm == nil {
+		return nil, fmt.Errorf("transfers: direct_multipart session lacks part_size_bytes or checksum_algorithm")
+	}
+	partSize := int(*begin.PartSizeBytes)
+	if partSize <= 0 || int64(partSize) != *begin.PartSizeBytes {
 		return nil, fmt.Errorf("transfers: invalid multipart part size")
 	}
-	digest, err := newChecksum(begin.ChecksumAlgorithm)
+	digest, err := newChecksum(*begin.ChecksumAlgorithm)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +223,7 @@ func (c *Client) streamMultipart(ctx context.Context, client *uploads.Client, na
 		}
 		part := buffer[:n]
 		number := len(parts) + 1
-		checksum, err := computeChecksum(begin.ChecksumAlgorithm, part)
+		checksum, err := computeChecksum(*begin.ChecksumAlgorithm, part)
 		if err != nil {
 			return nil, err
 		}
@@ -236,7 +243,7 @@ func (c *Client) streamMultipart(ctx context.Context, client *uploads.Client, na
 		}
 		parts = append(parts, &loonfs.CompletedUploadPart{PartNumber: number, Checksum: checksum, Etag: etag})
 	}
-	return &loonfs.UploadCompletion{DirectMultipart: &loonfs.CompleteUploadDirectMultipart{Content: reader.claim(begin.ChecksumAlgorithm), Parts: parts}}, nil
+	return &loonfs.CompleteUploadBody{DirectMultipart: &loonfs.CompleteUploadBodyDirectMultipart{Content: reader.claim(*begin.ChecksumAlgorithm), Parts: parts}}, nil
 }
 
 type uploadReader struct {

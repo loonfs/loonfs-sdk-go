@@ -68,11 +68,8 @@ func (c *Client) Content(
 //
 // Example:
 //
-//	request := &loonfs.BeginDownloadRequest{
+//	request := &loonfs.CreateDownloadRequest{
 //	    NamespaceID: "namespace_id",
-//	    SnapshotID: loonfs.String(
-//	        "pin_00000000000000000001-0000000000000002",
-//	    ),
 //	    Path: "/docs/report.txt",
 //	}
 //	client.Files.CreateDownload(
@@ -81,9 +78,9 @@ func (c *Client) Content(
 //	)
 func (c *Client) CreateDownload(
 	ctx context.Context,
-	request *loonfs.BeginDownloadRequest,
+	request *loonfs.CreateDownloadRequest,
 	opts ...option.RequestOption,
-) (*loonfs.BeginDownloadResponse, error) {
+) (*loonfs.CreateDownloadResponse, error) {
 	response, err := c.WithRawResponse.CreateDownload(
 		ctx,
 		request,

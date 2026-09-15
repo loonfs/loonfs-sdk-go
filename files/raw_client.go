@@ -88,9 +88,9 @@ func (r *RawClient) Content(
 
 func (r *RawClient) CreateDownload(
 	ctx context.Context,
-	request *loonfs.BeginDownloadRequest,
+	request *loonfs.CreateDownloadRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.BeginDownloadResponse], error) {
+) (*core.Response[*loonfs.CreateDownloadResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -101,19 +101,12 @@ func (r *RawClient) CreateDownload(
 		baseURL+"/v0/namespaces/%v/filesystem/downloads",
 		request.NamespaceID,
 	)
-	queryParams, err := internal.QueryValues(request)
-	if err != nil {
-		return nil, err
-	}
-	if len(queryParams) > 0 {
-		endpointURL += "?" + queryParams.Encode()
-	}
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *loonfs.BeginDownloadResponse
+	var response *loonfs.CreateDownloadResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -133,7 +126,7 @@ func (r *RawClient) CreateDownload(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.BeginDownloadResponse]{
+	return &core.Response[*loonfs.CreateDownloadResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

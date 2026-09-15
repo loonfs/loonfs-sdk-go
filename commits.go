@@ -11,19 +11,16 @@ import (
 
 var (
 	commitRequestFieldNamespaceID   = big.NewInt(1 << 0)
-	commitRequestFieldActorID       = big.NewInt(1 << 1)
-	commitRequestFieldCommitID      = big.NewInt(1 << 2)
-	commitRequestFieldContentTokens = big.NewInt(1 << 3)
-	commitRequestFieldMessage       = big.NewInt(1 << 4)
-	commitRequestFieldOperations    = big.NewInt(1 << 5)
-	commitRequestFieldPreconditions = big.NewInt(1 << 6)
+	commitRequestFieldCommitID      = big.NewInt(1 << 1)
+	commitRequestFieldContentTokens = big.NewInt(1 << 2)
+	commitRequestFieldMessage       = big.NewInt(1 << 3)
+	commitRequestFieldOperations    = big.NewInt(1 << 4)
+	commitRequestFieldPreconditions = big.NewInt(1 << 5)
 )
 
 type CommitRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
-	// Actor responsible for the commit, as supplied by the application.
-	ActorID ActorID `json:"actor_id" url:"-"`
 	// Caller-supplied idempotency key for the whole request.
 	CommitID CommitID `json:"commit_id" url:"-"`
 	// The proofs for new external content references in this request.
@@ -51,13 +48,6 @@ func (c *CommitRequest) require(field *big.Int) {
 func (c *CommitRequest) SetNamespaceID(namespaceID string) {
 	c.NamespaceID = namespaceID
 	c.require(commitRequestFieldNamespaceID)
-}
-
-// SetActorID sets the ActorID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitRequest) SetActorID(actorID ActorID) {
-	c.ActorID = actorID
-	c.require(commitRequestFieldActorID)
 }
 
 // SetCommitID sets the CommitID field and marks it as non-optional;
@@ -807,195 +797,6 @@ func (c *CommitPreconditionPathBinding) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CommitPreconditionPathBinding) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-// The result of one commit, including its attribution and filesystem events.
-var (
-	commitResponseFieldCommitID      = big.NewInt(1 << 0)
-	commitResponseFieldCommittedAtMs = big.NewInt(1 << 1)
-	commitResponseFieldCommittedBy   = big.NewInt(1 << 2)
-	commitResponseFieldCommittedSeq  = big.NewInt(1 << 3)
-	commitResponseFieldEvents        = big.NewInt(1 << 4)
-	commitResponseFieldMessage       = big.NewInt(1 << 5)
-	commitResponseFieldNamespaceID   = big.NewInt(1 << 6)
-)
-
-type CommitResponse struct {
-	// The idempotency key for the commit.
-	CommitID CommitID `json:"commit_id" url:"commit_id"`
-	// The commit time in Unix milliseconds; `committed_seq` defines commit order.
-	CommittedAtMs int64 `json:"committed_at_ms" url:"committed_at_ms"`
-	// Actor responsible for the commit, as supplied by the application.
-	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
-	// Sequence number where the commit became visible.
-	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
-	// The filesystem events in commit order, or `None` when replaying a commit
-	// without retained WAL history.
-	Events []*FilesystemChange `json:"events,omitempty" url:"events,omitempty"`
-	// The optional caller annotation for the commit.
-	Message *string `json:"message,omitempty" url:"message,omitempty"`
-	// Namespace that changed.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CommitResponse) GetCommitID() CommitID {
-	if c == nil {
-		return ""
-	}
-	return c.CommitID
-}
-
-func (c *CommitResponse) GetCommittedAtMs() int64 {
-	if c == nil {
-		return 0
-	}
-	return c.CommittedAtMs
-}
-
-func (c *CommitResponse) GetCommittedBy() ActorID {
-	if c == nil {
-		return ""
-	}
-	return c.CommittedBy
-}
-
-func (c *CommitResponse) GetCommittedSeq() ChangeSeq {
-	if c == nil {
-		return 0
-	}
-	return c.CommittedSeq
-}
-
-func (c *CommitResponse) GetEvents() []*FilesystemChange {
-	if c == nil {
-		return nil
-	}
-	return c.Events
-}
-
-func (c *CommitResponse) GetMessage() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Message
-}
-
-func (c *CommitResponse) GetNamespaceID() NamespaceID {
-	if c == nil {
-		return ""
-	}
-	return c.NamespaceID
-}
-
-func (c *CommitResponse) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CommitResponse) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetCommitID sets the CommitID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitResponse) SetCommitID(commitID CommitID) {
-	c.CommitID = commitID
-	c.require(commitResponseFieldCommitID)
-}
-
-// SetCommittedAtMs sets the CommittedAtMs field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitResponse) SetCommittedAtMs(committedAtMs int64) {
-	c.CommittedAtMs = committedAtMs
-	c.require(commitResponseFieldCommittedAtMs)
-}
-
-// SetCommittedBy sets the CommittedBy field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitResponse) SetCommittedBy(committedBy ActorID) {
-	c.CommittedBy = committedBy
-	c.require(commitResponseFieldCommittedBy)
-}
-
-// SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitResponse) SetCommittedSeq(committedSeq ChangeSeq) {
-	c.CommittedSeq = committedSeq
-	c.require(commitResponseFieldCommittedSeq)
-}
-
-// SetEvents sets the Events field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitResponse) SetEvents(events []*FilesystemChange) {
-	c.Events = events
-	c.require(commitResponseFieldEvents)
-}
-
-// SetMessage sets the Message field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitResponse) SetMessage(message *string) {
-	c.Message = message
-	c.require(commitResponseFieldMessage)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitResponse) SetNamespaceID(namespaceID NamespaceID) {
-	c.NamespaceID = namespaceID
-	c.require(commitResponseFieldNamespaceID)
-}
-
-func (c *CommitResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler CommitResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CommitResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CommitResponse) MarshalJSON() ([]byte, error) {
-	type embed CommitResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CommitResponse) String() string {
 	if c == nil {
 		return "<nil>"
 	}

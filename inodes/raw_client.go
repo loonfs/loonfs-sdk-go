@@ -138,7 +138,7 @@ func (r *RawClient) CreateDownload(
 	ctx context.Context,
 	request *loonfs.CreateDownloadByInodeRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.BeginDownloadByInodeResponse], error) {
+) (*core.Response[*loonfs.CreateDownloadByInodeResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -155,8 +155,7 @@ func (r *RawClient) CreateDownload(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	headers.Add("Content-Type", "application/json")
-	var response *loonfs.BeginDownloadByInodeResponse
+	var response *loonfs.CreateDownloadByInodeResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -168,7 +167,6 @@ func (r *RawClient) CreateDownload(
 			BodyProperties:  options.BodyProperties,
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
-			Request:         request,
 			Response:        &response,
 			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
 		},
@@ -176,7 +174,7 @@ func (r *RawClient) CreateDownload(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.BeginDownloadByInodeResponse]{
+	return &core.Response[*loonfs.CreateDownloadByInodeResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

@@ -36,13 +36,16 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Returns the current path entry for a visible inode. Unknown or hidden inodes answer `inode_not_found`.
+// Returns the path entry for a visible inode from the current state or a live snapshot. Unknown or hidden inodes answer `inode_not_found`.
 //
 // Example:
 //
 //	request := &loonfs.GetInodeRequest{
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
+//	    SnapshotID: loonfs.String(
+//	        "pin_00000000000000000001-0000000000000002",
+//	    ),
 //	}
 //	client.Inodes.Retrieve(
 //	    context.TODO(),
@@ -64,13 +67,16 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Lists one page of a directory's children addressed by parent inode ID, in canonical name-key order. Inode addressing keeps a listing and its resumption on the same directory across concurrent renames or moves of the parent.
+// Lists one page of a directory's children from the current state or a live snapshot, addressed by parent inode ID, in canonical name-key order. Inode addressing keeps a listing and its resumption on the same directory across concurrent renames or moves of the parent.
 //
 // Example:
 //
 //	request := &loonfs.ListInodeChildrenRequest{
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
+//	    SnapshotID: loonfs.String(
+//	        "pin_00000000000000000001-0000000000000002",
+//	    ),
 //	}
 //	client.Inodes.ListChildren(
 //	    context.TODO(),
@@ -245,7 +251,7 @@ func (c *Client) Content(
 	return response.Body, nil
 }
 
-// Authorizes a direct read of one retained inode revision. The request body is `{}` and the response does not include a path.
+// Authorizes a direct read of one retained inode revision. The request has no body and the response does not include a path.
 //
 // Example:
 //
@@ -253,9 +259,6 @@ func (c *Client) Content(
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
 //	    RevisionNo: int64(1000000),
-//	    Body: map[string]any{
-//	        "key": "value",
-//	    },
 //	}
 //	client.Inodes.CreateDownload(
 //	    context.TODO(),
@@ -265,7 +268,7 @@ func (c *Client) CreateDownload(
 	ctx context.Context,
 	request *loonfs.CreateDownloadByInodeRequest,
 	opts ...option.RequestOption,
-) (*loonfs.BeginDownloadByInodeResponse, error) {
+) (*loonfs.CreateDownloadByInodeResponse, error) {
 	response, err := c.WithRawResponse.CreateDownload(
 		ctx,
 		request,

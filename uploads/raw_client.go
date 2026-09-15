@@ -37,7 +37,7 @@ func (r *RawClient) Create(
 	ctx context.Context,
 	request *loonfs.CreateUploadRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.BeginUploadResponse], error) {
+) (*core.Response[*loonfs.UploadSession], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -53,7 +53,7 @@ func (r *RawClient) Create(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *loonfs.BeginUploadResponse
+	var response *loonfs.UploadSession
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -61,7 +61,7 @@ func (r *RawClient) Create(
 			Method:          http.MethodPost,
 			Headers:         headers,
 			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
+			DisableRetries:  true,
 			BodyProperties:  options.BodyProperties,
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
@@ -73,7 +73,7 @@ func (r *RawClient) Create(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.BeginUploadResponse]{
+	return &core.Response[*loonfs.UploadSession]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -228,7 +228,7 @@ func (r *RawClient) PutContent(
 	uploadID string,
 	request io.Reader,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.UploadContentResponse], error) {
+) (*core.Response[*loonfs.UploadSession], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -244,7 +244,7 @@ func (r *RawClient) PutContent(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.UploadContentResponse
+	var response *loonfs.UploadSession
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -264,7 +264,7 @@ func (r *RawClient) PutContent(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.UploadContentResponse]{
+	return &core.Response[*loonfs.UploadSession]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

@@ -55,6 +55,29 @@ func (l *ListTrashRequest) SetCursor(cursor *string) {
 	l.require(listTrashRequestFieldCursor)
 }
 
+// Filesystem item kind.
+type InodeKind string
+
+const (
+	InodeKindFile InodeKind = "file"
+	InodeKindDir  InodeKind = "dir"
+)
+
+func NewInodeKindFromString(s string) (InodeKind, error) {
+	switch s {
+	case "file":
+		return InodeKindFile, nil
+	case "dir":
+		return InodeKindDir, nil
+	}
+	var t InodeKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i InodeKind) Ptr() *InodeKind {
+	return &i
+}
+
 // One trash listing page: the namespace's recoverable deletions.
 var (
 	listTrashResponseFieldEntries     = big.NewInt(1 << 0)
@@ -199,6 +222,7 @@ var (
 	trashEntryFieldDeletedBy      = big.NewInt(1 << 2)
 	trashEntryFieldDeletionSeq    = big.NewInt(1 << 3)
 	trashEntryFieldInodeID        = big.NewInt(1 << 4)
+	trashEntryFieldInodeKind      = big.NewInt(1 << 5)
 )
 
 type TrashEntry struct {
@@ -212,6 +236,8 @@ type TrashEntry struct {
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
 	// Inode hidden by the deletion.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
+	// Whether the deleted root is a file or a directory.
+	InodeKind InodeKind `json:"inode_kind" url:"inode_kind"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -253,6 +279,13 @@ func (t *TrashEntry) GetInodeID() InodeID {
 		return ""
 	}
 	return t.InodeID
+}
+
+func (t *TrashEntry) GetInodeKind() InodeKind {
+	if t == nil {
+		return ""
+	}
+	return t.InodeKind
 }
 
 func (t *TrashEntry) GetExtraProperties() map[string]interface{} {
@@ -302,6 +335,13 @@ func (t *TrashEntry) SetDeletionSeq(deletionSeq ChangeSeq) {
 func (t *TrashEntry) SetInodeID(inodeID InodeID) {
 	t.InodeID = inodeID
 	t.require(trashEntryFieldInodeID)
+}
+
+// SetInodeKind sets the InodeKind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TrashEntry) SetInodeKind(inodeKind InodeKind) {
+	t.InodeKind = inodeKind
+	t.require(trashEntryFieldInodeKind)
 }
 
 func (t *TrashEntry) UnmarshalJSON(data []byte) error {

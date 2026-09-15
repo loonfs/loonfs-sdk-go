@@ -104,7 +104,7 @@ type ForkNamespaceRequest struct {
 	// Durable namespace id for the fork target.
 	NewNamespaceID NamespaceID `json:"new_namespace_id" url:"-"`
 	// Fork from this live snapshot instead of the current head.
-	SnapshotID *CheckpointID `json:"snapshot_id,omitempty" url:"-"`
+	SnapshotID *SnapshotID `json:"snapshot_id,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -133,7 +133,7 @@ func (f *ForkNamespaceRequest) SetNewNamespaceID(newNamespaceID NamespaceID) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *ForkNamespaceRequest) SetSnapshotID(snapshotID *CheckpointID) {
+func (f *ForkNamespaceRequest) SetSnapshotID(snapshotID *SnapshotID) {
 	f.SnapshotID = snapshotID
 	f.require(forkNamespaceRequestFieldSnapshotID)
 }
@@ -290,12 +290,21 @@ func (d *DeleteNamespaceResponse) String() string {
 
 // Current state for one namespace.
 var (
-	namespaceFieldHeadSeq           = big.NewInt(1 << 0)
-	namespaceFieldNamespaceID       = big.NewInt(1 << 1)
-	namespaceFieldRetentionFloorSeq = big.NewInt(1 << 2)
+	namespaceFieldCreatedAtMs       = big.NewInt(1 << 0)
+	namespaceFieldCreatedBy         = big.NewInt(1 << 1)
+	namespaceFieldForkBasis         = big.NewInt(1 << 2)
+	namespaceFieldHeadSeq           = big.NewInt(1 << 3)
+	namespaceFieldNamespaceID       = big.NewInt(1 << 4)
+	namespaceFieldRetentionFloorSeq = big.NewInt(1 << 5)
 )
 
 type Namespace struct {
+	// Time the namespace was created, in Unix milliseconds.
+	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
+	// Actor that created the namespace, as supplied by the application.
+	CreatedBy ActorID `json:"created_by" url:"created_by"`
+	// Present only for a fork: the source it was forked from.
+	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
 	// Current visible namespace sequence.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// Namespace ID.
@@ -308,6 +317,27 @@ type Namespace struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (n *Namespace) GetCreatedAtMs() int64 {
+	if n == nil {
+		return 0
+	}
+	return n.CreatedAtMs
+}
+
+func (n *Namespace) GetCreatedBy() ActorID {
+	if n == nil {
+		return ""
+	}
+	return n.CreatedBy
+}
+
+func (n *Namespace) GetForkBasis() *NamespaceForkBasis {
+	if n == nil {
+		return nil
+	}
+	return n.ForkBasis
 }
 
 func (n *Namespace) GetHeadSeq() ChangeSeq {
@@ -343,6 +373,27 @@ func (n *Namespace) require(field *big.Int) {
 		n.explicitFields = big.NewInt(0)
 	}
 	n.explicitFields.Or(n.explicitFields, field)
+}
+
+// SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *Namespace) SetCreatedAtMs(createdAtMs int64) {
+	n.CreatedAtMs = createdAtMs
+	n.require(namespaceFieldCreatedAtMs)
+}
+
+// SetCreatedBy sets the CreatedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *Namespace) SetCreatedBy(createdBy ActorID) {
+	n.CreatedBy = createdBy
+	n.require(namespaceFieldCreatedBy)
+}
+
+// SetForkBasis sets the ForkBasis field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *Namespace) SetForkBasis(forkBasis *NamespaceForkBasis) {
+	n.ForkBasis = forkBasis
+	n.require(namespaceFieldForkBasis)
 }
 
 // SetHeadSeq sets the HeadSeq field and marks it as non-optional;

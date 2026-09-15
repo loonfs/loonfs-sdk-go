@@ -24,7 +24,7 @@ type GetFileBytesRequest struct {
 	// Optional prior revision number; cannot be combined with snapshot_id
 	RevisionNo *RevisionNo `json:"-" url:"revision_no,omitempty"`
 	// Use the file revision captured by this snapshot
-	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -60,85 +60,87 @@ func (g *GetFileBytesRequest) SetRevisionNo(revisionNo *RevisionNo) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileBytesRequest) SetSnapshotID(snapshotID *CheckpointID) {
+func (g *GetFileBytesRequest) SetSnapshotID(snapshotID *SnapshotID) {
 	g.SnapshotID = snapshotID
 	g.require(getFileBytesRequestFieldSnapshotID)
 }
 
 var (
-	beginDownloadRequestFieldNamespaceID = big.NewInt(1 << 0)
-	beginDownloadRequestFieldSnapshotID  = big.NewInt(1 << 1)
-	beginDownloadRequestFieldPath        = big.NewInt(1 << 2)
-	beginDownloadRequestFieldRevisionNo  = big.NewInt(1 << 3)
+	createDownloadRequestFieldNamespaceID = big.NewInt(1 << 0)
+	createDownloadRequestFieldPath        = big.NewInt(1 << 1)
+	createDownloadRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	createDownloadRequestFieldSnapshotID  = big.NewInt(1 << 3)
 )
 
-type BeginDownloadRequest struct {
+type CreateDownloadRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
-	// Use the file revision captured by this snapshot
-	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
 	// Absolute path of the file to read.
 	Path AbsolutePath `json:"path" url:"-"`
 	// Revision to read, or `None` for the path's current revision.
+	// Cannot be combined with `snapshot_id`.
 	RevisionNo *RevisionNo `json:"revision_no,omitempty" url:"-"`
+	// Read the file revision captured by this snapshot.
+	// Cannot be combined with `revision_no`.
+	SnapshotID *SnapshotID `json:"snapshot_id,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (b *BeginDownloadRequest) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
+func (c *CreateDownloadRequest) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
 	}
-	b.explicitFields.Or(b.explicitFields, field)
+	c.explicitFields.Or(c.explicitFields, field)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadRequest) SetNamespaceID(namespaceID string) {
-	b.NamespaceID = namespaceID
-	b.require(beginDownloadRequestFieldNamespaceID)
-}
-
-// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadRequest) SetSnapshotID(snapshotID *CheckpointID) {
-	b.SnapshotID = snapshotID
-	b.require(beginDownloadRequestFieldSnapshotID)
+func (c *CreateDownloadRequest) SetNamespaceID(namespaceID string) {
+	c.NamespaceID = namespaceID
+	c.require(createDownloadRequestFieldNamespaceID)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadRequest) SetPath(path AbsolutePath) {
-	b.Path = path
-	b.require(beginDownloadRequestFieldPath)
+func (c *CreateDownloadRequest) SetPath(path AbsolutePath) {
+	c.Path = path
+	c.require(createDownloadRequestFieldPath)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadRequest) SetRevisionNo(revisionNo *RevisionNo) {
-	b.RevisionNo = revisionNo
-	b.require(beginDownloadRequestFieldRevisionNo)
+func (c *CreateDownloadRequest) SetRevisionNo(revisionNo *RevisionNo) {
+	c.RevisionNo = revisionNo
+	c.require(createDownloadRequestFieldRevisionNo)
 }
 
-func (b *BeginDownloadRequest) UnmarshalJSON(data []byte) error {
-	type unmarshaler BeginDownloadRequest
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadRequest) SetSnapshotID(snapshotID *SnapshotID) {
+	c.SnapshotID = snapshotID
+	c.require(createDownloadRequestFieldSnapshotID)
+}
+
+func (c *CreateDownloadRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateDownloadRequest
 	var body unmarshaler
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
-	*b = BeginDownloadRequest(body)
+	*c = CreateDownloadRequest(body)
 	return nil
 }
 
-func (b *BeginDownloadRequest) MarshalJSON() ([]byte, error) {
-	type embed BeginDownloadRequest
+func (c *CreateDownloadRequest) MarshalJSON() ([]byte, error) {
+	type embed CreateDownloadRequest
 	var marshaler = struct {
 		embed
 	}{
-		embed: embed(*b),
+		embed: embed(*c),
 	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
 	return json.Marshal(explicitMarshaler)
 }
 
@@ -259,7 +261,7 @@ type ListPathEntriesRequest struct {
 	// Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// Use the directory state captured by this snapshot
-	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -309,7 +311,7 @@ func (l *ListPathEntriesRequest) SetIncludeAttributes(includeAttributes *bool) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListPathEntriesRequest) SetSnapshotID(snapshotID *CheckpointID) {
+func (l *ListPathEntriesRequest) SetSnapshotID(snapshotID *SnapshotID) {
 	l.SnapshotID = snapshotID
 	l.require(listPathEntriesRequestFieldSnapshotID)
 }
@@ -385,7 +387,7 @@ type GetPathEntryRequest struct {
 	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// Use the path state captured by this snapshot
-	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -421,7 +423,7 @@ func (g *GetPathEntryRequest) SetIncludeAttributes(includeAttributes *bool) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *CheckpointID) {
+func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *SnapshotID) {
 	g.SnapshotID = snapshotID
 	g.require(getPathEntryRequestFieldSnapshotID)
 }
@@ -430,14 +432,14 @@ func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *CheckpointID) {
 //
 // The URL expires at `access.expires_at_ms`; later path changes do not change the object.
 var (
-	beginDownloadResponseFieldAccess      = big.NewInt(1 << 0)
-	beginDownloadResponseFieldContentRef  = big.NewInt(1 << 1)
-	beginDownloadResponseFieldNamespaceID = big.NewInt(1 << 2)
-	beginDownloadResponseFieldPath        = big.NewInt(1 << 3)
-	beginDownloadResponseFieldRevisionNo  = big.NewInt(1 << 4)
+	createDownloadResponseFieldAccess      = big.NewInt(1 << 0)
+	createDownloadResponseFieldContentRef  = big.NewInt(1 << 1)
+	createDownloadResponseFieldNamespaceID = big.NewInt(1 << 2)
+	createDownloadResponseFieldPath        = big.NewInt(1 << 3)
+	createDownloadResponseFieldRevisionNo  = big.NewInt(1 << 4)
 )
 
-type BeginDownloadResponse struct {
+type CreateDownloadResponse struct {
 	// Short-lived read capability the client uses without learning the raw object key.
 	Access *ObjectTransferAccess `json:"access" url:"access"`
 	// The identity, byte length, and checksum of the object to download.
@@ -456,130 +458,130 @@ type BeginDownloadResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (b *BeginDownloadResponse) GetAccess() *ObjectTransferAccess {
-	if b == nil {
+func (c *CreateDownloadResponse) GetAccess() *ObjectTransferAccess {
+	if c == nil {
 		return nil
 	}
-	return b.Access
+	return c.Access
 }
 
-func (b *BeginDownloadResponse) GetContentRef() *ContentRef {
-	if b == nil {
+func (c *CreateDownloadResponse) GetContentRef() *ContentRef {
+	if c == nil {
 		return nil
 	}
-	return b.ContentRef
+	return c.ContentRef
 }
 
-func (b *BeginDownloadResponse) GetNamespaceID() NamespaceID {
-	if b == nil {
+func (c *CreateDownloadResponse) GetNamespaceID() NamespaceID {
+	if c == nil {
 		return ""
 	}
-	return b.NamespaceID
+	return c.NamespaceID
 }
 
-func (b *BeginDownloadResponse) GetPath() AbsolutePath {
-	if b == nil {
+func (c *CreateDownloadResponse) GetPath() AbsolutePath {
+	if c == nil {
 		return ""
 	}
-	return b.Path
+	return c.Path
 }
 
-func (b *BeginDownloadResponse) GetRevisionNo() RevisionNo {
-	if b == nil {
+func (c *CreateDownloadResponse) GetRevisionNo() RevisionNo {
+	if c == nil {
 		return 0
 	}
-	return b.RevisionNo
+	return c.RevisionNo
 }
 
-func (b *BeginDownloadResponse) GetExtraProperties() map[string]interface{} {
-	if b == nil {
+func (c *CreateDownloadResponse) GetExtraProperties() map[string]interface{} {
+	if c == nil {
 		return nil
 	}
-	return b.extraProperties
+	return c.extraProperties
 }
 
-func (b *BeginDownloadResponse) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
+func (c *CreateDownloadResponse) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
 	}
-	b.explicitFields.Or(b.explicitFields, field)
+	c.explicitFields.Or(c.explicitFields, field)
 }
 
 // SetAccess sets the Access field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadResponse) SetAccess(access *ObjectTransferAccess) {
-	b.Access = access
-	b.require(beginDownloadResponseFieldAccess)
+func (c *CreateDownloadResponse) SetAccess(access *ObjectTransferAccess) {
+	c.Access = access
+	c.require(createDownloadResponseFieldAccess)
 }
 
 // SetContentRef sets the ContentRef field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadResponse) SetContentRef(contentRef *ContentRef) {
-	b.ContentRef = contentRef
-	b.require(beginDownloadResponseFieldContentRef)
+func (c *CreateDownloadResponse) SetContentRef(contentRef *ContentRef) {
+	c.ContentRef = contentRef
+	c.require(createDownloadResponseFieldContentRef)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadResponse) SetNamespaceID(namespaceID NamespaceID) {
-	b.NamespaceID = namespaceID
-	b.require(beginDownloadResponseFieldNamespaceID)
+func (c *CreateDownloadResponse) SetNamespaceID(namespaceID NamespaceID) {
+	c.NamespaceID = namespaceID
+	c.require(createDownloadResponseFieldNamespaceID)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadResponse) SetPath(path AbsolutePath) {
-	b.Path = path
-	b.require(beginDownloadResponseFieldPath)
+func (c *CreateDownloadResponse) SetPath(path AbsolutePath) {
+	c.Path = path
+	c.require(createDownloadResponseFieldPath)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadResponse) SetRevisionNo(revisionNo RevisionNo) {
-	b.RevisionNo = revisionNo
-	b.require(beginDownloadResponseFieldRevisionNo)
+func (c *CreateDownloadResponse) SetRevisionNo(revisionNo RevisionNo) {
+	c.RevisionNo = revisionNo
+	c.require(createDownloadResponseFieldRevisionNo)
 }
 
-func (b *BeginDownloadResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler BeginDownloadResponse
+func (c *CreateDownloadResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateDownloadResponse
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*b = BeginDownloadResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	*c = CreateDownloadResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
 	if err != nil {
 		return err
 	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (b *BeginDownloadResponse) MarshalJSON() ([]byte, error) {
-	type embed BeginDownloadResponse
+func (c *CreateDownloadResponse) MarshalJSON() ([]byte, error) {
+	type embed CreateDownloadResponse
 	var marshaler = struct {
 		embed
 	}{
-		embed: embed(*b),
+		embed: embed(*c),
 	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
 	return json.Marshal(explicitMarshaler)
 }
 
-func (b *BeginDownloadResponse) String() string {
-	if b == nil {
+func (c *CreateDownloadResponse) String() string {
+	if c == nil {
 		return "<nil>"
 	}
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := internal.StringifyJSON(b); err == nil {
+	if value, err := internal.StringifyJSON(c); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", b)
+	return fmt.Sprintf("%#v", c)
 }
 
 // One line-oriented match.

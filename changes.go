@@ -24,7 +24,7 @@ type ListChangesRequest struct {
 	// Maximum page size
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// End the feed at this snapshot's captured sequence
-	SnapshotID *CheckpointID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -60,180 +60,9 @@ func (l *ListChangesRequest) SetLimit(limit *int) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListChangesRequest) SetSnapshotID(snapshotID *CheckpointID) {
+func (l *ListChangesRequest) SetSnapshotID(snapshotID *SnapshotID) {
 	l.SnapshotID = snapshotID
 	l.require(listChangesRequestFieldSnapshotID)
-}
-
-// One committed change in namespace order.
-var (
-	committedChangeFieldCommitID      = big.NewInt(1 << 0)
-	committedChangeFieldCommittedAtMs = big.NewInt(1 << 1)
-	committedChangeFieldCommittedBy   = big.NewInt(1 << 2)
-	committedChangeFieldCommittedSeq  = big.NewInt(1 << 3)
-	committedChangeFieldEvents        = big.NewInt(1 << 4)
-	committedChangeFieldMessage       = big.NewInt(1 << 5)
-)
-
-type CommittedChange struct {
-	// Client idempotency key for this logical commit.
-	CommitID CommitID `json:"commit_id" url:"commit_id"`
-	// The commit time in Unix milliseconds; `committed_seq` defines commit order.
-	CommittedAtMs int64 `json:"committed_at_ms" url:"committed_at_ms"`
-	// Actor responsible for the commit, as supplied by the application.
-	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
-	// Namespace sequence for this logical commit.
-	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
-	// The filesystem events for this commit in commit order.
-	Events []*FilesystemChange `json:"events" url:"events"`
-	// Caller annotation, omitted when absent and carrying no filesystem semantics.
-	Message *string `json:"message,omitempty" url:"message,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CommittedChange) GetCommitID() CommitID {
-	if c == nil {
-		return ""
-	}
-	return c.CommitID
-}
-
-func (c *CommittedChange) GetCommittedAtMs() int64 {
-	if c == nil {
-		return 0
-	}
-	return c.CommittedAtMs
-}
-
-func (c *CommittedChange) GetCommittedBy() ActorID {
-	if c == nil {
-		return ""
-	}
-	return c.CommittedBy
-}
-
-func (c *CommittedChange) GetCommittedSeq() ChangeSeq {
-	if c == nil {
-		return 0
-	}
-	return c.CommittedSeq
-}
-
-func (c *CommittedChange) GetEvents() []*FilesystemChange {
-	if c == nil {
-		return nil
-	}
-	return c.Events
-}
-
-func (c *CommittedChange) GetMessage() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Message
-}
-
-func (c *CommittedChange) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CommittedChange) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetCommitID sets the CommitID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommittedChange) SetCommitID(commitID CommitID) {
-	c.CommitID = commitID
-	c.require(committedChangeFieldCommitID)
-}
-
-// SetCommittedAtMs sets the CommittedAtMs field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommittedChange) SetCommittedAtMs(committedAtMs int64) {
-	c.CommittedAtMs = committedAtMs
-	c.require(committedChangeFieldCommittedAtMs)
-}
-
-// SetCommittedBy sets the CommittedBy field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommittedChange) SetCommittedBy(committedBy ActorID) {
-	c.CommittedBy = committedBy
-	c.require(committedChangeFieldCommittedBy)
-}
-
-// SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommittedChange) SetCommittedSeq(committedSeq ChangeSeq) {
-	c.CommittedSeq = committedSeq
-	c.require(committedChangeFieldCommittedSeq)
-}
-
-// SetEvents sets the Events field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommittedChange) SetEvents(events []*FilesystemChange) {
-	c.Events = events
-	c.require(committedChangeFieldEvents)
-}
-
-// SetMessage sets the Message field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommittedChange) SetMessage(message *string) {
-	c.Message = message
-	c.require(committedChangeFieldMessage)
-}
-
-func (c *CommittedChange) UnmarshalJSON(data []byte) error {
-	type unmarshaler CommittedChange
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CommittedChange(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CommittedChange) MarshalJSON() ([]byte, error) {
-	type embed CommittedChange
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CommittedChange) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
 }
 
 // Change-feed response after a cursor.
@@ -249,7 +78,7 @@ type ListChangesResponse struct {
 	// Exclusive cursor supplied by the caller, or the endpoint's initial position.
 	AfterSeq ChangeSeq `json:"after_seq" url:"after_seq"`
 	// Logical commits after `after_seq`, ordered by ascending namespace sequence.
-	Changes []*CommittedChange `json:"changes" url:"changes"`
+	Changes []*Commit `json:"changes" url:"changes"`
 	// Namespace whose ordered commit stream was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Cursor to request when another page remains, or `None` at `through_seq`.
@@ -271,7 +100,7 @@ func (l *ListChangesResponse) GetAfterSeq() ChangeSeq {
 	return l.AfterSeq
 }
 
-func (l *ListChangesResponse) GetChanges() []*CommittedChange {
+func (l *ListChangesResponse) GetChanges() []*Commit {
 	if l == nil {
 		return nil
 	}
@@ -322,7 +151,7 @@ func (l *ListChangesResponse) SetAfterSeq(afterSeq ChangeSeq) {
 
 // SetChanges sets the Changes field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListChangesResponse) SetChanges(changes []*CommittedChange) {
+func (l *ListChangesResponse) SetChanges(changes []*Commit) {
 	l.Changes = changes
 	l.require(listChangesResponseFieldChanges)
 }

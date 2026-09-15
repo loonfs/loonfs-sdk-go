@@ -144,7 +144,7 @@ func (c *Client) Create(
 //
 //	request := &loonfs.DeleteSnapshotRequest{
 //	    NamespaceID: "namespace_id",
-//	    SnapshotID: "snapshot_id",
+//	    SnapshotID: "pin_00000000000000000001-0000000000000002",
 //	}
 //	client.Snapshots.Delete(
 //	    context.TODO(),
@@ -172,7 +172,7 @@ func (c *Client) Delete(
 //
 //	request := &loonfs.ExtendSnapshotRequest{
 //	    NamespaceID: "namespace_id",
-//	    SnapshotID: "snapshot_id",
+//	    SnapshotID: "pin_00000000000000000001-0000000000000002",
 //	    TTLMs: int64(1000000),
 //	}
 //	client.Snapshots.Extend(

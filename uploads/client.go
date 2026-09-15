@@ -41,8 +41,8 @@ func NewClient(options *core.RequestOptions) *Client {
 //
 //	request := &loonfs.CreateUploadRequest{
 //	    NamespaceID: "namespace_id",
-//	    Body: &loonfs.BeginUploadRequest{
-//	        DirectMultipart: &loonfs.BeginUploadDirectMultipart{},
+//	    Body: &loonfs.CreateUploadBody{
+//	        DirectMultipart: &loonfs.CreateUploadBodyDirectMultipart{},
 //	    },
 //	}
 //	client.Uploads.Create(
@@ -53,7 +53,7 @@ func (c *Client) Create(
 	ctx context.Context,
 	request *loonfs.CreateUploadRequest,
 	opts ...option.RequestOption,
-) (*loonfs.BeginUploadResponse, error) {
+) (*loonfs.UploadSession, error) {
 	response, err := c.WithRawResponse.Create(
 		ctx,
 		request,
@@ -65,7 +65,7 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
-// Returns an upload session. A completed session includes a new content token so the client can retry the commit without uploading the content again.
+// Returns an upload session. An open direct_put session includes freshly signed access. A completed session includes a new content token so the client can retry the commit without uploading the content again.
 //
 // Example:
 //
@@ -128,8 +128,8 @@ func (c *Client) Abort(
 //	request := &loonfs.CompleteUploadRequest{
 //	    NamespaceID: "namespace_id",
 //	    UploadID: "upload_id",
-//	    Body: &loonfs.UploadCompletion{
-//	        DirectMultipart: &loonfs.CompleteUploadDirectMultipart{
+//	    Body: &loonfs.CompleteUploadBody{
+//	        DirectMultipart: &loonfs.CompleteUploadBodyDirectMultipart{
 //	            Content: &loonfs.UploadContentClaim{
 //	                Checksum: &loonfs.Checksum{
 //	                    Algorithm: loonfs.ChecksumAlgorithmSha256,
@@ -170,7 +170,7 @@ func (c *Client) Complete(
 	return response.Body, nil
 }
 
-// Uploads bytes into a service-proxied upload session and returns the content reference for the stored object.
+// Uploads bytes into a service-proxied upload session and returns the open session with the staged content reference.
 func (c *Client) PutContent(
 	ctx context.Context,
 	// Namespace id
@@ -179,7 +179,7 @@ func (c *Client) PutContent(
 	uploadID string,
 	request io.Reader,
 	opts ...option.RequestOption,
-) (*loonfs.UploadContentResponse, error) {
+) (*loonfs.UploadSession, error) {
 	response, err := c.WithRawResponse.PutContent(
 		ctx,
 		namespaceID,

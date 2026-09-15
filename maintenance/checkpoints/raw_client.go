@@ -61,7 +61,7 @@ func (r *RawClient) Create(
 			Method:          http.MethodPost,
 			Headers:         headers,
 			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
+			DisableRetries:  true,
 			BodyProperties:  options.BodyProperties,
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
