@@ -12,7 +12,7 @@ import (
 // Validated complete absolute namespace path, serialized as a plain string.
 type AbsolutePath = string
 
-// Opaque hosting-platform actor id: non-empty, at most 256 UTF-8 bytes, without leading or trailing whitespace or control characters.
+// Stable opaque actor id containing 1 to 256 visible ASCII characters.
 type ActorID = string
 
 // Revision number for an inode's attributes. It starts at 0 and increases whenever the attribute map changes.
@@ -39,20 +39,20 @@ type ChangeSeq = int64
 
 // One checkpoint resource described by its durable record.
 var (
-	checkpointFieldCheckpointID  = big.NewInt(1 << 0)
-	checkpointFieldCheckpointSeq = big.NewInt(1 << 1)
-	checkpointFieldCreatedAtMs   = big.NewInt(1 << 2)
-	checkpointFieldExpiresAtMs   = big.NewInt(1 << 3)
-	checkpointFieldManifestNo    = big.NewInt(1 << 4)
-	checkpointFieldNamespaceID   = big.NewInt(1 << 5)
-	checkpointFieldOwner         = big.NewInt(1 << 6)
+	checkpointFieldCapturedSeq  = big.NewInt(1 << 0)
+	checkpointFieldCheckpointID = big.NewInt(1 << 1)
+	checkpointFieldCreatedAtMs  = big.NewInt(1 << 2)
+	checkpointFieldExpiresAtMs  = big.NewInt(1 << 3)
+	checkpointFieldManifestNo   = big.NewInt(1 << 4)
+	checkpointFieldNamespaceID  = big.NewInt(1 << 5)
+	checkpointFieldOwner        = big.NewInt(1 << 6)
 )
 
 type Checkpoint struct {
+	// Namespace sequence captured by the checkpoint.
+	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
 	// Durable checkpoint id used to address the checkpoint for deletion.
 	CheckpointID CheckpointID `json:"checkpoint_id" url:"checkpoint_id"`
-	// Sequence covered by the checkpoint's pinned basis.
-	CheckpointSeq ChangeSeq `json:"checkpoint_seq" url:"checkpoint_seq"`
 	// Time the checkpoint record was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
 	// Expiry in Unix milliseconds; collection waits one further grace window.
@@ -71,18 +71,18 @@ type Checkpoint struct {
 	rawJSON         json.RawMessage
 }
 
+func (c *Checkpoint) GetCapturedSeq() ChangeSeq {
+	if c == nil {
+		return 0
+	}
+	return c.CapturedSeq
+}
+
 func (c *Checkpoint) GetCheckpointID() CheckpointID {
 	if c == nil {
 		return ""
 	}
 	return c.CheckpointID
-}
-
-func (c *Checkpoint) GetCheckpointSeq() ChangeSeq {
-	if c == nil {
-		return 0
-	}
-	return c.CheckpointSeq
 }
 
 func (c *Checkpoint) GetCreatedAtMs() int64 {
@@ -134,18 +134,18 @@ func (c *Checkpoint) require(field *big.Int) {
 	c.explicitFields.Or(c.explicitFields, field)
 }
 
+// SetCapturedSeq sets the CapturedSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Checkpoint) SetCapturedSeq(capturedSeq ChangeSeq) {
+	c.CapturedSeq = capturedSeq
+	c.require(checkpointFieldCapturedSeq)
+}
+
 // SetCheckpointID sets the CheckpointID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *Checkpoint) SetCheckpointID(checkpointID CheckpointID) {
 	c.CheckpointID = checkpointID
 	c.require(checkpointFieldCheckpointID)
-}
-
-// SetCheckpointSeq sets the CheckpointSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetCheckpointSeq(checkpointSeq ChangeSeq) {
-	c.CheckpointSeq = checkpointSeq
-	c.require(checkpointFieldCheckpointSeq)
 }
 
 // SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
@@ -766,6 +766,195 @@ func NewChecksumAlgorithmFromString(s string) (ChecksumAlgorithm, error) {
 
 func (c ChecksumAlgorithm) Ptr() *ChecksumAlgorithm {
 	return &c
+}
+
+// One committed logical commit: its identity and the events it applied.
+var (
+	commitFieldCommitID      = big.NewInt(1 << 0)
+	commitFieldCommittedAtMs = big.NewInt(1 << 1)
+	commitFieldCommittedBy   = big.NewInt(1 << 2)
+	commitFieldCommittedSeq  = big.NewInt(1 << 3)
+	commitFieldEvents        = big.NewInt(1 << 4)
+	commitFieldMessage       = big.NewInt(1 << 5)
+	commitFieldNamespaceID   = big.NewInt(1 << 6)
+)
+
+type Commit struct {
+	// The idempotency key for the commit.
+	CommitID CommitID `json:"commit_id" url:"commit_id"`
+	// The commit time in Unix milliseconds; `committed_seq` defines commit order.
+	CommittedAtMs int64 `json:"committed_at_ms" url:"committed_at_ms"`
+	// Actor responsible for the commit, as supplied by the application.
+	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
+	// Sequence number where the commit became visible.
+	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
+	// Always present on the change feed. Absent only from a replayed
+	// `POST /commits` response whose WAL record has been retired.
+	Events []*FilesystemChange `json:"events,omitempty" url:"events,omitempty"`
+	// The optional caller annotation for the commit.
+	Message *string `json:"message,omitempty" url:"message,omitempty"`
+	// Namespace that changed.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *Commit) GetCommitID() CommitID {
+	if c == nil {
+		return ""
+	}
+	return c.CommitID
+}
+
+func (c *Commit) GetCommittedAtMs() int64 {
+	if c == nil {
+		return 0
+	}
+	return c.CommittedAtMs
+}
+
+func (c *Commit) GetCommittedBy() ActorID {
+	if c == nil {
+		return ""
+	}
+	return c.CommittedBy
+}
+
+func (c *Commit) GetCommittedSeq() ChangeSeq {
+	if c == nil {
+		return 0
+	}
+	return c.CommittedSeq
+}
+
+func (c *Commit) GetEvents() []*FilesystemChange {
+	if c == nil {
+		return nil
+	}
+	return c.Events
+}
+
+func (c *Commit) GetMessage() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Message
+}
+
+func (c *Commit) GetNamespaceID() NamespaceID {
+	if c == nil {
+		return ""
+	}
+	return c.NamespaceID
+}
+
+func (c *Commit) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *Commit) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetCommitID sets the CommitID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Commit) SetCommitID(commitID CommitID) {
+	c.CommitID = commitID
+	c.require(commitFieldCommitID)
+}
+
+// SetCommittedAtMs sets the CommittedAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Commit) SetCommittedAtMs(committedAtMs int64) {
+	c.CommittedAtMs = committedAtMs
+	c.require(commitFieldCommittedAtMs)
+}
+
+// SetCommittedBy sets the CommittedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Commit) SetCommittedBy(committedBy ActorID) {
+	c.CommittedBy = committedBy
+	c.require(commitFieldCommittedBy)
+}
+
+// SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Commit) SetCommittedSeq(committedSeq ChangeSeq) {
+	c.CommittedSeq = committedSeq
+	c.require(commitFieldCommittedSeq)
+}
+
+// SetEvents sets the Events field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Commit) SetEvents(events []*FilesystemChange) {
+	c.Events = events
+	c.require(commitFieldEvents)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Commit) SetMessage(message *string) {
+	c.Message = message
+	c.require(commitFieldMessage)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Commit) SetNamespaceID(namespaceID NamespaceID) {
+	c.NamespaceID = namespaceID
+	c.require(commitFieldNamespaceID)
+}
+
+func (c *Commit) UnmarshalJSON(data []byte) error {
+	type unmarshaler Commit
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = Commit(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *Commit) MarshalJSON() ([]byte, error) {
+	type embed Commit
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *Commit) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
 }
 
 // Client-supplied idempotency key for one logical commit.
@@ -5409,18 +5598,27 @@ type NameKey = string
 
 // Namespace state and storage details used by maintenance.
 var (
-	namespaceDiagnosticsFieldCurrentManifestNo = big.NewInt(1 << 0)
-	namespaceDiagnosticsFieldHeadSeq           = big.NewInt(1 << 1)
-	namespaceDiagnosticsFieldLiveCheckpoints   = big.NewInt(1 << 2)
-	namespaceDiagnosticsFieldLiveSnapshots     = big.NewInt(1 << 3)
-	namespaceDiagnosticsFieldNamespaceID       = big.NewInt(1 << 4)
-	namespaceDiagnosticsFieldRetentionFloorSeq = big.NewInt(1 << 5)
-	namespaceDiagnosticsFieldWalTailSegments   = big.NewInt(1 << 6)
+	namespaceDiagnosticsFieldCreatedAtMs       = big.NewInt(1 << 0)
+	namespaceDiagnosticsFieldCreatedBy         = big.NewInt(1 << 1)
+	namespaceDiagnosticsFieldCurrentManifestNo = big.NewInt(1 << 2)
+	namespaceDiagnosticsFieldForkBasis         = big.NewInt(1 << 3)
+	namespaceDiagnosticsFieldHeadSeq           = big.NewInt(1 << 4)
+	namespaceDiagnosticsFieldLiveCheckpoints   = big.NewInt(1 << 5)
+	namespaceDiagnosticsFieldLiveSnapshots     = big.NewInt(1 << 6)
+	namespaceDiagnosticsFieldNamespaceID       = big.NewInt(1 << 7)
+	namespaceDiagnosticsFieldRetentionFloorSeq = big.NewInt(1 << 8)
+	namespaceDiagnosticsFieldWalTailSegments   = big.NewInt(1 << 9)
 )
 
 type NamespaceDiagnostics struct {
+	// Time the namespace was created, in Unix milliseconds.
+	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
+	// Actor that created the namespace, as supplied by the application.
+	CreatedBy ActorID `json:"created_by" url:"created_by"`
 	// The namespace's current manifest number.
 	CurrentManifestNo *ManifestNo `json:"current_manifest_no,omitempty" url:"current_manifest_no,omitempty"`
+	// Present only for a fork: the source it was forked from.
+	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
 	// Current visible namespace sequence.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// Number of active user checkpoints, including expired records awaiting collection.
@@ -5441,11 +5639,32 @@ type NamespaceDiagnostics struct {
 	rawJSON         json.RawMessage
 }
 
+func (n *NamespaceDiagnostics) GetCreatedAtMs() int64 {
+	if n == nil {
+		return 0
+	}
+	return n.CreatedAtMs
+}
+
+func (n *NamespaceDiagnostics) GetCreatedBy() ActorID {
+	if n == nil {
+		return ""
+	}
+	return n.CreatedBy
+}
+
 func (n *NamespaceDiagnostics) GetCurrentManifestNo() *ManifestNo {
 	if n == nil {
 		return nil
 	}
 	return n.CurrentManifestNo
+}
+
+func (n *NamespaceDiagnostics) GetForkBasis() *NamespaceForkBasis {
+	if n == nil {
+		return nil
+	}
+	return n.ForkBasis
 }
 
 func (n *NamespaceDiagnostics) GetHeadSeq() ChangeSeq {
@@ -5504,11 +5723,32 @@ func (n *NamespaceDiagnostics) require(field *big.Int) {
 	n.explicitFields.Or(n.explicitFields, field)
 }
 
+// SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceDiagnostics) SetCreatedAtMs(createdAtMs int64) {
+	n.CreatedAtMs = createdAtMs
+	n.require(namespaceDiagnosticsFieldCreatedAtMs)
+}
+
+// SetCreatedBy sets the CreatedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceDiagnostics) SetCreatedBy(createdBy ActorID) {
+	n.CreatedBy = createdBy
+	n.require(namespaceDiagnosticsFieldCreatedBy)
+}
+
 // SetCurrentManifestNo sets the CurrentManifestNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NamespaceDiagnostics) SetCurrentManifestNo(currentManifestNo *ManifestNo) {
 	n.CurrentManifestNo = currentManifestNo
 	n.require(namespaceDiagnosticsFieldCurrentManifestNo)
+}
+
+// SetForkBasis sets the ForkBasis field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceDiagnostics) SetForkBasis(forkBasis *NamespaceForkBasis) {
+	n.ForkBasis = forkBasis
+	n.require(namespaceDiagnosticsFieldForkBasis)
 }
 
 // SetHeadSeq sets the HeadSeq field and marks it as non-optional;
@@ -5581,6 +5821,109 @@ func (n *NamespaceDiagnostics) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NamespaceDiagnostics) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+// The source a forked namespace started from.
+var (
+	namespaceForkBasisFieldSourceHeadSeq     = big.NewInt(1 << 0)
+	namespaceForkBasisFieldSourceNamespaceID = big.NewInt(1 << 1)
+)
+
+type NamespaceForkBasis struct {
+	// Source sequence the fork captured.
+	SourceHeadSeq ChangeSeq `json:"source_head_seq" url:"source_head_seq"`
+	// Namespace the fork was taken from.
+	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"source_namespace_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NamespaceForkBasis) GetSourceHeadSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.SourceHeadSeq
+}
+
+func (n *NamespaceForkBasis) GetSourceNamespaceID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.SourceNamespaceID
+}
+
+func (n *NamespaceForkBasis) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NamespaceForkBasis) require(field *big.Int) {
+	if n.explicitFields == nil {
+		n.explicitFields = big.NewInt(0)
+	}
+	n.explicitFields.Or(n.explicitFields, field)
+}
+
+// SetSourceHeadSeq sets the SourceHeadSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceForkBasis) SetSourceHeadSeq(sourceHeadSeq ChangeSeq) {
+	n.SourceHeadSeq = sourceHeadSeq
+	n.require(namespaceForkBasisFieldSourceHeadSeq)
+}
+
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceForkBasis) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
+	n.SourceNamespaceID = sourceNamespaceID
+	n.require(namespaceForkBasisFieldSourceNamespaceID)
+}
+
+func (n *NamespaceForkBasis) UnmarshalJSON(data []byte) error {
+	type unmarshaler NamespaceForkBasis
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NamespaceForkBasis(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NamespaceForkBasis) MarshalJSON() ([]byte, error) {
+	type embed NamespaceForkBasis
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NamespaceForkBasis) String() string {
 	if n == nil {
 		return "<nil>"
 	}
@@ -6842,6 +7185,7 @@ func (r *ReorganizeStepOutcome) validate() error {
 	return nil
 }
 
+// A family group needs a streaming compaction. Run the `metadata_compaction` job.
 type ReorganizeStepOutcomeCompactionRequired struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6907,6 +7251,7 @@ func (r *ReorganizeStepOutcomeCompactionRequired) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// A newer runtime holds the compactor epoch.
 type ReorganizeStepOutcomeFenced struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6972,6 +7317,7 @@ func (r *ReorganizeStepOutcomeFenced) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// Another publisher changed the current manifest before this step could publish.
 type ReorganizeStepOutcomeManifestAdvanced struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7037,6 +7383,7 @@ func (r *ReorganizeStepOutcomeManifestAdvanced) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// No family group had enough delta runs to merge.
 type ReorganizeStepOutcomeNotNeeded struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7102,6 +7449,7 @@ func (r *ReorganizeStepOutcomeNotNeeded) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// One family group was merged and a manifest published.
 type ReorganizeStepOutcomeUnitPublished struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7168,8 +7516,6 @@ func (r *ReorganizeStepOutcomeUnitPublished) String() string {
 }
 
 // The candidates inspected but not deleted by one garbage-collection pass.
-//
-// Every field is present and contributes to [`GcResponse::retained_candidates`].
 var (
 	retainedCandidatesFieldCheckpointNotDeletable = big.NewInt(1 << 0)
 	retainedCandidatesFieldNoProviderTimestamp    = big.NewInt(1 << 1)
@@ -8023,7 +8369,6 @@ var (
 	runMaintenanceResponseGcFieldNextReclamationAtMs       = big.NewInt(1 << 3)
 	runMaintenanceResponseGcFieldReclaimAfterMs            = big.NewInt(1 << 4)
 	runMaintenanceResponseGcFieldRetained                  = big.NewInt(1 << 5)
-	runMaintenanceResponseGcFieldRetainedCandidates        = big.NewInt(1 << 6)
 )
 
 type RunMaintenanceResponseGc struct {
@@ -8037,10 +8382,8 @@ type RunMaintenanceResponseGc struct {
 	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
 	// The deleted head's irrevocable owner-prefix collection deadline.
 	ReclaimAfterMs *int64 `json:"reclaim_after_ms,omitempty" url:"reclaim_after_ms,omitempty"`
-	// `retained_candidates` grouped by reason.
+	// Candidates retained at deletion time, grouped by reason.
 	Retained *RetainedCandidates `json:"retained" url:"retained"`
-	// The number of candidates retained at deletion time.
-	RetainedCandidates int64 `json:"retained_candidates" url:"retained_candidates"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -8089,13 +8432,6 @@ func (r *RunMaintenanceResponseGc) GetRetained() *RetainedCandidates {
 		return nil
 	}
 	return r.Retained
-}
-
-func (r *RunMaintenanceResponseGc) GetRetainedCandidates() int64 {
-	if r == nil {
-		return 0
-	}
-	return r.RetainedCandidates
 }
 
 func (r *RunMaintenanceResponseGc) GetExtraProperties() map[string]interface{} {
@@ -8152,13 +8488,6 @@ func (r *RunMaintenanceResponseGc) SetReclaimAfterMs(reclaimAfterMs *int64) {
 func (r *RunMaintenanceResponseGc) SetRetained(retained *RetainedCandidates) {
 	r.Retained = retained
 	r.require(runMaintenanceResponseGcFieldRetained)
-}
-
-// SetRetainedCandidates sets the RetainedCandidates field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetRetainedCandidates(retainedCandidates int64) {
-	r.RetainedCandidates = retainedCandidates
-	r.require(runMaintenanceResponseGcFieldRetainedCandidates)
 }
 
 func (r *RunMaintenanceResponseGc) UnmarshalJSON(data []byte) error {
@@ -8702,6 +9031,12 @@ func (s *ServiceUnavailableErrorBody) String() string {
 	}
 	return fmt.Sprintf("%#v", s)
 }
+
+// Id of a snapshot.
+//
+// A snapshot is backed by a checkpoint record and uses that record's
+// id, `pin_{manifest_no:020}-{16 lowercase hex}`.
+type SnapshotID = string
 
 // What one contract check concluded about the store.
 type StoreProbeCheckOutcome string

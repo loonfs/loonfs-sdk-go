@@ -67,8 +67,7 @@ type CreateDownloadByInodeRequest struct {
 	// File inode ID
 	InodeID string `json:"-" url:"-"`
 	// Revision number
-	RevisionNo RevisionNo                  `json:"-" url:"-"`
-	Body       BeginDownloadByInodeRequest `json:"-" url:"-"`
+	RevisionNo RevisionNo `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -102,25 +101,13 @@ func (c *CreateDownloadByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
 	c.require(createDownloadByInodeRequestFieldRevisionNo)
 }
 
-func (c *CreateDownloadByInodeRequest) UnmarshalJSON(data []byte) error {
-	var body BeginDownloadByInodeRequest
-	if err := json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	c.Body = body
-	return nil
-}
-
-func (c *CreateDownloadByInodeRequest) MarshalJSON() ([]byte, error) {
-	return json.Marshal(c.Body)
-}
-
 var (
 	listInodeChildrenRequestFieldNamespaceID       = big.NewInt(1 << 0)
 	listInodeChildrenRequestFieldInodeID           = big.NewInt(1 << 1)
 	listInodeChildrenRequestFieldLimit             = big.NewInt(1 << 2)
 	listInodeChildrenRequestFieldCursor            = big.NewInt(1 << 3)
 	listInodeChildrenRequestFieldIncludeAttributes = big.NewInt(1 << 4)
+	listInodeChildrenRequestFieldSnapshotID        = big.NewInt(1 << 5)
 )
 
 type ListInodeChildrenRequest struct {
@@ -134,6 +121,8 @@ type ListInodeChildrenRequest struct {
 	Cursor *string `json:"-" url:"cursor,omitempty"`
 	// Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
+	// Use the directory state captured by this snapshot
+	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -179,6 +168,13 @@ func (l *ListInodeChildrenRequest) SetCursor(cursor *string) {
 func (l *ListInodeChildrenRequest) SetIncludeAttributes(includeAttributes *bool) {
 	l.IncludeAttributes = includeAttributes
 	l.require(listInodeChildrenRequestFieldIncludeAttributes)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenRequest) SetSnapshotID(snapshotID *SnapshotID) {
+	l.SnapshotID = snapshotID
+	l.require(listInodeChildrenRequestFieldSnapshotID)
 }
 
 var (
@@ -241,6 +237,7 @@ var (
 	getInodeRequestFieldNamespaceID       = big.NewInt(1 << 0)
 	getInodeRequestFieldInodeID           = big.NewInt(1 << 1)
 	getInodeRequestFieldIncludeAttributes = big.NewInt(1 << 2)
+	getInodeRequestFieldSnapshotID        = big.NewInt(1 << 3)
 )
 
 type GetInodeRequest struct {
@@ -250,6 +247,8 @@ type GetInodeRequest struct {
 	InodeID string `json:"-" url:"-"`
 	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
+	// Use the path state captured by this snapshot
+	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -283,19 +282,23 @@ func (g *GetInodeRequest) SetIncludeAttributes(includeAttributes *bool) {
 	g.require(getInodeRequestFieldIncludeAttributes)
 }
 
-// Empty request for an inode-addressed download.
-type BeginDownloadByInodeRequest = map[string]any
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetInodeRequest) SetSnapshotID(snapshotID *SnapshotID) {
+	g.SnapshotID = snapshotID
+	g.require(getInodeRequestFieldSnapshotID)
+}
 
 // A short-lived capability to read one inode revision.
 var (
-	beginDownloadByInodeResponseFieldAccess      = big.NewInt(1 << 0)
-	beginDownloadByInodeResponseFieldContentRef  = big.NewInt(1 << 1)
-	beginDownloadByInodeResponseFieldInodeID     = big.NewInt(1 << 2)
-	beginDownloadByInodeResponseFieldNamespaceID = big.NewInt(1 << 3)
-	beginDownloadByInodeResponseFieldRevisionNo  = big.NewInt(1 << 4)
+	createDownloadByInodeResponseFieldAccess      = big.NewInt(1 << 0)
+	createDownloadByInodeResponseFieldContentRef  = big.NewInt(1 << 1)
+	createDownloadByInodeResponseFieldInodeID     = big.NewInt(1 << 2)
+	createDownloadByInodeResponseFieldNamespaceID = big.NewInt(1 << 3)
+	createDownloadByInodeResponseFieldRevisionNo  = big.NewInt(1 << 4)
 )
 
-type BeginDownloadByInodeResponse struct {
+type CreateDownloadByInodeResponse struct {
 	// Short-lived provider access without the raw object key.
 	Access *ObjectTransferAccess `json:"access" url:"access"`
 	// Content identity, size, and checksum.
@@ -314,130 +317,130 @@ type BeginDownloadByInodeResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (b *BeginDownloadByInodeResponse) GetAccess() *ObjectTransferAccess {
-	if b == nil {
+func (c *CreateDownloadByInodeResponse) GetAccess() *ObjectTransferAccess {
+	if c == nil {
 		return nil
 	}
-	return b.Access
+	return c.Access
 }
 
-func (b *BeginDownloadByInodeResponse) GetContentRef() *ContentRef {
-	if b == nil {
+func (c *CreateDownloadByInodeResponse) GetContentRef() *ContentRef {
+	if c == nil {
 		return nil
 	}
-	return b.ContentRef
+	return c.ContentRef
 }
 
-func (b *BeginDownloadByInodeResponse) GetInodeID() InodeID {
-	if b == nil {
+func (c *CreateDownloadByInodeResponse) GetInodeID() InodeID {
+	if c == nil {
 		return ""
 	}
-	return b.InodeID
+	return c.InodeID
 }
 
-func (b *BeginDownloadByInodeResponse) GetNamespaceID() NamespaceID {
-	if b == nil {
+func (c *CreateDownloadByInodeResponse) GetNamespaceID() NamespaceID {
+	if c == nil {
 		return ""
 	}
-	return b.NamespaceID
+	return c.NamespaceID
 }
 
-func (b *BeginDownloadByInodeResponse) GetRevisionNo() RevisionNo {
-	if b == nil {
+func (c *CreateDownloadByInodeResponse) GetRevisionNo() RevisionNo {
+	if c == nil {
 		return 0
 	}
-	return b.RevisionNo
+	return c.RevisionNo
 }
 
-func (b *BeginDownloadByInodeResponse) GetExtraProperties() map[string]interface{} {
-	if b == nil {
+func (c *CreateDownloadByInodeResponse) GetExtraProperties() map[string]interface{} {
+	if c == nil {
 		return nil
 	}
-	return b.extraProperties
+	return c.extraProperties
 }
 
-func (b *BeginDownloadByInodeResponse) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
+func (c *CreateDownloadByInodeResponse) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
 	}
-	b.explicitFields.Or(b.explicitFields, field)
+	c.explicitFields.Or(c.explicitFields, field)
 }
 
 // SetAccess sets the Access field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadByInodeResponse) SetAccess(access *ObjectTransferAccess) {
-	b.Access = access
-	b.require(beginDownloadByInodeResponseFieldAccess)
+func (c *CreateDownloadByInodeResponse) SetAccess(access *ObjectTransferAccess) {
+	c.Access = access
+	c.require(createDownloadByInodeResponseFieldAccess)
 }
 
 // SetContentRef sets the ContentRef field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadByInodeResponse) SetContentRef(contentRef *ContentRef) {
-	b.ContentRef = contentRef
-	b.require(beginDownloadByInodeResponseFieldContentRef)
+func (c *CreateDownloadByInodeResponse) SetContentRef(contentRef *ContentRef) {
+	c.ContentRef = contentRef
+	c.require(createDownloadByInodeResponseFieldContentRef)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadByInodeResponse) SetInodeID(inodeID InodeID) {
-	b.InodeID = inodeID
-	b.require(beginDownloadByInodeResponseFieldInodeID)
+func (c *CreateDownloadByInodeResponse) SetInodeID(inodeID InodeID) {
+	c.InodeID = inodeID
+	c.require(createDownloadByInodeResponseFieldInodeID)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadByInodeResponse) SetNamespaceID(namespaceID NamespaceID) {
-	b.NamespaceID = namespaceID
-	b.require(beginDownloadByInodeResponseFieldNamespaceID)
+func (c *CreateDownloadByInodeResponse) SetNamespaceID(namespaceID NamespaceID) {
+	c.NamespaceID = namespaceID
+	c.require(createDownloadByInodeResponseFieldNamespaceID)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BeginDownloadByInodeResponse) SetRevisionNo(revisionNo RevisionNo) {
-	b.RevisionNo = revisionNo
-	b.require(beginDownloadByInodeResponseFieldRevisionNo)
+func (c *CreateDownloadByInodeResponse) SetRevisionNo(revisionNo RevisionNo) {
+	c.RevisionNo = revisionNo
+	c.require(createDownloadByInodeResponseFieldRevisionNo)
 }
 
-func (b *BeginDownloadByInodeResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler BeginDownloadByInodeResponse
+func (c *CreateDownloadByInodeResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateDownloadByInodeResponse
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*b = BeginDownloadByInodeResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	*c = CreateDownloadByInodeResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
 	if err != nil {
 		return err
 	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (b *BeginDownloadByInodeResponse) MarshalJSON() ([]byte, error) {
-	type embed BeginDownloadByInodeResponse
+func (c *CreateDownloadByInodeResponse) MarshalJSON() ([]byte, error) {
+	type embed CreateDownloadByInodeResponse
 	var marshaler = struct {
 		embed
 	}{
-		embed: embed(*b),
+		embed: embed(*c),
 	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
 	return json.Marshal(explicitMarshaler)
 }
 
-func (b *BeginDownloadByInodeResponse) String() string {
-	if b == nil {
+func (c *CreateDownloadByInodeResponse) String() string {
+	if c == nil {
 		return "<nil>"
 	}
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := internal.StringifyJSON(b); err == nil {
+	if value, err := internal.StringifyJSON(c); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", b)
+	return fmt.Sprintf("%#v", c)
 }
 
 // One directory listing addressed by parent inode and the namespace head used to read it.

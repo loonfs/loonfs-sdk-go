@@ -46,7 +46,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -82,7 +82,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -154,7 +154,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -198,7 +198,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"attributes\": {\n            \"key\": \"platform\"\n          },\n          \"attributes_revision_no\": 1000000,\n          \"inode_id\": \"ino_123\",\n          \"kind\": \"attributes_changed\"\n        }\n      ],\n      \"message\": \"message\"\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"through_seq\": 1000000\n}",
+        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"attributes\": {\n            \"key\": \"platform\"\n          },\n          \"attributes_revision_no\": 1000000,\n          \"inode_id\": \"ino_123\",\n          \"kind\": \"attributes_changed\"\n        }\n      ],\n      \"message\": \"message\",\n      \"namespace_id\": \"demo\"\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"through_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -306,11 +306,6 @@
         "pathParameters": {
           "namespace_id": {
             "equalTo": "namespace_id"
-          }
-        },
-        "queryParameters": {
-          "snapshot_id": {
-            "equalTo": "pin_00000000000000000001-0000000000000002"
           }
         }
       },
@@ -522,7 +517,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_binding\": {\n        \"display_name\": \"report.txt\",\n        \"name_key\": \"report.txt\",\n        \"parent_inode_id\": \"ino_123\"\n      },\n      \"deleted_by\": \"usr_8f3c\",\n      \"deletion_seq\": 1000000,\n      \"inode_id\": \"ino_123\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_binding\": {\n        \"display_name\": \"report.txt\",\n        \"name_key\": \"report.txt\",\n        \"parent_inode_id\": \"ino_123\"\n      },\n      \"deleted_by\": \"usr_8f3c\",\n      \"deletion_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"inode_kind\": \"file\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -556,6 +551,11 @@
           },
           "inode_id": {
             "equalTo": "ino_123"
+          }
+        },
+        "queryParameters": {
+          "snapshot_id": {
+            "equalTo": "pin_00000000000000000001-0000000000000002"
           }
         }
       },
@@ -595,6 +595,11 @@
           },
           "inode_id": {
             "equalTo": "ino_123"
+          }
+        },
+        "queryParameters": {
+          "snapshot_id": {
+            "equalTo": "pin_00000000000000000001-0000000000000002"
           }
         }
       },
@@ -759,7 +764,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"snapshots\": [\n    {\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"head_seq\": 1000000,\n      \"name\": \"name\",\n      \"namespace_id\": \"demo\",\n      \"snapshot_id\": \"pin_00000000000000000001-0000000000000002\"\n    }\n  ]\n}",
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"snapshots\": [\n    {\n      \"captured_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"name\": \"name\",\n      \"namespace_id\": \"demo\",\n      \"snapshot_id\": \"pin_00000000000000000001-0000000000000002\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -795,7 +800,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"head_seq\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"pin_00000000000000000001-0000000000000002\"\n}",
+        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"pin_00000000000000000001-0000000000000002\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -828,7 +833,7 @@
             "equalTo": "namespace_id"
           },
           "snapshot_id": {
-            "equalTo": "snapshot_id"
+            "equalTo": "pin_00000000000000000001-0000000000000002"
           }
         }
       },
@@ -867,13 +872,13 @@
             "equalTo": "namespace_id"
           },
           "snapshot_id": {
-            "equalTo": "snapshot_id"
+            "equalTo": "pin_00000000000000000001-0000000000000002"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"head_seq\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"pin_00000000000000000001-0000000000000002\"\n}",
+        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"pin_00000000000000000001-0000000000000002\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -909,7 +914,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"checksum_algorithm\": \"sha256\",\n  \"namespace_id\": \"demo\",\n  \"part_size_bytes\": 1000000,\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"mode\": \"direct_multipart\"\n}",
+        "body": "{\n  \"aborted_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"status\": \"aborted\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1101,7 +1106,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"checkpoints\": [\n    {\n      \"checkpoint_id\": \"pin_00000000000000000001-0000000000000002\",\n      \"checkpoint_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"manifest_no\": 1000000,\n      \"namespace_id\": \"demo\",\n      \"owner\": {\n        \"target_namespace_id\": \"demo\",\n        \"kind\": \"fork\"\n      }\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "body": "{\n  \"checkpoints\": [\n    {\n      \"captured_seq\": 1000000,\n      \"checkpoint_id\": \"pin_00000000000000000001-0000000000000002\",\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"manifest_no\": 1000000,\n      \"namespace_id\": \"demo\",\n      \"owner\": {\n        \"target_namespace_id\": \"demo\",\n        \"kind\": \"fork\"\n      }\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1137,7 +1142,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"checkpoint_id\": \"pin_00000000000000000001-0000000000000002\",\n  \"checkpoint_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_no\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"owner\": {\n    \"target_namespace_id\": \"demo\",\n    \"kind\": \"fork\"\n  }\n}",
+        "body": "{\n  \"captured_seq\": 1000000,\n  \"checkpoint_id\": \"pin_00000000000000000001-0000000000000002\",\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_no\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"owner\": {\n    \"target_namespace_id\": \"demo\",\n    \"kind\": \"fork\"\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1212,7 +1217,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"current_manifest_no\": 1000000,\n  \"head_seq\": 1000000,\n  \"live_checkpoints\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_segments\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"current_manifest_no\": 1000000,\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"live_checkpoints\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_segments\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1392,7 +1397,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_segments\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"expired\": 1000000,\n    \"fork\": 1000000,\n    \"snapshot\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaim_after_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"retained_candidates\": 1000000,\n  \"kind\": \"gc\"\n}",
+        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_segments\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"expired\": 1000000,\n    \"fork\": 1000000,\n    \"snapshot\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaim_after_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"kind\": \"gc\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }

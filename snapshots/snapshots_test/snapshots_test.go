@@ -144,7 +144,7 @@ func TestSnapshotsDeleteWithWireMock(
 	)
 	request := &loonfs.DeleteSnapshotRequest{
 		NamespaceID: "namespace_id",
-		SnapshotID:  "snapshot_id",
+		SnapshotID:  "pin_00000000000000000001-0000000000000002",
 	}
 	_, invocationErr := client.Snapshots.Delete(
 		context.TODO(),
@@ -155,7 +155,7 @@ func TestSnapshotsDeleteWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestSnapshotsDeleteWithWireMock", "DELETE", "/v0/namespaces/namespace_id/snapshots/snapshot_id", nil, 1)
+	VerifyRequestCount(t, "TestSnapshotsDeleteWithWireMock", "DELETE", "/v0/namespaces/namespace_id/snapshots/pin_00000000000000000001-0000000000000002", nil, 1)
 }
 
 func TestSnapshotsExtendWithWireMock(
@@ -171,7 +171,7 @@ func TestSnapshotsExtendWithWireMock(
 	)
 	request := &loonfs.ExtendSnapshotRequest{
 		NamespaceID: "namespace_id",
-		SnapshotID:  "snapshot_id",
+		SnapshotID:  "pin_00000000000000000001-0000000000000002",
 		TTLMs:       int64(1000000),
 	}
 	_, invocationErr := client.Snapshots.Extend(
@@ -183,5 +183,5 @@ func TestSnapshotsExtendWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestSnapshotsExtendWithWireMock", "POST", "/v0/namespaces/namespace_id/snapshots/snapshot_id/extend", nil, 1)
+	VerifyRequestCount(t, "TestSnapshotsExtendWithWireMock", "POST", "/v0/namespaces/namespace_id/snapshots/pin_00000000000000000001-0000000000000002/extend", nil, 1)
 }

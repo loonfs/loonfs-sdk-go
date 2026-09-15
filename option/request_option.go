@@ -83,3 +83,10 @@ func WithTokenFunc(fn func() (string, error)) *core.TokenFuncOption {
 		TokenFunc: fn,
 	}
 }
+
+// WithActorID sets the actorID request header.
+func WithActorID(actorID *string) *core.ActorIDOption {
+	return &core.ActorIDOption{
+		ActorID: actorID,
+	}
+}

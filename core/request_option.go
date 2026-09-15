@@ -3,6 +3,7 @@
 package core
 
 import (
+	fmt "fmt"
 	http "net/http"
 	url "net/url"
 )
@@ -26,6 +27,7 @@ type RequestOptions struct {
 	DisableRetries             bool
 	Token                      string
 	TokenFunc                  func() (string, error)
+	ActorID                    *string
 }
 
 // NewRequestOptions returns a new *RequestOptions value.
@@ -54,6 +56,9 @@ func (r *RequestOptions) ToHeader() http.Header {
 		if token, err := r.TokenFunc(); err == nil && token != "" {
 			header.Set("Authorization", "Bearer "+token)
 		}
+	}
+	if r.ActorID != nil {
+		header.Set("Loonfs-Actor", fmt.Sprintf("%v", *r.ActorID))
 	}
 	return header
 }
@@ -139,4 +144,13 @@ type TokenFuncOption struct {
 
 func (t *TokenFuncOption) applyRequestOptions(opts *RequestOptions) {
 	opts.TokenFunc = t.TokenFunc
+}
+
+// ActorIDOption implements the RequestOption interface.
+type ActorIDOption struct {
+	ActorID *string
+}
+
+func (a *ActorIDOption) applyRequestOptions(opts *RequestOptions) {
+	opts.ActorID = a.ActorID
 }

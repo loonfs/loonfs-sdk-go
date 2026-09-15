@@ -88,12 +88,9 @@ func TestFilesCreateDownloadWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &loonfs.BeginDownloadRequest{
+	request := &loonfs.CreateDownloadRequest{
 		NamespaceID: "namespace_id",
-		SnapshotID: loonfs.String(
-			"pin_00000000000000000001-0000000000000002",
-		),
-		Path: "/docs/report.txt",
+		Path:        "/docs/report.txt",
 	}
 	_, invocationErr := client.Files.CreateDownload(
 		context.TODO(),
@@ -104,7 +101,7 @@ func TestFilesCreateDownloadWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFilesCreateDownloadWithWireMock", "POST", "/v0/namespaces/namespace_id/filesystem/downloads", map[string]interface{}{"snapshot_id": "pin_00000000000000000001-0000000000000002"}, 1)
+	VerifyRequestCount(t, "TestFilesCreateDownloadWithWireMock", "POST", "/v0/namespaces/namespace_id/filesystem/downloads", nil, 1)
 }
 
 func TestFilesListWithWireMock(

@@ -85,7 +85,7 @@ type DeleteSnapshotRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// Snapshot id
-	SnapshotID string `json:"-" url:"-"`
+	SnapshotID SnapshotID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -107,7 +107,7 @@ func (d *DeleteSnapshotRequest) SetNamespaceID(namespaceID string) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteSnapshotRequest) SetSnapshotID(snapshotID string) {
+func (d *DeleteSnapshotRequest) SetSnapshotID(snapshotID SnapshotID) {
 	d.SnapshotID = snapshotID
 	d.require(deleteSnapshotRequestFieldSnapshotID)
 }
@@ -122,7 +122,7 @@ type ExtendSnapshotRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// Snapshot id
-	SnapshotID string `json:"-" url:"-"`
+	SnapshotID SnapshotID `json:"-" url:"-"`
 	// Requested lifetime from the server's current time, in milliseconds.
 	TTLMs int64 `json:"ttl_ms" url:"-"`
 
@@ -146,7 +146,7 @@ func (e *ExtendSnapshotRequest) SetNamespaceID(namespaceID string) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExtendSnapshotRequest) SetSnapshotID(snapshotID string) {
+func (e *ExtendSnapshotRequest) SetSnapshotID(snapshotID SnapshotID) {
 	e.SnapshotID = snapshotID
 	e.require(extendSnapshotRequestFieldSnapshotID)
 }
@@ -235,7 +235,7 @@ type DeleteSnapshotResponse struct {
 	// Namespace the snapshot belonged to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Deleted snapshot record.
-	SnapshotID CheckpointID `json:"snapshot_id" url:"snapshot_id"`
+	SnapshotID SnapshotID `json:"snapshot_id" url:"snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -251,7 +251,7 @@ func (d *DeleteSnapshotResponse) GetNamespaceID() NamespaceID {
 	return d.NamespaceID
 }
 
-func (d *DeleteSnapshotResponse) GetSnapshotID() CheckpointID {
+func (d *DeleteSnapshotResponse) GetSnapshotID() SnapshotID {
 	if d == nil {
 		return ""
 	}
@@ -281,7 +281,7 @@ func (d *DeleteSnapshotResponse) SetNamespaceID(namespaceID NamespaceID) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteSnapshotResponse) SetSnapshotID(snapshotID CheckpointID) {
+func (d *DeleteSnapshotResponse) SetSnapshotID(snapshotID SnapshotID) {
 	d.SnapshotID = snapshotID
 	d.require(deleteSnapshotResponseFieldSnapshotID)
 }
@@ -450,33 +450,40 @@ func (l *ListSnapshotsResponse) String() string {
 
 // A live snapshot.
 var (
-	snapshotFieldCreatedAtMs = big.NewInt(1 << 0)
-	snapshotFieldExpiresAtMs = big.NewInt(1 << 1)
-	snapshotFieldHeadSeq     = big.NewInt(1 << 2)
+	snapshotFieldCapturedSeq = big.NewInt(1 << 0)
+	snapshotFieldCreatedAtMs = big.NewInt(1 << 1)
+	snapshotFieldExpiresAtMs = big.NewInt(1 << 2)
 	snapshotFieldName        = big.NewInt(1 << 3)
 	snapshotFieldNamespaceID = big.NewInt(1 << 4)
 	snapshotFieldSnapshotID  = big.NewInt(1 << 5)
 )
 
 type Snapshot struct {
+	// Namespace sequence captured by the snapshot.
+	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
 	// Time the snapshot record was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
 	// When the snapshot expires, in Unix milliseconds.
 	ExpiresAtMs int64 `json:"expires_at_ms" url:"expires_at_ms"`
-	// Namespace sequence captured by the snapshot.
-	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// Snapshot label.
 	Name string `json:"name" url:"name"`
 	// Namespace whose state the snapshot captured.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Snapshot id.
-	SnapshotID CheckpointID `json:"snapshot_id" url:"snapshot_id"`
+	SnapshotID SnapshotID `json:"snapshot_id" url:"snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (s *Snapshot) GetCapturedSeq() ChangeSeq {
+	if s == nil {
+		return 0
+	}
+	return s.CapturedSeq
 }
 
 func (s *Snapshot) GetCreatedAtMs() int64 {
@@ -493,13 +500,6 @@ func (s *Snapshot) GetExpiresAtMs() int64 {
 	return s.ExpiresAtMs
 }
 
-func (s *Snapshot) GetHeadSeq() ChangeSeq {
-	if s == nil {
-		return 0
-	}
-	return s.HeadSeq
-}
-
 func (s *Snapshot) GetName() string {
 	if s == nil {
 		return ""
@@ -514,7 +514,7 @@ func (s *Snapshot) GetNamespaceID() NamespaceID {
 	return s.NamespaceID
 }
 
-func (s *Snapshot) GetSnapshotID() CheckpointID {
+func (s *Snapshot) GetSnapshotID() SnapshotID {
 	if s == nil {
 		return ""
 	}
@@ -535,6 +535,13 @@ func (s *Snapshot) require(field *big.Int) {
 	s.explicitFields.Or(s.explicitFields, field)
 }
 
+// SetCapturedSeq sets the CapturedSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *Snapshot) SetCapturedSeq(capturedSeq ChangeSeq) {
+	s.CapturedSeq = capturedSeq
+	s.require(snapshotFieldCapturedSeq)
+}
+
 // SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (s *Snapshot) SetCreatedAtMs(createdAtMs int64) {
@@ -547,13 +554,6 @@ func (s *Snapshot) SetCreatedAtMs(createdAtMs int64) {
 func (s *Snapshot) SetExpiresAtMs(expiresAtMs int64) {
 	s.ExpiresAtMs = expiresAtMs
 	s.require(snapshotFieldExpiresAtMs)
-}
-
-// SetHeadSeq sets the HeadSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *Snapshot) SetHeadSeq(headSeq ChangeSeq) {
-	s.HeadSeq = headSeq
-	s.require(snapshotFieldHeadSeq)
 }
 
 // SetName sets the Name field and marks it as non-optional;
@@ -572,7 +572,7 @@ func (s *Snapshot) SetNamespaceID(namespaceID NamespaceID) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *Snapshot) SetSnapshotID(snapshotID CheckpointID) {
+func (s *Snapshot) SetSnapshotID(snapshotID SnapshotID) {
 	s.SnapshotID = snapshotID
 	s.require(snapshotFieldSnapshotID)
 }

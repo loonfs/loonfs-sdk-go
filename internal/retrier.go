@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	defaultRetryAttempts = 1
+	defaultRetryAttempts = 3
 	minRetryDelay        = 1000 * time.Millisecond
 	maxRetryDelay        = 60000 * time.Millisecond
 )
@@ -163,12 +163,8 @@ func (r *Retrier) run(
 	return response, nil
 }
 
-// shouldRetry returns true if the request should be retried based on the given
-// response status code.
 func (r *Retrier) shouldRetry(response *http.Response) bool {
-	return response.StatusCode == http.StatusTooManyRequests ||
-		response.StatusCode == http.StatusRequestTimeout ||
-		response.StatusCode >= http.StatusInternalServerError
+	return response.Header.Get("Retry-After") != ""
 }
 
 // retryDelay calculates the delay time based on response headers,

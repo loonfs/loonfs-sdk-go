@@ -36,7 +36,7 @@ func (r *RawClient) Create(
 	ctx context.Context,
 	request *loonfs.CommitRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.CommitResponse], error) {
+) (*core.Response[*loonfs.Commit], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -52,7 +52,7 @@ func (r *RawClient) Create(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *loonfs.CommitResponse
+	var response *loonfs.Commit
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -72,7 +72,7 @@ func (r *RawClient) Create(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.CommitResponse]{
+	return &core.Response[*loonfs.Commit]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

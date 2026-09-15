@@ -295,7 +295,7 @@ client.Namespaces.Fork(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.CheckpointID` — Fork from this live snapshot instead of the current head.
+**snapshotID:** `*loonfs.SnapshotID` — Fork from this live snapshot instead of the current head.
     
 </dd>
 </dl>
@@ -384,7 +384,7 @@ client.Changes.List(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.CheckpointID` — End the feed at this snapshot's captured sequence
+**snapshotID:** `*loonfs.SnapshotID` — End the feed at this snapshot's captured sequence
     
 </dd>
 </dl>
@@ -397,7 +397,7 @@ client.Changes.List(
 </details>
 
 ## Commits
-<details><summary><code>client.Commits.Create(NamespaceID, request) -> *loonfs.CommitResponse</code></summary>
+<details><summary><code>client.Commits.Create(NamespaceID, request) -> *loonfs.Commit</code></summary>
 <dl>
 <dd>
 
@@ -426,7 +426,6 @@ Applies one commit: an ordered, non-empty list of path operations that commit to
 ```go
 request := &loonfs.CommitRequest{
     NamespaceID: "namespace_id",
-    ActorID: "usr_8f3c",
     CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
     Operations: []*loonfs.FilesystemOperation{
         &loonfs.FilesystemOperation{
@@ -456,14 +455,6 @@ client.Commits.Create(
 <dd>
 
 **namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**actorID:** `loonfs.ActorID` — Actor responsible for the commit, as supplied by the application.
     
 </dd>
 </dl>
@@ -589,7 +580,7 @@ client.Files.Content(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.CheckpointID` — Use the file revision captured by this snapshot
+**snapshotID:** `*loonfs.SnapshotID` — Use the file revision captured by this snapshot
     
 </dd>
 </dl>
@@ -601,7 +592,7 @@ client.Files.Content(
 </dl>
 </details>
 
-<details><summary><code>client.Files.CreateDownload(NamespaceID, request) -> *loonfs.BeginDownloadResponse</code></summary>
+<details><summary><code>client.Files.CreateDownload(NamespaceID, request) -> *loonfs.CreateDownloadResponse</code></summary>
 <dl>
 <dd>
 
@@ -628,11 +619,8 @@ Authorizes one direct read of a file's content object and returns a short-lived 
 <dd>
 
 ```go
-request := &loonfs.BeginDownloadRequest{
+request := &loonfs.CreateDownloadRequest{
     NamespaceID: "namespace_id",
-    SnapshotID: loonfs.String(
-        "pin_00000000000000000001-0000000000000002",
-    ),
     Path: "/docs/report.txt",
 }
 client.Files.CreateDownload(
@@ -661,14 +649,6 @@ client.Files.CreateDownload(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.CheckpointID` — Use the file revision captured by this snapshot
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
 **path:** `loonfs.AbsolutePath` — Absolute path of the file to read.
     
 </dd>
@@ -677,7 +657,21 @@ client.Files.CreateDownload(
 <dl>
 <dd>
 
-**revisionNo:** `*loonfs.RevisionNo` — Revision to read, or `None` for the path's current revision.
+**revisionNo:** `*loonfs.RevisionNo` 
+
+Revision to read, or `None` for the path's current revision.
+Cannot be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.SnapshotID` 
+
+Read the file revision captured by this snapshot.
+Cannot be combined with `revision_no`.
     
 </dd>
 </dl>
@@ -781,7 +775,7 @@ client.Files.List(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.CheckpointID` — Use the directory state captured by this snapshot
+**snapshotID:** `*loonfs.SnapshotID` — Use the directory state captured by this snapshot
     
 </dd>
 </dl>
@@ -869,7 +863,7 @@ client.Files.Retrieve(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.CheckpointID` — Use the path state captured by this snapshot
+**snapshotID:** `*loonfs.SnapshotID` — Use the path state captured by this snapshot
     
 </dd>
 </dl>
@@ -1173,7 +1167,7 @@ client.Trash.List(
 <dl>
 <dd>
 
-Returns the current path entry for a visible inode. Unknown or hidden inodes answer `inode_not_found`.
+Returns the path entry for a visible inode from the current state or a live snapshot. Unknown or hidden inodes answer `inode_not_found`.
 </dd>
 </dl>
 </dd>
@@ -1191,6 +1185,9 @@ Returns the current path entry for a visible inode. Unknown or hidden inodes ans
 request := &loonfs.GetInodeRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_123",
+    SnapshotID: loonfs.String(
+        "pin_00000000000000000001-0000000000000002",
+    ),
 }
 client.Inodes.Retrieve(
     context.TODO(),
@@ -1230,6 +1227,14 @@ client.Inodes.Retrieve(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.SnapshotID` — Use the path state captured by this snapshot
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -1250,7 +1255,7 @@ client.Inodes.Retrieve(
 <dl>
 <dd>
 
-Lists one page of a directory's children addressed by parent inode ID, in canonical name-key order. Inode addressing keeps a listing and its resumption on the same directory across concurrent renames or moves of the parent.
+Lists one page of a directory's children from the current state or a live snapshot, addressed by parent inode ID, in canonical name-key order. Inode addressing keeps a listing and its resumption on the same directory across concurrent renames or moves of the parent.
 </dd>
 </dl>
 </dd>
@@ -1268,6 +1273,9 @@ Lists one page of a directory's children addressed by parent inode ID, in canoni
 request := &loonfs.ListInodeChildrenRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_123",
+    SnapshotID: loonfs.String(
+        "pin_00000000000000000001-0000000000000002",
+    ),
 }
 client.Inodes.ListChildren(
     context.TODO(),
@@ -1320,6 +1328,14 @@ client.Inodes.ListChildren(
 <dd>
 
 **includeAttributes:** `*bool` — Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.SnapshotID` — Use the directory state captured by this snapshot
     
 </dd>
 </dl>
@@ -1494,7 +1510,7 @@ client.Inodes.Content(
 </dl>
 </details>
 
-<details><summary><code>client.Inodes.CreateDownload(NamespaceID, InodeID, RevisionNo, request) -> *loonfs.BeginDownloadByInodeResponse</code></summary>
+<details><summary><code>client.Inodes.CreateDownload(NamespaceID, InodeID, RevisionNo) -> *loonfs.CreateDownloadByInodeResponse</code></summary>
 <dl>
 <dd>
 
@@ -1506,7 +1522,7 @@ client.Inodes.Content(
 <dl>
 <dd>
 
-Authorizes a direct read of one retained inode revision. The request body is `{}` and the response does not include a path.
+Authorizes a direct read of one retained inode revision. The request has no body and the response does not include a path.
 </dd>
 </dl>
 </dd>
@@ -1525,9 +1541,6 @@ request := &loonfs.CreateDownloadByInodeRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_123",
     RevisionNo: int64(1000000),
-    Body: map[string]any{
-        "key": "value",
-    },
 }
 client.Inodes.CreateDownload(
     context.TODO(),
@@ -1564,14 +1577,6 @@ client.Inodes.CreateDownload(
 <dd>
 
 **revisionNo:** `loonfs.RevisionNo` — Revision number
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**request:** `loonfs.BeginDownloadByInodeRequest` 
     
 </dd>
 </dl>
@@ -1767,7 +1772,7 @@ Deletes a snapshot pin. A missing id returns snapshot_not_found.
 ```go
 request := &loonfs.DeleteSnapshotRequest{
     NamespaceID: "namespace_id",
-    SnapshotID: "snapshot_id",
+    SnapshotID: "pin_00000000000000000001-0000000000000002",
 }
 client.Snapshots.Delete(
     context.TODO(),
@@ -1795,7 +1800,7 @@ client.Snapshots.Delete(
 <dl>
 <dd>
 
-**snapshotID:** `string` — Snapshot id
+**snapshotID:** `loonfs.SnapshotID` — Snapshot id
     
 </dd>
 </dl>
@@ -1836,7 +1841,7 @@ Extends a live snapshot without passing its lifetime limit. Repeating the reques
 ```go
 request := &loonfs.ExtendSnapshotRequest{
     NamespaceID: "namespace_id",
-    SnapshotID: "snapshot_id",
+    SnapshotID: "pin_00000000000000000001-0000000000000002",
     TTLMs: int64(1000000),
 }
 client.Snapshots.Extend(
@@ -1865,7 +1870,7 @@ client.Snapshots.Extend(
 <dl>
 <dd>
 
-**snapshotID:** `string` — Snapshot id
+**snapshotID:** `loonfs.SnapshotID` — Snapshot id
     
 </dd>
 </dl>
@@ -1886,7 +1891,7 @@ client.Snapshots.Extend(
 </details>
 
 ## uploads
-<details><summary><code>client.Uploads.Create(NamespaceID, request) -> *loonfs.BeginUploadResponse</code></summary>
+<details><summary><code>client.Uploads.Create(NamespaceID, request) -> *loonfs.UploadSession</code></summary>
 <dl>
 <dd>
 
@@ -1915,8 +1920,8 @@ Starts an upload session for content that may later be attached to a file. Servi
 ```go
 request := &loonfs.CreateUploadRequest{
     NamespaceID: "namespace_id",
-    Body: &loonfs.BeginUploadRequest{
-        DirectMultipart: &loonfs.BeginUploadDirectMultipart{},
+    Body: &loonfs.CreateUploadBody{
+        DirectMultipart: &loonfs.CreateUploadBodyDirectMultipart{},
     },
 }
 client.Uploads.Create(
@@ -1945,7 +1950,7 @@ client.Uploads.Create(
 <dl>
 <dd>
 
-**request:** `*loonfs.BeginUploadRequest` 
+**request:** `*loonfs.CreateUploadBody` 
     
 </dd>
 </dl>
@@ -1969,7 +1974,7 @@ client.Uploads.Create(
 <dl>
 <dd>
 
-Returns an upload session. A completed session includes a new content token so the client can retry the commit without uploading the content again.
+Returns an upload session. An open direct_put session includes freshly signed access. A completed session includes a new content token so the client can retry the commit without uploading the content again.
 </dd>
 </dl>
 </dd>
@@ -2125,8 +2130,8 @@ Completes an upload. The request mode must match the mode used to start the sess
 request := &loonfs.CompleteUploadRequest{
     NamespaceID: "namespace_id",
     UploadID: "upload_id",
-    Body: &loonfs.UploadCompletion{
-        DirectMultipart: &loonfs.CompleteUploadDirectMultipart{
+    Body: &loonfs.CompleteUploadBody{
+        DirectMultipart: &loonfs.CompleteUploadBodyDirectMultipart{
             Content: &loonfs.UploadContentClaim{
                 Checksum: &loonfs.Checksum{
                     Algorithm: loonfs.ChecksumAlgorithmSha256,
@@ -2181,7 +2186,7 @@ client.Uploads.Complete(
 <dl>
 <dd>
 
-**request:** `*loonfs.UploadCompletion` 
+**request:** `*loonfs.CompleteUploadBody` 
     
 </dd>
 </dl>
