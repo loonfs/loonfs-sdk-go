@@ -12,6 +12,61 @@ import (
 // Validated complete absolute namespace path, serialized as a plain string.
 type AbsolutePath = string
 
+// A validated map from principal to rights, limited to
+// [`MAX_ACCESS_GRANT_ENTRIES`] entries and [`MAX_ACCESS_GRANTS_PRINCIPAL_BYTES`]
+// bytes of principal ids. No entry has an empty set of rights. Decoding
+// rejects repeated principals.
+type AccessGrants = map[string]AccessRights
+
+// Monotonic per-inode access revision. It increases with every accepted access update.
+type AccessRevisionNo = int64
+
+// One right a grant can carry.
+type AccessRight string
+
+const (
+	AccessRightRead    AccessRight = "read"
+	AccessRightHistory AccessRight = "history"
+	AccessRightWrite   AccessRight = "write"
+	AccessRightCreate  AccessRight = "create"
+	AccessRightRemove  AccessRight = "remove"
+	AccessRightShare   AccessRight = "share"
+	AccessRightManage  AccessRight = "manage"
+	AccessRightAdmin   AccessRight = "admin"
+)
+
+func NewAccessRightFromString(s string) (AccessRight, error) {
+	switch s {
+	case "read":
+		return AccessRightRead, nil
+	case "history":
+		return AccessRightHistory, nil
+	case "write":
+		return AccessRightWrite, nil
+	case "create":
+		return AccessRightCreate, nil
+	case "remove":
+		return AccessRightRemove, nil
+	case "share":
+		return AccessRightShare, nil
+	case "manage":
+		return AccessRightManage, nil
+	case "admin":
+		return AccessRightAdmin, nil
+	}
+	var t AccessRight
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AccessRight) Ptr() *AccessRight {
+	return &a
+}
+
+// A set of rights. Encoded as distinct names in `read`, `history`, `write`,
+// `create`, `remove`, `share`, `manage`, `admin` order. Decoding accepts any
+// order and rejects repeated names.
+type AccessRights = []AccessRight
+
 // Stable opaque actor id containing 1 to 256 visible ASCII characters.
 type ActorID = string
 
@@ -1775,28 +1830,30 @@ var (
 	errorDetailsFieldActiveAcquiredAtMs           = big.NewInt(1 << 0)
 	errorDetailsFieldActiveWriter                 = big.NewInt(1 << 1)
 	errorDetailsFieldActiveWriterEpoch            = big.NewInt(1 << 2)
-	errorDetailsFieldActualAttributesRevisionNo   = big.NewInt(1 << 3)
-	errorDetailsFieldActualBindingGeneration      = big.NewInt(1 << 4)
-	errorDetailsFieldActualDeletionSeq            = big.NewInt(1 << 5)
-	errorDetailsFieldActualHeadSeq                = big.NewInt(1 << 6)
-	errorDetailsFieldActualInodeID                = big.NewInt(1 << 7)
-	errorDetailsFieldActualRevisionNo             = big.NewInt(1 << 8)
-	errorDetailsFieldAfterSeq                     = big.NewInt(1 << 9)
-	errorDetailsFieldCommitID                     = big.NewInt(1 << 10)
-	errorDetailsFieldCommittedFingerprint         = big.NewInt(1 << 11)
-	errorDetailsFieldCommittedSeq                 = big.NewInt(1 << 12)
-	errorDetailsFieldExpectedAttributesRevisionNo = big.NewInt(1 << 13)
-	errorDetailsFieldExpectedBindingGeneration    = big.NewInt(1 << 14)
-	errorDetailsFieldExpectedDeletionSeq          = big.NewInt(1 << 15)
-	errorDetailsFieldExpectedHeadSeq              = big.NewInt(1 << 16)
-	errorDetailsFieldExpectedInodeID              = big.NewInt(1 << 17)
-	errorDetailsFieldExpectedRevisionNo           = big.NewInt(1 << 18)
-	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 19)
-	errorDetailsFieldInodeID                      = big.NewInt(1 << 20)
-	errorDetailsFieldMaxWriterSessions            = big.NewInt(1 << 21)
-	errorDetailsFieldOperationIndex               = big.NewInt(1 << 22)
-	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 23)
-	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 24)
+	errorDetailsFieldActualAccessRevisionNo       = big.NewInt(1 << 3)
+	errorDetailsFieldActualAttributesRevisionNo   = big.NewInt(1 << 4)
+	errorDetailsFieldActualBindingGeneration      = big.NewInt(1 << 5)
+	errorDetailsFieldActualDeletionSeq            = big.NewInt(1 << 6)
+	errorDetailsFieldActualHeadSeq                = big.NewInt(1 << 7)
+	errorDetailsFieldActualInodeID                = big.NewInt(1 << 8)
+	errorDetailsFieldActualRevisionNo             = big.NewInt(1 << 9)
+	errorDetailsFieldAfterSeq                     = big.NewInt(1 << 10)
+	errorDetailsFieldCommitID                     = big.NewInt(1 << 11)
+	errorDetailsFieldCommittedFingerprint         = big.NewInt(1 << 12)
+	errorDetailsFieldCommittedSeq                 = big.NewInt(1 << 13)
+	errorDetailsFieldExpectedAccessRevisionNo     = big.NewInt(1 << 14)
+	errorDetailsFieldExpectedAttributesRevisionNo = big.NewInt(1 << 15)
+	errorDetailsFieldExpectedBindingGeneration    = big.NewInt(1 << 16)
+	errorDetailsFieldExpectedDeletionSeq          = big.NewInt(1 << 17)
+	errorDetailsFieldExpectedHeadSeq              = big.NewInt(1 << 18)
+	errorDetailsFieldExpectedInodeID              = big.NewInt(1 << 19)
+	errorDetailsFieldExpectedRevisionNo           = big.NewInt(1 << 20)
+	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 21)
+	errorDetailsFieldInodeID                      = big.NewInt(1 << 22)
+	errorDetailsFieldMaxWriterSessions            = big.NewInt(1 << 23)
+	errorDetailsFieldOperationIndex               = big.NewInt(1 << 24)
+	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 25)
+	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 26)
 )
 
 type ErrorDetails struct {
@@ -1806,6 +1863,8 @@ type ErrorDetails struct {
 	ActiveWriter *WriterID `json:"active_writer,omitempty" url:"active_writer,omitempty"`
 	// Epoch that currently owns the namespace.
 	ActiveWriterEpoch *WriterEpoch `json:"active_writer_epoch,omitempty" url:"active_writer_epoch,omitempty"`
+	// Access revision that is actually current for the inode.
+	ActualAccessRevisionNo *AccessRevisionNo `json:"actual_access_revision_no,omitempty" url:"actual_access_revision_no,omitempty"`
 	// Attribute revision that is actually current for the inode.
 	ActualAttributesRevisionNo *AttributeRevisionNo `json:"actual_attributes_revision_no,omitempty" url:"actual_attributes_revision_no,omitempty"`
 	// Current binding token; absent for the root, which has no binding.
@@ -1826,6 +1885,8 @@ type ErrorDetails struct {
 	CommittedFingerprint *string `json:"committed_fingerprint,omitempty" url:"committed_fingerprint,omitempty"`
 	// The sequence where this commit ID already landed, when recorded by a durable receipt.
 	CommittedSeq *ChangeSeq `json:"committed_seq,omitempty" url:"committed_seq,omitempty"`
+	// Access revision the request expected to be current.
+	ExpectedAccessRevisionNo *AccessRevisionNo `json:"expected_access_revision_no,omitempty" url:"expected_access_revision_no,omitempty"`
 	// Attribute revision the request expected to be current.
 	ExpectedAttributesRevisionNo *AttributeRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
 	// Opaque binding token supplied by the request.
@@ -1877,6 +1938,13 @@ func (e *ErrorDetails) GetActiveWriterEpoch() *WriterEpoch {
 		return nil
 	}
 	return e.ActiveWriterEpoch
+}
+
+func (e *ErrorDetails) GetActualAccessRevisionNo() *AccessRevisionNo {
+	if e == nil {
+		return nil
+	}
+	return e.ActualAccessRevisionNo
 }
 
 func (e *ErrorDetails) GetActualAttributesRevisionNo() *AttributeRevisionNo {
@@ -1947,6 +2015,13 @@ func (e *ErrorDetails) GetCommittedSeq() *ChangeSeq {
 		return nil
 	}
 	return e.CommittedSeq
+}
+
+func (e *ErrorDetails) GetExpectedAccessRevisionNo() *AccessRevisionNo {
+	if e == nil {
+		return nil
+	}
+	return e.ExpectedAccessRevisionNo
 }
 
 func (e *ErrorDetails) GetExpectedAttributesRevisionNo() *AttributeRevisionNo {
@@ -2068,6 +2143,13 @@ func (e *ErrorDetails) SetActiveWriterEpoch(activeWriterEpoch *WriterEpoch) {
 	e.require(errorDetailsFieldActiveWriterEpoch)
 }
 
+// SetActualAccessRevisionNo sets the ActualAccessRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetActualAccessRevisionNo(actualAccessRevisionNo *AccessRevisionNo) {
+	e.ActualAccessRevisionNo = actualAccessRevisionNo
+	e.require(errorDetailsFieldActualAccessRevisionNo)
+}
+
 // SetActualAttributesRevisionNo sets the ActualAttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (e *ErrorDetails) SetActualAttributesRevisionNo(actualAttributesRevisionNo *AttributeRevisionNo) {
@@ -2136,6 +2218,13 @@ func (e *ErrorDetails) SetCommittedFingerprint(committedFingerprint *string) {
 func (e *ErrorDetails) SetCommittedSeq(committedSeq *ChangeSeq) {
 	e.CommittedSeq = committedSeq
 	e.require(errorDetailsFieldCommittedSeq)
+}
+
+// SetExpectedAccessRevisionNo sets the ExpectedAccessRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetExpectedAccessRevisionNo(expectedAccessRevisionNo *AccessRevisionNo) {
+	e.ExpectedAccessRevisionNo = expectedAccessRevisionNo
+	e.require(errorDetailsFieldExpectedAccessRevisionNo)
 }
 
 // SetExpectedAttributesRevisionNo sets the ExpectedAttributesRevisionNo field and marks it as non-optional;
@@ -2628,6 +2717,7 @@ func (f *FileRevision) String() string {
 // One request operation can produce multiple changes.
 type FilesystemChange struct {
 	Kind              string
+	AccessChanged     *FilesystemChangeAccessChanged
 	AttributesChanged *FilesystemChangeAttributesChanged
 	ContentChanged    *FilesystemChangeContentChanged
 	Deleted           *FilesystemChangeDeleted
@@ -2644,6 +2734,13 @@ func (f *FilesystemChange) GetKind() string {
 		return ""
 	}
 	return f.Kind
+}
+
+func (f *FilesystemChange) GetAccessChanged() *FilesystemChangeAccessChanged {
+	if f == nil {
+		return nil
+	}
+	return f.AccessChanged
 }
 
 func (f *FilesystemChange) GetAttributesChanged() *FilesystemChangeAttributesChanged {
@@ -2707,6 +2804,12 @@ func (f *FilesystemChange) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant kind", f)
 	}
 	switch unmarshaler.Kind {
+	case "access_changed":
+		value := new(FilesystemChangeAccessChanged)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.AccessChanged = value
 	case "attributes_changed":
 		value := new(FilesystemChangeAttributesChanged)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -2758,6 +2861,9 @@ func (f FilesystemChange) MarshalJSON() ([]byte, error) {
 	if err := f.validate(); err != nil {
 		return nil, err
 	}
+	if f.AccessChanged != nil {
+		return internal.MarshalJSONWithExtraProperty(f.AccessChanged, "kind", "access_changed")
+	}
 	if f.AttributesChanged != nil {
 		return internal.MarshalJSONWithExtraProperty(f.AttributesChanged, "kind", "attributes_changed")
 	}
@@ -2786,6 +2892,7 @@ func (f FilesystemChange) MarshalJSON() ([]byte, error) {
 }
 
 type FilesystemChangeVisitor interface {
+	VisitAccessChanged(*FilesystemChangeAccessChanged) error
 	VisitAttributesChanged(*FilesystemChangeAttributesChanged) error
 	VisitContentChanged(*FilesystemChangeContentChanged) error
 	VisitDeleted(*FilesystemChangeDeleted) error
@@ -2796,6 +2903,9 @@ type FilesystemChangeVisitor interface {
 }
 
 func (f *FilesystemChange) Accept(visitor FilesystemChangeVisitor) error {
+	if f.AccessChanged != nil {
+		return visitor.VisitAccessChanged(f.AccessChanged)
+	}
 	if f.AttributesChanged != nil {
 		return visitor.VisitAttributesChanged(f.AttributesChanged)
 	}
@@ -2825,6 +2935,9 @@ func (f *FilesystemChange) validate() error {
 		return fmt.Errorf("type %T is nil", f)
 	}
 	var fields []string
+	if f.AccessChanged != nil {
+		fields = append(fields, "access_changed")
+	}
 	if f.AttributesChanged != nil {
 		fields = append(fields, "attributes_changed")
 	}
@@ -2870,6 +2983,144 @@ func (f *FilesystemChange) validate() error {
 		}
 	}
 	return nil
+}
+
+// An inode's access row was replaced. `grants` is the complete
+// direct grant map after the update.
+var (
+	filesystemChangeAccessChangedFieldAccessRevisionNo = big.NewInt(1 << 0)
+	filesystemChangeAccessChangedFieldBoundary         = big.NewInt(1 << 1)
+	filesystemChangeAccessChangedFieldGrants           = big.NewInt(1 << 2)
+	filesystemChangeAccessChangedFieldInodeID          = big.NewInt(1 << 3)
+)
+
+type FilesystemChangeAccessChanged struct {
+	// Revision published by the update.
+	AccessRevisionNo AccessRevisionNo `json:"access_revision_no" url:"access_revision_no"`
+	// Whether the directory stops inheritance from its ancestors.
+	Boundary bool `json:"boundary" url:"boundary"`
+	// The inode's complete direct grants after this update.
+	Grants AccessGrants `json:"grants" url:"grants"`
+	// Inode whose access state advanced.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemChangeAccessChanged) GetAccessRevisionNo() AccessRevisionNo {
+	if f == nil {
+		return 0
+	}
+	return f.AccessRevisionNo
+}
+
+func (f *FilesystemChangeAccessChanged) GetBoundary() bool {
+	if f == nil {
+		return false
+	}
+	return f.Boundary
+}
+
+func (f *FilesystemChangeAccessChanged) GetGrants() AccessGrants {
+	if f == nil {
+		return nil
+	}
+	return f.Grants
+}
+
+func (f *FilesystemChangeAccessChanged) GetInodeID() InodeID {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemChangeAccessChanged) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemChangeAccessChanged) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetAccessRevisionNo sets the AccessRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemChangeAccessChanged) SetAccessRevisionNo(accessRevisionNo AccessRevisionNo) {
+	f.AccessRevisionNo = accessRevisionNo
+	f.require(filesystemChangeAccessChangedFieldAccessRevisionNo)
+}
+
+// SetBoundary sets the Boundary field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemChangeAccessChanged) SetBoundary(boundary bool) {
+	f.Boundary = boundary
+	f.require(filesystemChangeAccessChangedFieldBoundary)
+}
+
+// SetGrants sets the Grants field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemChangeAccessChanged) SetGrants(grants AccessGrants) {
+	f.Grants = grants
+	f.require(filesystemChangeAccessChangedFieldGrants)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemChangeAccessChanged) SetInodeID(inodeID InodeID) {
+	f.InodeID = inodeID
+	f.require(filesystemChangeAccessChangedFieldInodeID)
+}
+
+func (f *FilesystemChangeAccessChanged) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemChangeAccessChanged
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemChangeAccessChanged(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemChangeAccessChanged) MarshalJSON() ([]byte, error) {
+	type embed FilesystemChangeAccessChanged
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemChangeAccessChanged) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
 }
 
 // An inode's attributes changed.
@@ -6986,6 +7237,9 @@ func (p *PathEntryFile) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
+// Stable opaque principal id containing 1 to 256 visible ASCII characters other than the comma.
+type PrincipalID = string
+
 // The outcome of the metadata-reorganization part of a maintenance pass.
 type ReorganizeStepOutcome struct {
 	Outcome            string
@@ -7708,11 +7962,12 @@ type RevisionNo = int64
 
 // One maintenance job for one namespace.
 type RunMaintenanceRequest struct {
-	Kind               string
-	Gc                 *RunMaintenanceRequestGc
-	Metadata           *RunMaintenanceRequestMetadata
-	MetadataCompaction *RunMaintenanceRequestMetadataCompaction
-	Retention          *RunMaintenanceRequestRetention
+	Kind                 string
+	Gc                   *RunMaintenanceRequestGc
+	Metadata             *RunMaintenanceRequestMetadata
+	MetadataCompaction   *RunMaintenanceRequestMetadataCompaction
+	RecoverAdministrator *RunMaintenanceRequestRecoverAdministrator
+	Retention            *RunMaintenanceRequestRetention
 
 	rawJSON json.RawMessage
 }
@@ -7743,6 +7998,13 @@ func (r *RunMaintenanceRequest) GetMetadataCompaction() *RunMaintenanceRequestMe
 		return nil
 	}
 	return r.MetadataCompaction
+}
+
+func (r *RunMaintenanceRequest) GetRecoverAdministrator() *RunMaintenanceRequestRecoverAdministrator {
+	if r == nil {
+		return nil
+	}
+	return r.RecoverAdministrator
 }
 
 func (r *RunMaintenanceRequest) GetRetention() *RunMaintenanceRequestRetention {
@@ -7782,6 +8044,12 @@ func (r *RunMaintenanceRequest) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		r.MetadataCompaction = value
+	case "recover_administrator":
+		value := new(RunMaintenanceRequestRecoverAdministrator)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.RecoverAdministrator = value
 	case "retention":
 		value := new(RunMaintenanceRequestRetention)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -7806,6 +8074,9 @@ func (r RunMaintenanceRequest) MarshalJSON() ([]byte, error) {
 	if r.MetadataCompaction != nil {
 		return internal.MarshalJSONWithExtraProperty(r.MetadataCompaction, "kind", "metadata_compaction")
 	}
+	if r.RecoverAdministrator != nil {
+		return internal.MarshalJSONWithExtraProperty(r.RecoverAdministrator, "kind", "recover_administrator")
+	}
 	if r.Retention != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Retention, "kind", "retention")
 	}
@@ -7819,6 +8090,7 @@ type RunMaintenanceRequestVisitor interface {
 	VisitGc(*RunMaintenanceRequestGc) error
 	VisitMetadata(*RunMaintenanceRequestMetadata) error
 	VisitMetadataCompaction(*RunMaintenanceRequestMetadataCompaction) error
+	VisitRecoverAdministrator(*RunMaintenanceRequestRecoverAdministrator) error
 	VisitRetention(*RunMaintenanceRequestRetention) error
 }
 
@@ -7831,6 +8103,9 @@ func (r *RunMaintenanceRequest) Accept(visitor RunMaintenanceRequestVisitor) err
 	}
 	if r.MetadataCompaction != nil {
 		return visitor.VisitMetadataCompaction(r.MetadataCompaction)
+	}
+	if r.RecoverAdministrator != nil {
+		return visitor.VisitRecoverAdministrator(r.RecoverAdministrator)
 	}
 	if r.Retention != nil {
 		return visitor.VisitRetention(r.Retention)
@@ -7851,6 +8126,9 @@ func (r *RunMaintenanceRequest) validate() error {
 	}
 	if r.MetadataCompaction != nil {
 		fields = append(fields, "metadata_compaction")
+	}
+	if r.RecoverAdministrator != nil {
+		fields = append(fields, "recover_administrator")
 	}
 	if r.Retention != nil {
 		fields = append(fields, "retention")
@@ -8120,6 +8398,92 @@ func (r *RunMaintenanceRequestMetadataCompaction) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// Restores a root administrator.
+var (
+	runMaintenanceRequestRecoverAdministratorFieldPrincipalID = big.NewInt(1 << 0)
+)
+
+type RunMaintenanceRequestRecoverAdministrator struct {
+	// Principal receiving administrator rights.
+	PrincipalID PrincipalID `json:"principal_id" url:"principal_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceRequestRecoverAdministrator) GetPrincipalID() PrincipalID {
+	if r == nil {
+		return ""
+	}
+	return r.PrincipalID
+}
+
+func (r *RunMaintenanceRequestRecoverAdministrator) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunMaintenanceRequestRecoverAdministrator) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetPrincipalID sets the PrincipalID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceRequestRecoverAdministrator) SetPrincipalID(principalID PrincipalID) {
+	r.PrincipalID = principalID
+	r.require(runMaintenanceRequestRecoverAdministratorFieldPrincipalID)
+}
+
+func (r *RunMaintenanceRequestRecoverAdministrator) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceRequestRecoverAdministrator
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunMaintenanceRequestRecoverAdministrator(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunMaintenanceRequestRecoverAdministrator) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceRequestRecoverAdministrator
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunMaintenanceRequestRecoverAdministrator) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
 // Advances the retention floor to the flushed manifest head.
 type RunMaintenanceRequestRetention struct {
 
@@ -8188,11 +8552,12 @@ func (r *RunMaintenanceRequestRetention) String() string {
 
 // The result of one maintenance job. The `kind` matches the request.
 type RunMaintenanceResponse struct {
-	Kind               string
-	Gc                 *RunMaintenanceResponseGc
-	Metadata           *RunMaintenanceResponseMetadata
-	MetadataCompaction *RunMaintenanceResponseMetadataCompaction
-	Retention          *RunMaintenanceResponseRetention
+	Kind                 string
+	Gc                   *RunMaintenanceResponseGc
+	Metadata             *RunMaintenanceResponseMetadata
+	MetadataCompaction   *RunMaintenanceResponseMetadataCompaction
+	RecoverAdministrator *RunMaintenanceResponseRecoverAdministrator
+	Retention            *RunMaintenanceResponseRetention
 
 	rawJSON json.RawMessage
 }
@@ -8223,6 +8588,13 @@ func (r *RunMaintenanceResponse) GetMetadataCompaction() *RunMaintenanceResponse
 		return nil
 	}
 	return r.MetadataCompaction
+}
+
+func (r *RunMaintenanceResponse) GetRecoverAdministrator() *RunMaintenanceResponseRecoverAdministrator {
+	if r == nil {
+		return nil
+	}
+	return r.RecoverAdministrator
 }
 
 func (r *RunMaintenanceResponse) GetRetention() *RunMaintenanceResponseRetention {
@@ -8262,6 +8634,12 @@ func (r *RunMaintenanceResponse) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		r.MetadataCompaction = value
+	case "recover_administrator":
+		value := new(RunMaintenanceResponseRecoverAdministrator)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.RecoverAdministrator = value
 	case "retention":
 		value := new(RunMaintenanceResponseRetention)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -8286,6 +8664,9 @@ func (r RunMaintenanceResponse) MarshalJSON() ([]byte, error) {
 	if r.MetadataCompaction != nil {
 		return internal.MarshalJSONWithExtraProperty(r.MetadataCompaction, "kind", "metadata_compaction")
 	}
+	if r.RecoverAdministrator != nil {
+		return internal.MarshalJSONWithExtraProperty(r.RecoverAdministrator, "kind", "recover_administrator")
+	}
 	if r.Retention != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Retention, "kind", "retention")
 	}
@@ -8299,6 +8680,7 @@ type RunMaintenanceResponseVisitor interface {
 	VisitGc(*RunMaintenanceResponseGc) error
 	VisitMetadata(*RunMaintenanceResponseMetadata) error
 	VisitMetadataCompaction(*RunMaintenanceResponseMetadataCompaction) error
+	VisitRecoverAdministrator(*RunMaintenanceResponseRecoverAdministrator) error
 	VisitRetention(*RunMaintenanceResponseRetention) error
 }
 
@@ -8311,6 +8693,9 @@ func (r *RunMaintenanceResponse) Accept(visitor RunMaintenanceResponseVisitor) e
 	}
 	if r.MetadataCompaction != nil {
 		return visitor.VisitMetadataCompaction(r.MetadataCompaction)
+	}
+	if r.RecoverAdministrator != nil {
+		return visitor.VisitRecoverAdministrator(r.RecoverAdministrator)
 	}
 	if r.Retention != nil {
 		return visitor.VisitRetention(r.Retention)
@@ -8331,6 +8716,9 @@ func (r *RunMaintenanceResponse) validate() error {
 	}
 	if r.MetadataCompaction != nil {
 		fields = append(fields, "metadata_compaction")
+	}
+	if r.RecoverAdministrator != nil {
+		fields = append(fields, "recover_administrator")
 	}
 	if r.Retention != nil {
 		fields = append(fields, "retention")
@@ -8741,6 +9129,143 @@ func (r *RunMaintenanceResponseMetadataCompaction) MarshalJSON() ([]byte, error)
 }
 
 func (r *RunMaintenanceResponseMetadataCompaction) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// The committed administrator recovery.
+var (
+	runMaintenanceResponseRecoverAdministratorFieldAccessRevisionNo = big.NewInt(1 << 0)
+	runMaintenanceResponseRecoverAdministratorFieldCommitID         = big.NewInt(1 << 1)
+	runMaintenanceResponseRecoverAdministratorFieldCommittedSeq     = big.NewInt(1 << 2)
+	runMaintenanceResponseRecoverAdministratorFieldNamespaceID      = big.NewInt(1 << 3)
+)
+
+type RunMaintenanceResponseRecoverAdministrator struct {
+	// Root access revision after recovery.
+	AccessRevisionNo AccessRevisionNo `json:"access_revision_no" url:"access_revision_no"`
+	// Recovery commit id.
+	CommitID CommitID `json:"commit_id" url:"commit_id"`
+	// Sequence assigned to the recovery commit.
+	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
+	// Namespace whose root grants changed.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceResponseRecoverAdministrator) GetAccessRevisionNo() AccessRevisionNo {
+	if r == nil {
+		return 0
+	}
+	return r.AccessRevisionNo
+}
+
+func (r *RunMaintenanceResponseRecoverAdministrator) GetCommitID() CommitID {
+	if r == nil {
+		return ""
+	}
+	return r.CommitID
+}
+
+func (r *RunMaintenanceResponseRecoverAdministrator) GetCommittedSeq() ChangeSeq {
+	if r == nil {
+		return 0
+	}
+	return r.CommittedSeq
+}
+
+func (r *RunMaintenanceResponseRecoverAdministrator) GetNamespaceID() NamespaceID {
+	if r == nil {
+		return ""
+	}
+	return r.NamespaceID
+}
+
+func (r *RunMaintenanceResponseRecoverAdministrator) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunMaintenanceResponseRecoverAdministrator) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetAccessRevisionNo sets the AccessRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseRecoverAdministrator) SetAccessRevisionNo(accessRevisionNo AccessRevisionNo) {
+	r.AccessRevisionNo = accessRevisionNo
+	r.require(runMaintenanceResponseRecoverAdministratorFieldAccessRevisionNo)
+}
+
+// SetCommitID sets the CommitID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseRecoverAdministrator) SetCommitID(commitID CommitID) {
+	r.CommitID = commitID
+	r.require(runMaintenanceResponseRecoverAdministratorFieldCommitID)
+}
+
+// SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseRecoverAdministrator) SetCommittedSeq(committedSeq ChangeSeq) {
+	r.CommittedSeq = committedSeq
+	r.require(runMaintenanceResponseRecoverAdministratorFieldCommittedSeq)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseRecoverAdministrator) SetNamespaceID(namespaceID NamespaceID) {
+	r.NamespaceID = namespaceID
+	r.require(runMaintenanceResponseRecoverAdministratorFieldNamespaceID)
+}
+
+func (r *RunMaintenanceResponseRecoverAdministrator) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceResponseRecoverAdministrator
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunMaintenanceResponseRecoverAdministrator(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunMaintenanceResponseRecoverAdministrator) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceResponseRecoverAdministrator
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunMaintenanceResponseRecoverAdministrator) String() string {
 	if r == nil {
 		return "<nil>"
 	}

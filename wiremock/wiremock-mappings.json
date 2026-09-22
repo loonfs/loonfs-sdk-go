@@ -46,7 +46,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -82,7 +82,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -154,7 +154,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -198,7 +198,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"attributes\": {\n            \"key\": \"platform\"\n          },\n          \"attributes_revision_no\": 1000000,\n          \"inode_id\": \"ino_123\",\n          \"kind\": \"attributes_changed\"\n        }\n      ],\n      \"message\": \"message\",\n      \"namespace_id\": \"demo\"\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"through_seq\": 1000000\n}",
+        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"access_revision_no\": 1000000,\n          \"boundary\": true,\n          \"grants\": {\n            \"key\": [\n              \"read\"\n            ]\n          },\n          \"inode_id\": \"ino_123\",\n          \"kind\": \"access_changed\"\n        }\n      ],\n      \"message\": \"message\",\n      \"namespace_id\": \"demo\"\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"through_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -234,7 +234,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n  \"committed_at_ms\": 1000000,\n  \"committed_by\": \"usr_8f3c\",\n  \"committed_seq\": 1000000,\n  \"events\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"kind\": \"attributes_changed\"\n    }\n  ],\n  \"message\": \"message\",\n  \"namespace_id\": \"demo\"\n}",
+        "body": "{\n  \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n  \"committed_at_ms\": 1000000,\n  \"committed_by\": \"usr_8f3c\",\n  \"committed_seq\": 1000000,\n  \"events\": [\n    {\n      \"access_revision_no\": 1000000,\n      \"boundary\": true,\n      \"grants\": {\n        \"key\": [\n          \"read\"\n        ]\n      },\n      \"inode_id\": \"ino_123\",\n      \"kind\": \"access_changed\"\n    }\n  ],\n  \"message\": \"message\",\n  \"namespace_id\": \"demo\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
