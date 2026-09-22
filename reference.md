@@ -90,6 +90,17 @@ client.Namespaces.Create(
 <dl>
 <dd>
 
+**access:** `*loonfs.NamespaceAccess`
+
+The access mode, fixed for the namespace's life. Defaults to
+unrestricted.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **namespaceID:** `loonfs.NamespaceID` — Durable namespace id to create.
     
 </dd>

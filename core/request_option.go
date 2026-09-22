@@ -28,6 +28,9 @@ type RequestOptions struct {
 	Token                      string
 	TokenFunc                  func() (string, error)
 	ActorID                    *string
+	SubjectID                  *string
+	PrincipalScope             *string
+	Principals                 *string
 }
 
 // NewRequestOptions returns a new *RequestOptions value.
@@ -59,6 +62,15 @@ func (r *RequestOptions) ToHeader() http.Header {
 	}
 	if r.ActorID != nil {
 		header.Set("Loonfs-Actor", fmt.Sprintf("%v", *r.ActorID))
+	}
+	if r.SubjectID != nil {
+		header.Set("Loonfs-Subject", fmt.Sprintf("%v", *r.SubjectID))
+	}
+	if r.PrincipalScope != nil {
+		header.Set("Loonfs-Principal-Scope", fmt.Sprintf("%v", *r.PrincipalScope))
+	}
+	if r.Principals != nil {
+		header.Set("Loonfs-Principals", fmt.Sprintf("%v", *r.Principals))
 	}
 	return header
 }
@@ -153,4 +165,31 @@ type ActorIDOption struct {
 
 func (a *ActorIDOption) applyRequestOptions(opts *RequestOptions) {
 	opts.ActorID = a.ActorID
+}
+
+// SubjectIDOption implements the RequestOption interface.
+type SubjectIDOption struct {
+	SubjectID *string
+}
+
+func (s *SubjectIDOption) applyRequestOptions(opts *RequestOptions) {
+	opts.SubjectID = s.SubjectID
+}
+
+// PrincipalScopeOption implements the RequestOption interface.
+type PrincipalScopeOption struct {
+	PrincipalScope *string
+}
+
+func (p *PrincipalScopeOption) applyRequestOptions(opts *RequestOptions) {
+	opts.PrincipalScope = p.PrincipalScope
+}
+
+// PrincipalsOption implements the RequestOption interface.
+type PrincipalsOption struct {
+	Principals *string
+}
+
+func (p *PrincipalsOption) applyRequestOptions(opts *RequestOptions) {
+	opts.Principals = p.Principals
 }

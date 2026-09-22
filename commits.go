@@ -117,6 +117,7 @@ type AttributeKey = string
 // or the batch's base head sequence when no earlier candidate was admitted.
 type CommitPrecondition struct {
 	Kind               string
+	AccessRevision     *CommitPreconditionAccessRevision
 	AttributesRevision *CommitPreconditionAttributesRevision
 	FileRevision       *CommitPreconditionFileRevision
 	NamespaceHead      *CommitPreconditionNamespaceHead
@@ -131,6 +132,13 @@ func (c *CommitPrecondition) GetKind() string {
 		return ""
 	}
 	return c.Kind
+}
+
+func (c *CommitPrecondition) GetAccessRevision() *CommitPreconditionAccessRevision {
+	if c == nil {
+		return nil
+	}
+	return c.AccessRevision
 }
 
 func (c *CommitPrecondition) GetAttributesRevision() *CommitPreconditionAttributesRevision {
@@ -180,6 +188,12 @@ func (c *CommitPrecondition) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant kind", c)
 	}
 	switch unmarshaler.Kind {
+	case "access_revision":
+		value := new(CommitPreconditionAccessRevision)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.AccessRevision = value
 	case "attributes_revision":
 		value := new(CommitPreconditionAttributesRevision)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -219,6 +233,9 @@ func (c CommitPrecondition) MarshalJSON() ([]byte, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
+	if c.AccessRevision != nil {
+		return internal.MarshalJSONWithExtraProperty(c.AccessRevision, "kind", "access_revision")
+	}
 	if c.AttributesRevision != nil {
 		return internal.MarshalJSONWithExtraProperty(c.AttributesRevision, "kind", "attributes_revision")
 	}
@@ -241,6 +258,7 @@ func (c CommitPrecondition) MarshalJSON() ([]byte, error) {
 }
 
 type CommitPreconditionVisitor interface {
+	VisitAccessRevision(*CommitPreconditionAccessRevision) error
 	VisitAttributesRevision(*CommitPreconditionAttributesRevision) error
 	VisitFileRevision(*CommitPreconditionFileRevision) error
 	VisitNamespaceHead(*CommitPreconditionNamespaceHead) error
@@ -249,6 +267,9 @@ type CommitPreconditionVisitor interface {
 }
 
 func (c *CommitPrecondition) Accept(visitor CommitPreconditionVisitor) error {
+	if c.AccessRevision != nil {
+		return visitor.VisitAccessRevision(c.AccessRevision)
+	}
 	if c.AttributesRevision != nil {
 		return visitor.VisitAttributesRevision(c.AttributesRevision)
 	}
@@ -272,6 +293,9 @@ func (c *CommitPrecondition) validate() error {
 		return fmt.Errorf("type %T is nil", c)
 	}
 	var fields []string
+	if c.AccessRevision != nil {
+		fields = append(fields, "access_revision")
+	}
 	if c.AttributesRevision != nil {
 		fields = append(fields, "attributes_revision")
 	}
@@ -311,6 +335,109 @@ func (c *CommitPrecondition) validate() error {
 		}
 	}
 	return nil
+}
+
+// Requires a visible inode with the access revision the caller read.
+var (
+	commitPreconditionAccessRevisionFieldExpectedAccessRevisionNo = big.NewInt(1 << 0)
+	commitPreconditionAccessRevisionFieldInodeID                  = big.NewInt(1 << 1)
+)
+
+type CommitPreconditionAccessRevision struct {
+	// Access revision observed by the caller.
+	ExpectedAccessRevisionNo AccessRevisionNo `json:"expected_access_revision_no" url:"expected_access_revision_no"`
+	// Inode whose state the caller read.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CommitPreconditionAccessRevision) GetExpectedAccessRevisionNo() AccessRevisionNo {
+	if c == nil {
+		return 0
+	}
+	return c.ExpectedAccessRevisionNo
+}
+
+func (c *CommitPreconditionAccessRevision) GetInodeID() InodeID {
+	if c == nil {
+		return ""
+	}
+	return c.InodeID
+}
+
+func (c *CommitPreconditionAccessRevision) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CommitPreconditionAccessRevision) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetExpectedAccessRevisionNo sets the ExpectedAccessRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitPreconditionAccessRevision) SetExpectedAccessRevisionNo(expectedAccessRevisionNo AccessRevisionNo) {
+	c.ExpectedAccessRevisionNo = expectedAccessRevisionNo
+	c.require(commitPreconditionAccessRevisionFieldExpectedAccessRevisionNo)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitPreconditionAccessRevision) SetInodeID(inodeID InodeID) {
+	c.InodeID = inodeID
+	c.require(commitPreconditionAccessRevisionFieldInodeID)
+}
+
+func (c *CommitPreconditionAccessRevision) UnmarshalJSON(data []byte) error {
+	type unmarshaler CommitPreconditionAccessRevision
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CommitPreconditionAccessRevision(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CommitPreconditionAccessRevision) MarshalJSON() ([]byte, error) {
+	type embed CommitPreconditionAccessRevision
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CommitPreconditionAccessRevision) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
 }
 
 // Requires a visible inode with the attribute revision the caller read.
@@ -874,6 +1001,7 @@ type FilesystemOperation struct {
 	PutFileRevisionByInode *FilesystemOperationPutFileRevisionByInode
 	RestoreRevision        *FilesystemOperationRestoreRevision
 	Undelete               *FilesystemOperationUndelete
+	UpdateAccess           *FilesystemOperationUpdateAccess
 	UpdateAttributes       *FilesystemOperationUpdateAttributes
 
 	rawJSON json.RawMessage
@@ -970,6 +1098,13 @@ func (f *FilesystemOperation) GetUndelete() *FilesystemOperationUndelete {
 	return f.Undelete
 }
 
+func (f *FilesystemOperation) GetUpdateAccess() *FilesystemOperationUpdateAccess {
+	if f == nil {
+		return nil
+	}
+	return f.UpdateAccess
+}
+
 func (f *FilesystemOperation) GetUpdateAttributes() *FilesystemOperationUpdateAttributes {
 	if f == nil {
 		return nil
@@ -1061,6 +1196,12 @@ func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		f.Undelete = value
+	case "update_access":
+		value := new(FilesystemOperationUpdateAccess)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.UpdateAccess = value
 	case "update_attributes":
 		value := new(FilesystemOperationUpdateAttributes)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -1112,6 +1253,9 @@ func (f FilesystemOperation) MarshalJSON() ([]byte, error) {
 	if f.Undelete != nil {
 		return internal.MarshalJSONWithExtraProperty(f.Undelete, "kind", "undelete")
 	}
+	if f.UpdateAccess != nil {
+		return internal.MarshalJSONWithExtraProperty(f.UpdateAccess, "kind", "update_access")
+	}
 	if f.UpdateAttributes != nil {
 		return internal.MarshalJSONWithExtraProperty(f.UpdateAttributes, "kind", "update_attributes")
 	}
@@ -1134,6 +1278,7 @@ type FilesystemOperationVisitor interface {
 	VisitPutFileRevisionByInode(*FilesystemOperationPutFileRevisionByInode) error
 	VisitRestoreRevision(*FilesystemOperationRestoreRevision) error
 	VisitUndelete(*FilesystemOperationUndelete) error
+	VisitUpdateAccess(*FilesystemOperationUpdateAccess) error
 	VisitUpdateAttributes(*FilesystemOperationUpdateAttributes) error
 }
 
@@ -1173,6 +1318,9 @@ func (f *FilesystemOperation) Accept(visitor FilesystemOperationVisitor) error {
 	}
 	if f.Undelete != nil {
 		return visitor.VisitUndelete(f.Undelete)
+	}
+	if f.UpdateAccess != nil {
+		return visitor.VisitUpdateAccess(f.UpdateAccess)
 	}
 	if f.UpdateAttributes != nil {
 		return visitor.VisitUpdateAttributes(f.UpdateAttributes)
@@ -1220,6 +1368,9 @@ func (f *FilesystemOperation) validate() error {
 	}
 	if f.Undelete != nil {
 		fields = append(fields, "undelete")
+	}
+	if f.UpdateAccess != nil {
+		fields = append(fields, "update_access")
 	}
 	if f.UpdateAttributes != nil {
 		fields = append(fields, "update_attributes")
@@ -1612,17 +1763,21 @@ func (f *FilesystemOperationCreateDirectoryByInode) String() string {
 }
 
 // Create a file with an unused name under an existing parent inode.
+// Requires exactly one of `content_ref` and `inline_content`.
 var (
 	filesystemOperationCreateFileByInodeFieldContentRef    = big.NewInt(1 << 0)
 	filesystemOperationCreateFileByInodeFieldDisplayName   = big.NewInt(1 << 1)
-	filesystemOperationCreateFileByInodeFieldParentInodeID = big.NewInt(1 << 2)
+	filesystemOperationCreateFileByInodeFieldInlineContent = big.NewInt(1 << 2)
+	filesystemOperationCreateFileByInodeFieldParentInodeID = big.NewInt(1 << 3)
 )
 
 type FilesystemOperationCreateFileByInode struct {
-	// Immutable bytes that must be covered by a valid preparation proof.
-	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
+	// Uploaded content covered by a token; mutually exclusive with `inline_content`.
+	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// New file name.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
+	// Complete file bytes as base64; mutually exclusive with `content_ref`.
+	InlineContent *string `json:"inline_content,omitempty" url:"inline_content,omitempty"`
 	// Parent directory.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
 
@@ -1645,6 +1800,13 @@ func (f *FilesystemOperationCreateFileByInode) GetDisplayName() DisplayName {
 		return ""
 	}
 	return f.DisplayName
+}
+
+func (f *FilesystemOperationCreateFileByInode) GetInlineContent() *string {
+	if f == nil {
+		return nil
+	}
+	return f.InlineContent
 }
 
 func (f *FilesystemOperationCreateFileByInode) GetParentInodeID() InodeID {
@@ -1680,6 +1842,13 @@ func (f *FilesystemOperationCreateFileByInode) SetContentRef(contentRef *Content
 func (f *FilesystemOperationCreateFileByInode) SetDisplayName(displayName DisplayName) {
 	f.DisplayName = displayName
 	f.require(filesystemOperationCreateFileByInodeFieldDisplayName)
+}
+
+// SetInlineContent sets the InlineContent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationCreateFileByInode) SetInlineContent(inlineContent *string) {
+	f.InlineContent = inlineContent
+	f.require(filesystemOperationCreateFileByInodeFieldInlineContent)
 }
 
 // SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
@@ -2313,24 +2482,28 @@ func (f *FilesystemOperationMovePath) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Create or replace one file with an already-durable content ref.
+// Create or replace one file from uploaded or inline content.
+// Requires exactly one of `content_ref` and `inline_content`.
 var (
 	filesystemOperationPutFileFieldBehavior           = big.NewInt(1 << 0)
 	filesystemOperationPutFileFieldContentRef         = big.NewInt(1 << 1)
 	filesystemOperationPutFileFieldExpectedInodeID    = big.NewInt(1 << 2)
 	filesystemOperationPutFileFieldExpectedRevisionNo = big.NewInt(1 << 3)
-	filesystemOperationPutFileFieldPath               = big.NewInt(1 << 4)
+	filesystemOperationPutFileFieldInlineContent      = big.NewInt(1 << 4)
+	filesystemOperationPutFileFieldPath               = big.NewInt(1 << 5)
 )
 
 type FilesystemOperationPutFile struct {
 	// Whether an existing file may receive a new revision instead of causing a conflict.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// Immutable bytes that must be covered by a valid preparation proof.
-	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
+	// Uploaded content covered by a token; mutually exclusive with `inline_content`.
+	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// With `replace` behavior, the request requires the path to contain this inode.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
 	// With `replace` behavior and an inode precondition, the request requires this content revision.
 	ExpectedRevisionNo *RevisionNo `json:"expected_revision_no,omitempty" url:"expected_revision_no,omitempty"`
+	// Complete file bytes as base64; mutually exclusive with `content_ref`.
+	InlineContent *string `json:"inline_content,omitempty" url:"inline_content,omitempty"`
 	// Absolute destination path; missing ancestors are created automatically.
 	Path AbsolutePath `json:"path" url:"path"`
 
@@ -2367,6 +2540,13 @@ func (f *FilesystemOperationPutFile) GetExpectedRevisionNo() *RevisionNo {
 		return nil
 	}
 	return f.ExpectedRevisionNo
+}
+
+func (f *FilesystemOperationPutFile) GetInlineContent() *string {
+	if f == nil {
+		return nil
+	}
+	return f.InlineContent
 }
 
 func (f *FilesystemOperationPutFile) GetPath() AbsolutePath {
@@ -2416,6 +2596,13 @@ func (f *FilesystemOperationPutFile) SetExpectedInodeID(expectedInodeID *InodeID
 func (f *FilesystemOperationPutFile) SetExpectedRevisionNo(expectedRevisionNo *RevisionNo) {
 	f.ExpectedRevisionNo = expectedRevisionNo
 	f.require(filesystemOperationPutFileFieldExpectedRevisionNo)
+}
+
+// SetInlineContent sets the InlineContent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationPutFile) SetInlineContent(inlineContent *string) {
+	f.InlineContent = inlineContent
+	f.require(filesystemOperationPutFileFieldInlineContent)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
@@ -2468,17 +2655,21 @@ func (f *FilesystemOperationPutFile) String() string {
 }
 
 // Append a revision to a file inode if its current revision matches.
+// Requires exactly one of `content_ref` and `inline_content`.
 var (
 	filesystemOperationPutFileRevisionByInodeFieldContentRef         = big.NewInt(1 << 0)
 	filesystemOperationPutFileRevisionByInodeFieldExpectedRevisionNo = big.NewInt(1 << 1)
-	filesystemOperationPutFileRevisionByInodeFieldInodeID            = big.NewInt(1 << 2)
+	filesystemOperationPutFileRevisionByInodeFieldInlineContent      = big.NewInt(1 << 2)
+	filesystemOperationPutFileRevisionByInodeFieldInodeID            = big.NewInt(1 << 3)
 )
 
 type FilesystemOperationPutFileRevisionByInode struct {
-	// Immutable bytes that must be covered by a valid preparation proof.
-	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
+	// Uploaded content covered by a token; mutually exclusive with `inline_content`.
+	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// Current revision required for the write.
 	ExpectedRevisionNo RevisionNo `json:"expected_revision_no" url:"expected_revision_no"`
+	// Complete file bytes as base64; mutually exclusive with `content_ref`.
+	InlineContent *string `json:"inline_content,omitempty" url:"inline_content,omitempty"`
 	// File to update.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
@@ -2501,6 +2692,13 @@ func (f *FilesystemOperationPutFileRevisionByInode) GetExpectedRevisionNo() Revi
 		return 0
 	}
 	return f.ExpectedRevisionNo
+}
+
+func (f *FilesystemOperationPutFileRevisionByInode) GetInlineContent() *string {
+	if f == nil {
+		return nil
+	}
+	return f.InlineContent
 }
 
 func (f *FilesystemOperationPutFileRevisionByInode) GetInodeID() InodeID {
@@ -2536,6 +2734,13 @@ func (f *FilesystemOperationPutFileRevisionByInode) SetContentRef(contentRef *Co
 func (f *FilesystemOperationPutFileRevisionByInode) SetExpectedRevisionNo(expectedRevisionNo RevisionNo) {
 	f.ExpectedRevisionNo = expectedRevisionNo
 	f.require(filesystemOperationPutFileRevisionByInodeFieldExpectedRevisionNo)
+}
+
+// SetInlineContent sets the InlineContent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationPutFileRevisionByInode) SetInlineContent(inlineContent *string) {
+	f.InlineContent = inlineContent
+	f.require(filesystemOperationPutFileRevisionByInodeFieldInlineContent)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
@@ -2796,6 +3001,161 @@ func (f *FilesystemOperationUndelete) MarshalJSON() ([]byte, error) {
 }
 
 func (f *FilesystemOperationUndelete) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Replace the access row of the inode one path resolves to. The root
+// path is a valid target.
+var (
+	filesystemOperationUpdateAccessFieldBoundary                 = big.NewInt(1 << 0)
+	filesystemOperationUpdateAccessFieldExpectedAccessRevisionNo = big.NewInt(1 << 1)
+	filesystemOperationUpdateAccessFieldExpectedInodeID          = big.NewInt(1 << 2)
+	filesystemOperationUpdateAccessFieldGrants                   = big.NewInt(1 << 3)
+	filesystemOperationUpdateAccessFieldPath                     = big.NewInt(1 << 4)
+)
+
+type FilesystemOperationUpdateAccess struct {
+	// Whether the directory stops inheritance from its ancestors.
+	Boundary bool `json:"boundary" url:"boundary"`
+	// With an inode precondition, the access revision that must still be current.
+	ExpectedAccessRevisionNo *AccessRevisionNo `json:"expected_access_revision_no,omitempty" url:"expected_access_revision_no,omitempty"`
+	// The inode that the path must still resolve to before the update.
+	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
+	// The inode's complete direct grants after this update.
+	Grants AccessGrants `json:"grants" url:"grants"`
+	// Absolute path that must resolve to a visible file or directory.
+	Path AbsolutePath `json:"path" url:"path"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationUpdateAccess) GetBoundary() bool {
+	if f == nil {
+		return false
+	}
+	return f.Boundary
+}
+
+func (f *FilesystemOperationUpdateAccess) GetExpectedAccessRevisionNo() *AccessRevisionNo {
+	if f == nil {
+		return nil
+	}
+	return f.ExpectedAccessRevisionNo
+}
+
+func (f *FilesystemOperationUpdateAccess) GetExpectedInodeID() *InodeID {
+	if f == nil {
+		return nil
+	}
+	return f.ExpectedInodeID
+}
+
+func (f *FilesystemOperationUpdateAccess) GetGrants() AccessGrants {
+	if f == nil {
+		return nil
+	}
+	return f.Grants
+}
+
+func (f *FilesystemOperationUpdateAccess) GetPath() AbsolutePath {
+	if f == nil {
+		return ""
+	}
+	return f.Path
+}
+
+func (f *FilesystemOperationUpdateAccess) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationUpdateAccess) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetBoundary sets the Boundary field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAccess) SetBoundary(boundary bool) {
+	f.Boundary = boundary
+	f.require(filesystemOperationUpdateAccessFieldBoundary)
+}
+
+// SetExpectedAccessRevisionNo sets the ExpectedAccessRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAccess) SetExpectedAccessRevisionNo(expectedAccessRevisionNo *AccessRevisionNo) {
+	f.ExpectedAccessRevisionNo = expectedAccessRevisionNo
+	f.require(filesystemOperationUpdateAccessFieldExpectedAccessRevisionNo)
+}
+
+// SetExpectedInodeID sets the ExpectedInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAccess) SetExpectedInodeID(expectedInodeID *InodeID) {
+	f.ExpectedInodeID = expectedInodeID
+	f.require(filesystemOperationUpdateAccessFieldExpectedInodeID)
+}
+
+// SetGrants sets the Grants field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAccess) SetGrants(grants AccessGrants) {
+	f.Grants = grants
+	f.require(filesystemOperationUpdateAccessFieldGrants)
+}
+
+// SetPath sets the Path field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAccess) SetPath(path AbsolutePath) {
+	f.Path = path
+	f.require(filesystemOperationUpdateAccessFieldPath)
+}
+
+func (f *FilesystemOperationUpdateAccess) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationUpdateAccess
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationUpdateAccess(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationUpdateAccess) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationUpdateAccess
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationUpdateAccess) String() string {
 	if f == nil {
 		return "<nil>"
 	}

@@ -90,3 +90,24 @@ func WithActorID(actorID *string) *core.ActorIDOption {
 		ActorID: actorID,
 	}
 }
+
+// WithSubjectID sets the subjectID request header.
+func WithSubjectID(subjectID *string) *core.SubjectIDOption {
+	return &core.SubjectIDOption{
+		SubjectID: subjectID,
+	}
+}
+
+// WithPrincipalScope sets the principalScope request header.
+func WithPrincipalScope(principalScope *string) *core.PrincipalScopeOption {
+	return &core.PrincipalScopeOption{
+		PrincipalScope: principalScope,
+	}
+}
+
+// WithPrincipals sets the principals request header.
+func WithPrincipals(principals *string) *core.PrincipalsOption {
+	return &core.PrincipalsOption{
+		Principals: principals,
+	}
+}
