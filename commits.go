@@ -448,7 +448,7 @@ var (
 
 type CommitPreconditionAttributesRevision struct {
 	// Attribute revision observed by the caller.
-	ExpectedAttributesRevisionNo AttributeRevisionNo `json:"expected_attributes_revision_no" url:"expected_attributes_revision_no"`
+	ExpectedAttributesRevisionNo AttributesRevisionNo `json:"expected_attributes_revision_no" url:"expected_attributes_revision_no"`
 	// Inode whose state the caller read.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
@@ -459,7 +459,7 @@ type CommitPreconditionAttributesRevision struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *CommitPreconditionAttributesRevision) GetExpectedAttributesRevisionNo() AttributeRevisionNo {
+func (c *CommitPreconditionAttributesRevision) GetExpectedAttributesRevisionNo() AttributesRevisionNo {
 	if c == nil {
 		return 0
 	}
@@ -489,7 +489,7 @@ func (c *CommitPreconditionAttributesRevision) require(field *big.Int) {
 
 // SetExpectedAttributesRevisionNo sets the ExpectedAttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitPreconditionAttributesRevision) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo AttributeRevisionNo) {
+func (c *CommitPreconditionAttributesRevision) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo AttributesRevisionNo) {
 	c.ExpectedAttributesRevisionNo = expectedAttributesRevisionNo
 	c.require(commitPreconditionAttributesRevisionFieldExpectedAttributesRevisionNo)
 }
@@ -3181,7 +3181,7 @@ var (
 
 type FilesystemOperationUpdateAttributes struct {
 	// With an inode precondition, the attribute revision that must still be current.
-	ExpectedAttributesRevisionNo *AttributeRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
+	ExpectedAttributesRevisionNo *AttributesRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
 	// The inode that the path must still resolve to before the update.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
 	// Absolute path that must resolve to a visible file or directory.
@@ -3199,7 +3199,7 @@ type FilesystemOperationUpdateAttributes struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemOperationUpdateAttributes) GetExpectedAttributesRevisionNo() *AttributeRevisionNo {
+func (f *FilesystemOperationUpdateAttributes) GetExpectedAttributesRevisionNo() *AttributesRevisionNo {
 	if f == nil {
 		return nil
 	}
@@ -3250,7 +3250,7 @@ func (f *FilesystemOperationUpdateAttributes) require(field *big.Int) {
 
 // SetExpectedAttributesRevisionNo sets the ExpectedAttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemOperationUpdateAttributes) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo *AttributeRevisionNo) {
+func (f *FilesystemOperationUpdateAttributes) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo *AttributesRevisionNo) {
 	f.ExpectedAttributesRevisionNo = expectedAttributesRevisionNo
 	f.require(filesystemOperationUpdateAttributesFieldExpectedAttributesRevisionNo)
 }

@@ -24,7 +24,7 @@ type GetFileBytesRequest struct {
 	// Optional prior revision number; cannot be combined with snapshot_id
 	RevisionNo *RevisionNo `json:"-" url:"revision_no,omitempty"`
 	// Use the file revision captured by this snapshot
-	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -60,7 +60,7 @@ func (g *GetFileBytesRequest) SetRevisionNo(revisionNo *RevisionNo) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileBytesRequest) SetSnapshotID(snapshotID *SnapshotID) {
+func (g *GetFileBytesRequest) SetSnapshotID(snapshotID *PinID) {
 	g.SnapshotID = snapshotID
 	g.require(getFileBytesRequestFieldSnapshotID)
 }
@@ -82,7 +82,7 @@ type CreateDownloadRequest struct {
 	RevisionNo *RevisionNo `json:"revision_no,omitempty" url:"-"`
 	// Read the file revision captured by this snapshot.
 	// Cannot be combined with `revision_no`.
-	SnapshotID *SnapshotID `json:"snapshot_id,omitempty" url:"-"`
+	SnapshotID *PinID `json:"snapshot_id,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -118,7 +118,7 @@ func (c *CreateDownloadRequest) SetRevisionNo(revisionNo *RevisionNo) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateDownloadRequest) SetSnapshotID(snapshotID *SnapshotID) {
+func (c *CreateDownloadRequest) SetSnapshotID(snapshotID *PinID) {
 	c.SnapshotID = snapshotID
 	c.require(createDownloadRequestFieldSnapshotID)
 }
@@ -261,7 +261,7 @@ type ListPathEntriesRequest struct {
 	// Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// Use the directory state captured by this snapshot
-	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -311,7 +311,7 @@ func (l *ListPathEntriesRequest) SetIncludeAttributes(includeAttributes *bool) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListPathEntriesRequest) SetSnapshotID(snapshotID *SnapshotID) {
+func (l *ListPathEntriesRequest) SetSnapshotID(snapshotID *PinID) {
 	l.SnapshotID = snapshotID
 	l.require(listPathEntriesRequestFieldSnapshotID)
 }
@@ -387,7 +387,7 @@ type GetPathEntryRequest struct {
 	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// Use the path state captured by this snapshot
-	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -423,7 +423,7 @@ func (g *GetPathEntryRequest) SetIncludeAttributes(includeAttributes *bool) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *SnapshotID) {
+func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *PinID) {
 	g.SnapshotID = snapshotID
 	g.require(getPathEntryRequestFieldSnapshotID)
 }

@@ -24,7 +24,7 @@ type ListChangesRequest struct {
 	// Maximum page size
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// End the feed at this snapshot's captured sequence
-	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -60,7 +60,7 @@ func (l *ListChangesRequest) SetLimit(limit *int) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListChangesRequest) SetSnapshotID(snapshotID *SnapshotID) {
+func (l *ListChangesRequest) SetSnapshotID(snapshotID *PinID) {
 	l.SnapshotID = snapshotID
 	l.require(listChangesRequestFieldSnapshotID)
 }
