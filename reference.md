@@ -90,11 +90,11 @@ client.Namespaces.Create(
 <dl>
 <dd>
 
-**access:** `*loonfs.NamespaceAccess`
+**access:** `*loonfs.NamespaceAccess` 
 
 The access mode, fixed for the namespace's life. Defaults to
 unrestricted.
-
+    
 </dd>
 </dl>
 
@@ -306,7 +306,7 @@ client.Namespaces.Fork(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.SnapshotID` — Fork from this live snapshot instead of the current head.
+**snapshotID:** `*loonfs.PinID` — Fork from this live snapshot instead of the current head.
     
 </dd>
 </dl>
@@ -395,7 +395,7 @@ client.Changes.List(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.SnapshotID` — End the feed at this snapshot's captured sequence
+**snapshotID:** `*loonfs.PinID` — End the feed at this snapshot's captured sequence
     
 </dd>
 </dl>
@@ -591,7 +591,7 @@ client.Files.Content(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.SnapshotID` — Use the file revision captured by this snapshot
+**snapshotID:** `*loonfs.PinID` — Use the file revision captured by this snapshot
     
 </dd>
 </dl>
@@ -615,7 +615,7 @@ client.Files.Content(
 <dl>
 <dd>
 
-Authorizes one direct read of a file's content object and returns a short-lived presigned GET capability, the resolved revision, and the content reference the client checks the arriving bytes against. `Range` is outside the signature, so one grant serves ranged, resumed, and parallel reads. Deployments that cannot presign answer 501 `not_supported`; the proxied `GET /filesystem/content` route stays available and is capped by `download.max_content_bytes`.
+Authorizes one direct read of a file's content object and returns a short-lived presigned GET capability, the resolved revision, and the content reference the client checks the arriving bytes against. `Range` is outside the signature, so one grant serves ranged, resumed, and parallel reads. Deployments that cannot presign answer 501 `not_supported`; the proxied `GET /filesystem/content` route stays available and is capped by `download.service_proxied.max_content_bytes`.
 </dd>
 </dl>
 </dd>
@@ -679,7 +679,7 @@ Cannot be combined with `snapshot_id`.
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.SnapshotID` 
+**snapshotID:** `*loonfs.PinID` 
 
 Read the file revision captured by this snapshot.
 Cannot be combined with `revision_no`.
@@ -786,7 +786,7 @@ client.Files.List(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.SnapshotID` — Use the directory state captured by this snapshot
+**snapshotID:** `*loonfs.PinID` — Use the directory state captured by this snapshot
     
 </dd>
 </dl>
@@ -874,7 +874,7 @@ client.Files.Retrieve(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.SnapshotID` — Use the path state captured by this snapshot
+**snapshotID:** `*loonfs.PinID` — Use the path state captured by this snapshot
     
 </dd>
 </dl>
@@ -1242,7 +1242,7 @@ client.Inodes.Retrieve(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.SnapshotID` — Use the path state captured by this snapshot
+**snapshotID:** `*loonfs.PinID` — Use the path state captured by this snapshot
     
 </dd>
 </dl>
@@ -1346,7 +1346,7 @@ client.Inodes.ListChildren(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.SnapshotID` — Use the directory state captured by this snapshot
+**snapshotID:** `*loonfs.PinID` — Use the directory state captured by this snapshot
     
 </dd>
 </dl>
@@ -1811,7 +1811,7 @@ client.Snapshots.Delete(
 <dl>
 <dd>
 
-**snapshotID:** `loonfs.SnapshotID` — Snapshot id
+**snapshotID:** `loonfs.PinID` — Snapshot id
     
 </dd>
 </dl>
@@ -1881,7 +1881,7 @@ client.Snapshots.Extend(
 <dl>
 <dd>
 
-**snapshotID:** `loonfs.SnapshotID` — Snapshot id
+**snapshotID:** `loonfs.PinID` — Snapshot id
     
 </dd>
 </dl>

@@ -122,7 +122,7 @@ type ListInodeChildrenRequest struct {
 	// Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// Use the directory state captured by this snapshot
-	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -172,7 +172,7 @@ func (l *ListInodeChildrenRequest) SetIncludeAttributes(includeAttributes *bool)
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListInodeChildrenRequest) SetSnapshotID(snapshotID *SnapshotID) {
+func (l *ListInodeChildrenRequest) SetSnapshotID(snapshotID *PinID) {
 	l.SnapshotID = snapshotID
 	l.require(listInodeChildrenRequestFieldSnapshotID)
 }
@@ -248,7 +248,7 @@ type GetInodeRequest struct {
 	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// Use the path state captured by this snapshot
-	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
+	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -284,7 +284,7 @@ func (g *GetInodeRequest) SetIncludeAttributes(includeAttributes *bool) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetInodeRequest) SetSnapshotID(snapshotID *SnapshotID) {
+func (g *GetInodeRequest) SetSnapshotID(snapshotID *PinID) {
 	g.SnapshotID = snapshotID
 	g.require(getInodeRequestFieldSnapshotID)
 }

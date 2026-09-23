@@ -85,7 +85,7 @@ type DeleteSnapshotRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// Snapshot id
-	SnapshotID SnapshotID `json:"-" url:"-"`
+	SnapshotID PinID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -107,7 +107,7 @@ func (d *DeleteSnapshotRequest) SetNamespaceID(namespaceID string) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteSnapshotRequest) SetSnapshotID(snapshotID SnapshotID) {
+func (d *DeleteSnapshotRequest) SetSnapshotID(snapshotID PinID) {
 	d.SnapshotID = snapshotID
 	d.require(deleteSnapshotRequestFieldSnapshotID)
 }
@@ -122,7 +122,7 @@ type ExtendSnapshotRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// Snapshot id
-	SnapshotID SnapshotID `json:"-" url:"-"`
+	SnapshotID PinID `json:"-" url:"-"`
 	// Requested lifetime from the server's current time, in milliseconds.
 	TTLMs int64 `json:"ttl_ms" url:"-"`
 
@@ -146,7 +146,7 @@ func (e *ExtendSnapshotRequest) SetNamespaceID(namespaceID string) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExtendSnapshotRequest) SetSnapshotID(snapshotID SnapshotID) {
+func (e *ExtendSnapshotRequest) SetSnapshotID(snapshotID PinID) {
 	e.SnapshotID = snapshotID
 	e.require(extendSnapshotRequestFieldSnapshotID)
 }
@@ -235,7 +235,7 @@ type DeleteSnapshotResponse struct {
 	// Namespace the snapshot belonged to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Deleted snapshot record.
-	SnapshotID SnapshotID `json:"snapshot_id" url:"snapshot_id"`
+	SnapshotID PinID `json:"snapshot_id" url:"snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -251,7 +251,7 @@ func (d *DeleteSnapshotResponse) GetNamespaceID() NamespaceID {
 	return d.NamespaceID
 }
 
-func (d *DeleteSnapshotResponse) GetSnapshotID() SnapshotID {
+func (d *DeleteSnapshotResponse) GetSnapshotID() PinID {
 	if d == nil {
 		return ""
 	}
@@ -281,7 +281,7 @@ func (d *DeleteSnapshotResponse) SetNamespaceID(namespaceID NamespaceID) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteSnapshotResponse) SetSnapshotID(snapshotID SnapshotID) {
+func (d *DeleteSnapshotResponse) SetSnapshotID(snapshotID PinID) {
 	d.SnapshotID = snapshotID
 	d.require(deleteSnapshotResponseFieldSnapshotID)
 }
@@ -470,7 +470,7 @@ type Snapshot struct {
 	// Namespace whose state the snapshot captured.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Snapshot id.
-	SnapshotID SnapshotID `json:"snapshot_id" url:"snapshot_id"`
+	SnapshotID PinID `json:"snapshot_id" url:"snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -514,7 +514,7 @@ func (s *Snapshot) GetNamespaceID() NamespaceID {
 	return s.NamespaceID
 }
 
-func (s *Snapshot) GetSnapshotID() SnapshotID {
+func (s *Snapshot) GetSnapshotID() PinID {
 	if s == nil {
 		return ""
 	}
@@ -572,7 +572,7 @@ func (s *Snapshot) SetNamespaceID(namespaceID NamespaceID) {
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *Snapshot) SetSnapshotID(snapshotID SnapshotID) {
+func (s *Snapshot) SetSnapshotID(snapshotID PinID) {
 	s.SnapshotID = snapshotID
 	s.require(snapshotFieldSnapshotID)
 }

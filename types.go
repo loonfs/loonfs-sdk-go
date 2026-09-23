@@ -70,9 +70,6 @@ type AccessRights = []AccessRight
 // Stable opaque actor id containing 1 to 256 visible ASCII characters.
 type ActorID = string
 
-// Revision number for an inode's attributes. It starts at 0 and increases whenever the attribute map changes.
-type AttributeRevisionNo = int64
-
 // A validated inode attribute value of at most [`MAX_ATTRIBUTE_VALUE_BYTES`] UTF-8 bytes.
 //
 // Empty strings and control characters are valid, and only an explicit remove
@@ -85,6 +82,9 @@ type AttributeValue = string
 // Construction and decoding reject values over these limits; an empty map
 // represents cleared attributes.
 type Attributes = map[string]AttributeValue
+
+// Revision number for an inode's attributes. It starts at 0 and increases whenever the attribute map changes.
+type AttributesRevisionNo = int64
 
 // Opaque token identifying one parent and name binding generation.
 type BindingGeneration = string
@@ -107,7 +107,7 @@ type Checkpoint struct {
 	// Namespace sequence captured by the checkpoint.
 	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
 	// Durable checkpoint id used to address the checkpoint for deletion.
-	CheckpointID CheckpointID `json:"checkpoint_id" url:"checkpoint_id"`
+	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
 	// Time the checkpoint record was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
 	// Expiry in Unix milliseconds; collection waits one further grace window.
@@ -133,7 +133,7 @@ func (c *Checkpoint) GetCapturedSeq() ChangeSeq {
 	return c.CapturedSeq
 }
 
-func (c *Checkpoint) GetCheckpointID() CheckpointID {
+func (c *Checkpoint) GetCheckpointID() PinID {
 	if c == nil {
 		return ""
 	}
@@ -198,7 +198,7 @@ func (c *Checkpoint) SetCapturedSeq(capturedSeq ChangeSeq) {
 
 // SetCheckpointID sets the CheckpointID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetCheckpointID(checkpointID CheckpointID) {
+func (c *Checkpoint) SetCheckpointID(checkpointID PinID) {
 	c.CheckpointID = checkpointID
 	c.require(checkpointFieldCheckpointID)
 }
@@ -279,11 +279,6 @@ func (c *Checkpoint) String() string {
 	}
 	return fmt.Sprintf("%#v", c)
 }
-
-// Durable checkpoint identifier.
-//
-// The manifest number determines which namespace manifest it pins.
-type CheckpointID = string
 
 // A fork target retaining its source basis for one fork attempt.
 var (
@@ -843,9 +838,8 @@ type Commit struct {
 	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
 	// Sequence number where the commit became visible.
 	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
-	// Always present on the change feed. Absent only from a replayed
-	// `POST /commits` response whose WAL record has been retired.
-	Events []*FilesystemChange `json:"events,omitempty" url:"events,omitempty"`
+	// The semantic filesystem operations the commit applied, in request order.
+	Events []*FilesystemChange `json:"events" url:"events"`
 	// The optional caller annotation for the commit.
 	Message *string `json:"message,omitempty" url:"message,omitempty"`
 	// Namespace that changed.
@@ -1036,8 +1030,9 @@ var (
 	contentRefFieldChecksum         = big.NewInt(1 << 0)
 	contentRefFieldContentID        = big.NewInt(1 << 1)
 	contentRefFieldKind             = big.NewInt(1 << 2)
-	contentRefFieldOwnerNamespaceID = big.NewInt(1 << 3)
-	contentRefFieldSizeBytes        = big.NewInt(1 << 4)
+	contentRefFieldOwnerGeneration  = big.NewInt(1 << 3)
+	contentRefFieldOwnerNamespaceID = big.NewInt(1 << 4)
+	contentRefFieldSizeBytes        = big.NewInt(1 << 5)
 )
 
 type ContentRef struct {
@@ -1047,6 +1042,8 @@ type ContentRef struct {
 	ContentID ContentID `json:"content_id" url:"content_id"`
 	// Content strategy used by the referenced object.
 	Kind ContentRefKind `json:"kind" url:"kind"`
+	// Generation of the owner namespace that wrote the bytes.
+	OwnerGeneration NamespaceGeneration `json:"owner_generation" url:"owner_generation"`
 	// Namespace that originally wrote the bytes.
 	OwnerNamespaceID NamespaceID `json:"owner_namespace_id" url:"owner_namespace_id"`
 	// Complete byte length of the referenced content.
@@ -1078,6 +1075,13 @@ func (c *ContentRef) GetKind() ContentRefKind {
 		return ""
 	}
 	return c.Kind
+}
+
+func (c *ContentRef) GetOwnerGeneration() NamespaceGeneration {
+	if c == nil {
+		return 0
+	}
+	return c.OwnerGeneration
 }
 
 func (c *ContentRef) GetOwnerNamespaceID() NamespaceID {
@@ -1127,6 +1131,13 @@ func (c *ContentRef) SetContentID(contentID ContentID) {
 func (c *ContentRef) SetKind(kind ContentRefKind) {
 	c.Kind = kind
 	c.require(contentRefFieldKind)
+}
+
+// SetOwnerGeneration sets the OwnerGeneration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentRef) SetOwnerGeneration(ownerGeneration NamespaceGeneration) {
+	c.OwnerGeneration = ownerGeneration
+	c.require(contentRefFieldOwnerGeneration)
 }
 
 // SetOwnerNamespaceID sets the OwnerNamespaceID field and marks it as non-optional;
@@ -1316,7 +1327,7 @@ var (
 
 type DeleteCheckpointResponse struct {
 	// Deleted checkpoint record.
-	CheckpointID CheckpointID `json:"checkpoint_id" url:"checkpoint_id"`
+	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
 	// Namespace the checkpoint belonged to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 
@@ -1327,7 +1338,7 @@ type DeleteCheckpointResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (d *DeleteCheckpointResponse) GetCheckpointID() CheckpointID {
+func (d *DeleteCheckpointResponse) GetCheckpointID() PinID {
 	if d == nil {
 		return ""
 	}
@@ -1357,7 +1368,7 @@ func (d *DeleteCheckpointResponse) require(field *big.Int) {
 
 // SetCheckpointID sets the CheckpointID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteCheckpointResponse) SetCheckpointID(checkpointID CheckpointID) {
+func (d *DeleteCheckpointResponse) SetCheckpointID(checkpointID PinID) {
 	d.CheckpointID = checkpointID
 	d.require(deleteCheckpointResponseFieldCheckpointID)
 }
@@ -1415,15 +1426,18 @@ func (d *DeleteCheckpointResponse) String() string {
 var (
 	deletedCheckpointsByOwnerFieldExpired  = big.NewInt(1 << 0)
 	deletedCheckpointsByOwnerFieldFork     = big.NewInt(1 << 1)
-	deletedCheckpointsByOwnerFieldSnapshot = big.NewInt(1 << 2)
+	deletedCheckpointsByOwnerFieldRetired  = big.NewInt(1 << 2)
+	deletedCheckpointsByOwnerFieldSnapshot = big.NewInt(1 << 3)
 )
 
 type DeletedCheckpointsByOwner struct {
-	// User-owned records deleted after expiry or terminal namespace deletion.
+	// User-owned records deleted after expiry or namespace deletion.
 	Expired int64 `json:"expired" url:"expired"`
 	// Fork-owned records deleted because their target namespaces are gone.
 	Fork int64 `json:"fork" url:"fork"`
-	// Snapshot-owned records deleted after expiry or terminal namespace deletion.
+	// Retired records deleted after their generations are reclaimed.
+	Retired int64 `json:"retired" url:"retired"`
+	// Snapshot-owned records deleted after expiry or namespace deletion.
 	Snapshot int64 `json:"snapshot" url:"snapshot"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1445,6 +1459,13 @@ func (d *DeletedCheckpointsByOwner) GetFork() int64 {
 		return 0
 	}
 	return d.Fork
+}
+
+func (d *DeletedCheckpointsByOwner) GetRetired() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.Retired
 }
 
 func (d *DeletedCheckpointsByOwner) GetSnapshot() int64 {
@@ -1480,6 +1501,13 @@ func (d *DeletedCheckpointsByOwner) SetExpired(expired int64) {
 func (d *DeletedCheckpointsByOwner) SetFork(fork int64) {
 	d.Fork = fork
 	d.require(deletedCheckpointsByOwnerFieldFork)
+}
+
+// SetRetired sets the Retired field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedCheckpointsByOwner) SetRetired(retired int64) {
+	d.Retired = retired
+	d.require(deletedCheckpointsByOwnerFieldRetired)
 }
 
 // SetSnapshot sets the Snapshot field and marks it as non-optional;
@@ -1866,7 +1894,7 @@ type ErrorDetails struct {
 	// Access revision that is actually current for the inode.
 	ActualAccessRevisionNo *AccessRevisionNo `json:"actual_access_revision_no,omitempty" url:"actual_access_revision_no,omitempty"`
 	// Attribute revision that is actually current for the inode.
-	ActualAttributesRevisionNo *AttributeRevisionNo `json:"actual_attributes_revision_no,omitempty" url:"actual_attributes_revision_no,omitempty"`
+	ActualAttributesRevisionNo *AttributesRevisionNo `json:"actual_attributes_revision_no,omitempty" url:"actual_attributes_revision_no,omitempty"`
 	// Current binding token; absent for the root, which has no binding.
 	ActualBindingGeneration *BindingGeneration `json:"actual_binding_generation,omitempty" url:"actual_binding_generation,omitempty"`
 	// Deletion generation actually active for the inode.
@@ -1888,7 +1916,7 @@ type ErrorDetails struct {
 	// Access revision the request expected to be current.
 	ExpectedAccessRevisionNo *AccessRevisionNo `json:"expected_access_revision_no,omitempty" url:"expected_access_revision_no,omitempty"`
 	// Attribute revision the request expected to be current.
-	ExpectedAttributesRevisionNo *AttributeRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
+	ExpectedAttributesRevisionNo *AttributesRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
 	// Opaque binding token supplied by the request.
 	ExpectedBindingGeneration *BindingGeneration `json:"expected_binding_generation,omitempty" url:"expected_binding_generation,omitempty"`
 	// Deletion generation the undelete expected to be active.
@@ -1947,7 +1975,7 @@ func (e *ErrorDetails) GetActualAccessRevisionNo() *AccessRevisionNo {
 	return e.ActualAccessRevisionNo
 }
 
-func (e *ErrorDetails) GetActualAttributesRevisionNo() *AttributeRevisionNo {
+func (e *ErrorDetails) GetActualAttributesRevisionNo() *AttributesRevisionNo {
 	if e == nil {
 		return nil
 	}
@@ -2024,7 +2052,7 @@ func (e *ErrorDetails) GetExpectedAccessRevisionNo() *AccessRevisionNo {
 	return e.ExpectedAccessRevisionNo
 }
 
-func (e *ErrorDetails) GetExpectedAttributesRevisionNo() *AttributeRevisionNo {
+func (e *ErrorDetails) GetExpectedAttributesRevisionNo() *AttributesRevisionNo {
 	if e == nil {
 		return nil
 	}
@@ -2152,7 +2180,7 @@ func (e *ErrorDetails) SetActualAccessRevisionNo(actualAccessRevisionNo *AccessR
 
 // SetActualAttributesRevisionNo sets the ActualAttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetActualAttributesRevisionNo(actualAttributesRevisionNo *AttributeRevisionNo) {
+func (e *ErrorDetails) SetActualAttributesRevisionNo(actualAttributesRevisionNo *AttributesRevisionNo) {
 	e.ActualAttributesRevisionNo = actualAttributesRevisionNo
 	e.require(errorDetailsFieldActualAttributesRevisionNo)
 }
@@ -2229,7 +2257,7 @@ func (e *ErrorDetails) SetExpectedAccessRevisionNo(expectedAccessRevisionNo *Acc
 
 // SetExpectedAttributesRevisionNo sets the ExpectedAttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo *AttributeRevisionNo) {
+func (e *ErrorDetails) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo *AttributesRevisionNo) {
 	e.ExpectedAttributesRevisionNo = expectedAttributesRevisionNo
 	e.require(errorDetailsFieldExpectedAttributesRevisionNo)
 }
@@ -3135,7 +3163,7 @@ type FilesystemChangeAttributesChanged struct {
 	// when all attributes were cleared.
 	Attributes Attributes `json:"attributes" url:"attributes"`
 	// New attribute revision for that inode.
-	AttributesRevisionNo AttributeRevisionNo `json:"attributes_revision_no" url:"attributes_revision_no"`
+	AttributesRevisionNo AttributesRevisionNo `json:"attributes_revision_no" url:"attributes_revision_no"`
 	// Inode whose attributes advanced.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
@@ -3153,7 +3181,7 @@ func (f *FilesystemChangeAttributesChanged) GetAttributes() Attributes {
 	return f.Attributes
 }
 
-func (f *FilesystemChangeAttributesChanged) GetAttributesRevisionNo() AttributeRevisionNo {
+func (f *FilesystemChangeAttributesChanged) GetAttributesRevisionNo() AttributesRevisionNo {
 	if f == nil {
 		return 0
 	}
@@ -3190,7 +3218,7 @@ func (f *FilesystemChangeAttributesChanged) SetAttributes(attributes Attributes)
 
 // SetAttributesRevisionNo sets the AttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeAttributesChanged) SetAttributesRevisionNo(attributesRevisionNo AttributeRevisionNo) {
+func (f *FilesystemChangeAttributesChanged) SetAttributesRevisionNo(attributesRevisionNo AttributesRevisionNo) {
 	f.AttributesRevisionNo = attributesRevisionNo
 	f.require(filesystemChangeAttributesChangedFieldAttributesRevisionNo)
 }
@@ -4558,7 +4586,7 @@ var (
 
 type GrepIndexLifecycleBackfilling struct {
 	// Checkpoint pinning the state being walked.
-	CheckpointID CheckpointID `json:"checkpoint_id" url:"checkpoint_id"`
+	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
 	// The inode after which the scan resumes, or `None` before the first page.
 	CursorInodeID *InodeID `json:"cursor_inode_id,omitempty" url:"cursor_inode_id,omitempty"`
 	// Namespace the status describes.
@@ -4577,7 +4605,7 @@ type GrepIndexLifecycleBackfilling struct {
 	rawJSON         json.RawMessage
 }
 
-func (g *GrepIndexLifecycleBackfilling) GetCheckpointID() CheckpointID {
+func (g *GrepIndexLifecycleBackfilling) GetCheckpointID() PinID {
 	if g == nil {
 		return ""
 	}
@@ -4635,7 +4663,7 @@ func (g *GrepIndexLifecycleBackfilling) require(field *big.Int) {
 
 // SetCheckpointID sets the CheckpointID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleBackfilling) SetCheckpointID(checkpointID CheckpointID) {
+func (g *GrepIndexLifecycleBackfilling) SetCheckpointID(checkpointID PinID) {
 	g.CheckpointID = checkpointID
 	g.require(grepIndexLifecycleBackfillingFieldCheckpointID)
 }
@@ -5853,12 +5881,13 @@ var (
 	namespaceDiagnosticsFieldCreatedBy         = big.NewInt(1 << 1)
 	namespaceDiagnosticsFieldCurrentManifestNo = big.NewInt(1 << 2)
 	namespaceDiagnosticsFieldForkBasis         = big.NewInt(1 << 3)
-	namespaceDiagnosticsFieldHeadSeq           = big.NewInt(1 << 4)
-	namespaceDiagnosticsFieldLiveCheckpoints   = big.NewInt(1 << 5)
-	namespaceDiagnosticsFieldLiveSnapshots     = big.NewInt(1 << 6)
-	namespaceDiagnosticsFieldNamespaceID       = big.NewInt(1 << 7)
-	namespaceDiagnosticsFieldRetentionFloorSeq = big.NewInt(1 << 8)
-	namespaceDiagnosticsFieldWalTailSegments   = big.NewInt(1 << 9)
+	namespaceDiagnosticsFieldGeneration        = big.NewInt(1 << 4)
+	namespaceDiagnosticsFieldHeadSeq           = big.NewInt(1 << 5)
+	namespaceDiagnosticsFieldLiveCheckpoints   = big.NewInt(1 << 6)
+	namespaceDiagnosticsFieldLiveSnapshots     = big.NewInt(1 << 7)
+	namespaceDiagnosticsFieldNamespaceID       = big.NewInt(1 << 8)
+	namespaceDiagnosticsFieldRetentionFloorSeq = big.NewInt(1 << 9)
+	namespaceDiagnosticsFieldWalTailSegments   = big.NewInt(1 << 10)
 )
 
 type NamespaceDiagnostics struct {
@@ -5870,6 +5899,8 @@ type NamespaceDiagnostics struct {
 	CurrentManifestNo *ManifestNo `json:"current_manifest_no,omitempty" url:"current_manifest_no,omitempty"`
 	// Present only for a fork: the source it was forked from.
 	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
+	// Which generation of its id this namespace is. Recreating a deleted id increments it.
+	Generation NamespaceGeneration `json:"generation" url:"generation"`
 	// Current visible namespace sequence.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// Number of active user checkpoints, including expired records awaiting collection.
@@ -5916,6 +5947,13 @@ func (n *NamespaceDiagnostics) GetForkBasis() *NamespaceForkBasis {
 		return nil
 	}
 	return n.ForkBasis
+}
+
+func (n *NamespaceDiagnostics) GetGeneration() NamespaceGeneration {
+	if n == nil {
+		return 0
+	}
+	return n.Generation
 }
 
 func (n *NamespaceDiagnostics) GetHeadSeq() ChangeSeq {
@@ -6000,6 +6038,13 @@ func (n *NamespaceDiagnostics) SetCurrentManifestNo(currentManifestNo *ManifestN
 func (n *NamespaceDiagnostics) SetForkBasis(forkBasis *NamespaceForkBasis) {
 	n.ForkBasis = forkBasis
 	n.require(namespaceDiagnosticsFieldForkBasis)
+}
+
+// SetGeneration sets the Generation field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceDiagnostics) SetGeneration(generation NamespaceGeneration) {
+	n.Generation = generation
+	n.require(namespaceDiagnosticsFieldGeneration)
 }
 
 // SetHeadSeq sets the HeadSeq field and marks it as non-optional;
@@ -6189,10 +6234,13 @@ func (n *NamespaceForkBasis) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
+// Which generation of its id a namespace is. A newly created namespace is generation 1; each recreation after a deletion increments it.
+type NamespaceGeneration = int64
+
 // Durable id for one namespace.
 //
-// A namespace is one filesystem history. This id is not a display name and
-// should not be reused after destruction. Its serialized form is 1 to 128
+// A namespace id names successive filesystem generations. This id is not a display name.
+// Its serialized form is 1 to 128
 // lowercase ASCII letters, digits, dots, underscores, or hyphens, starting
 // with a letter or digit; the `loonfs-` prefix is reserved for system use.
 type NamespaceID = string
@@ -6588,7 +6636,7 @@ type PathEntryDirectory struct {
 	// for the initial state.
 	Attributes *Attributes `json:"attributes,omitempty" url:"attributes,omitempty"`
 	// The attribute revision this projection represents.
-	AttributesRevisionNo *AttributeRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
+	AttributesRevisionNo *AttributesRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
 	// The latest attribute update time in Unix milliseconds, or `None` for the
 	// initial empty state.
 	AttributesUpdatedAtMs *int64 `json:"attributes_updated_at_ms,omitempty" url:"attributes_updated_at_ms,omitempty"`
@@ -6628,7 +6676,7 @@ func (p *PathEntryDirectory) GetAttributes() *Attributes {
 	return p.Attributes
 }
 
-func (p *PathEntryDirectory) GetAttributesRevisionNo() *AttributeRevisionNo {
+func (p *PathEntryDirectory) GetAttributesRevisionNo() *AttributesRevisionNo {
 	if p == nil {
 		return nil
 	}
@@ -6735,7 +6783,7 @@ func (p *PathEntryDirectory) SetAttributes(attributes *Attributes) {
 
 // SetAttributesRevisionNo sets the AttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PathEntryDirectory) SetAttributesRevisionNo(attributesRevisionNo *AttributeRevisionNo) {
+func (p *PathEntryDirectory) SetAttributesRevisionNo(attributesRevisionNo *AttributesRevisionNo) {
 	p.AttributesRevisionNo = attributesRevisionNo
 	p.require(pathEntryDirectoryFieldAttributesRevisionNo)
 }
@@ -6886,7 +6934,7 @@ type PathEntryFile struct {
 	// for the initial state.
 	Attributes *Attributes `json:"attributes,omitempty" url:"attributes,omitempty"`
 	// The attribute revision this projection represents.
-	AttributesRevisionNo *AttributeRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
+	AttributesRevisionNo *AttributesRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
 	// The latest attribute update time in Unix milliseconds, or `None` for the
 	// initial empty state.
 	AttributesUpdatedAtMs *int64 `json:"attributes_updated_at_ms,omitempty" url:"attributes_updated_at_ms,omitempty"`
@@ -6936,7 +6984,7 @@ func (p *PathEntryFile) GetAttributes() *Attributes {
 	return p.Attributes
 }
 
-func (p *PathEntryFile) GetAttributesRevisionNo() *AttributeRevisionNo {
+func (p *PathEntryFile) GetAttributesRevisionNo() *AttributesRevisionNo {
 	if p == nil {
 		return nil
 	}
@@ -7078,7 +7126,7 @@ func (p *PathEntryFile) SetAttributes(attributes *Attributes) {
 
 // SetAttributesRevisionNo sets the AttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PathEntryFile) SetAttributesRevisionNo(attributesRevisionNo *AttributeRevisionNo) {
+func (p *PathEntryFile) SetAttributesRevisionNo(attributesRevisionNo *AttributesRevisionNo) {
 	p.AttributesRevisionNo = attributesRevisionNo
 	p.require(pathEntryFileFieldAttributesRevisionNo)
 }
@@ -7236,6 +7284,9 @@ func (p *PathEntryFile) String() string {
 	}
 	return fmt.Sprintf("%#v", p)
 }
+
+// Durable pin identifier. The manifest number determines which namespace manifest it pins.
+type PinID = string
 
 // Stable opaque principal id containing 1 to 256 visible ASCII characters other than the comma.
 type PrincipalID = string
@@ -8766,9 +8817,9 @@ type RunMaintenanceResponseGc struct {
 	DeletedCheckpointsByOwner *DeletedCheckpointsByOwner `json:"deleted_checkpoints_by_owner" url:"deleted_checkpoints_by_owner"`
 	// Namespace the pass ran against.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The earliest known future reclamation time observed by this pass.
+	// The earliest pending generation deadline or future upload cleanup time.
 	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
-	// The deleted head's irrevocable owner-prefix collection deadline.
+	// The current tombstone's deletion time plus the configured retirement grace.
 	ReclaimAfterMs *int64 `json:"reclaim_after_ms,omitempty" url:"reclaim_after_ms,omitempty"`
 	// Candidates retained at deletion time, grouped by reason.
 	Retained *RetainedCandidates `json:"retained" url:"retained"`
@@ -9556,12 +9607,6 @@ func (s *ServiceUnavailableErrorBody) String() string {
 	}
 	return fmt.Sprintf("%#v", s)
 }
-
-// Id of a snapshot.
-//
-// A snapshot is backed by a checkpoint record and uses that record's
-// id, `pin_{manifest_no:020}-{16 lowercase hex}`.
-type SnapshotID = string
 
 // What one contract check concluded about the store.
 type StoreProbeCheckOutcome string

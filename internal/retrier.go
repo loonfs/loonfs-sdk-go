@@ -52,6 +52,7 @@ func buildRetryOptions(maxAttempts uint, disableRetries bool) []RetryOption {
 // exponential back-off between each retry.
 type Retrier struct {
 	attempts uint
+	disabled bool
 }
 
 // NewRetrier constructs a new *Retrier with the given options, if any.
@@ -66,6 +67,7 @@ func NewRetrier(opts ...RetryOption) *Retrier {
 	}
 	return &Retrier{
 		attempts: attempts,
+		disabled: options.disabled,
 	}
 }
 
@@ -87,7 +89,7 @@ func (r *Retrier) Run(
 	if options.attempts > 0 {
 		maxRetryAttempts = options.attempts
 	}
-	if options.disabled {
+	if r.disabled || options.disabled {
 		maxRetryAttempts = 1
 	}
 	var (
@@ -135,7 +137,7 @@ func (r *Retrier) run(
 		return nil, err
 	}
 
-	if r.shouldRetry(response) {
+	if retryAttempt+1 < maxRetryAttempts && r.shouldRetry(response) {
 		defer func() { _ = response.Body.Close() }()
 
 		delay, err := r.retryDelay(response, retryAttempt)
@@ -143,7 +145,13 @@ func (r *Retrier) run(
 			return nil, err
 		}
 
-		time.Sleep(delay)
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+		select {
+		case <-request.Context().Done():
+			return nil, request.Context().Err()
+		case <-timer.C:
+		}
 
 		body, err := decompressedResponseBody(response)
 		if err != nil {
