@@ -1014,13 +1014,7 @@ func (c *Commit) String() string {
 // `c_<32 lowercase hex>`, but callers may supply any value in that grammar.
 type CommitID = string
 
-// Durable identity of one immutable content object.
-//
-// The body is 128 fully random bits, with no time component: content
-// object keys shard on the id's leading characters, and a clock-derived
-// prefix would put every upload in one window into one shard. The id
-// names *which object*, never what it contains — integrity evidence
-// rides [`crate::ContentRef`] beside it.
+// Random identity of one immutable content object.
 type ContentID = string
 
 // A reference to one immutable content object.
@@ -1030,9 +1024,8 @@ var (
 	contentRefFieldChecksum         = big.NewInt(1 << 0)
 	contentRefFieldContentID        = big.NewInt(1 << 1)
 	contentRefFieldKind             = big.NewInt(1 << 2)
-	contentRefFieldOwnerGeneration  = big.NewInt(1 << 3)
-	contentRefFieldOwnerNamespaceID = big.NewInt(1 << 4)
-	contentRefFieldSizeBytes        = big.NewInt(1 << 5)
+	contentRefFieldOwnerNamespaceID = big.NewInt(1 << 3)
+	contentRefFieldSizeBytes        = big.NewInt(1 << 4)
 )
 
 type ContentRef struct {
@@ -1042,8 +1035,6 @@ type ContentRef struct {
 	ContentID ContentID `json:"content_id" url:"content_id"`
 	// Content strategy used by the referenced object.
 	Kind ContentRefKind `json:"kind" url:"kind"`
-	// Generation of the owner namespace that wrote the bytes.
-	OwnerGeneration NamespaceGeneration `json:"owner_generation" url:"owner_generation"`
 	// Namespace that originally wrote the bytes.
 	OwnerNamespaceID NamespaceID `json:"owner_namespace_id" url:"owner_namespace_id"`
 	// Complete byte length of the referenced content.
@@ -1075,13 +1066,6 @@ func (c *ContentRef) GetKind() ContentRefKind {
 		return ""
 	}
 	return c.Kind
-}
-
-func (c *ContentRef) GetOwnerGeneration() NamespaceGeneration {
-	if c == nil {
-		return 0
-	}
-	return c.OwnerGeneration
 }
 
 func (c *ContentRef) GetOwnerNamespaceID() NamespaceID {
@@ -1131,13 +1115,6 @@ func (c *ContentRef) SetContentID(contentID ContentID) {
 func (c *ContentRef) SetKind(kind ContentRefKind) {
 	c.Kind = kind
 	c.require(contentRefFieldKind)
-}
-
-// SetOwnerGeneration sets the OwnerGeneration field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContentRef) SetOwnerGeneration(ownerGeneration NamespaceGeneration) {
-	c.OwnerGeneration = ownerGeneration
-	c.require(contentRefFieldOwnerGeneration)
 }
 
 // SetOwnerNamespaceID sets the OwnerNamespaceID field and marks it as non-optional;
@@ -1426,8 +1403,7 @@ func (d *DeleteCheckpointResponse) String() string {
 var (
 	deletedCheckpointsByOwnerFieldExpired  = big.NewInt(1 << 0)
 	deletedCheckpointsByOwnerFieldFork     = big.NewInt(1 << 1)
-	deletedCheckpointsByOwnerFieldRetired  = big.NewInt(1 << 2)
-	deletedCheckpointsByOwnerFieldSnapshot = big.NewInt(1 << 3)
+	deletedCheckpointsByOwnerFieldSnapshot = big.NewInt(1 << 2)
 )
 
 type DeletedCheckpointsByOwner struct {
@@ -1435,8 +1411,6 @@ type DeletedCheckpointsByOwner struct {
 	Expired int64 `json:"expired" url:"expired"`
 	// Fork-owned records deleted because their target namespaces are gone.
 	Fork int64 `json:"fork" url:"fork"`
-	// Retired records deleted after their generations are reclaimed.
-	Retired int64 `json:"retired" url:"retired"`
 	// Snapshot-owned records deleted after expiry or namespace deletion.
 	Snapshot int64 `json:"snapshot" url:"snapshot"`
 
@@ -1459,13 +1433,6 @@ func (d *DeletedCheckpointsByOwner) GetFork() int64 {
 		return 0
 	}
 	return d.Fork
-}
-
-func (d *DeletedCheckpointsByOwner) GetRetired() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.Retired
 }
 
 func (d *DeletedCheckpointsByOwner) GetSnapshot() int64 {
@@ -1501,13 +1468,6 @@ func (d *DeletedCheckpointsByOwner) SetExpired(expired int64) {
 func (d *DeletedCheckpointsByOwner) SetFork(fork int64) {
 	d.Fork = fork
 	d.require(deletedCheckpointsByOwnerFieldFork)
-}
-
-// SetRetired sets the Retired field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedCheckpointsByOwner) SetRetired(retired int64) {
-	d.Retired = retired
-	d.require(deletedCheckpointsByOwnerFieldRetired)
 }
 
 // SetSnapshot sets the Snapshot field and marks it as non-optional;
@@ -1576,7 +1536,7 @@ type DeletedObjectCounts struct {
 	Manifests int64 `json:"manifests" url:"manifests"`
 	// Unreferenced metadata segments deleted.
 	MetadataSegments int64 `json:"metadata_segments" url:"metadata_segments"`
-	// Successful deletion attempts under a retired namespace owner prefix.
+	// Listed content objects deleted from a retired namespace.
 	RetiredContentObjects int64 `json:"retired_content_objects" url:"retired_content_objects"`
 	// Upload-session control objects deleted after the reap window.
 	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
@@ -1879,9 +1839,10 @@ var (
 	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 21)
 	errorDetailsFieldInodeID                      = big.NewInt(1 << 22)
 	errorDetailsFieldMaxWriterSessions            = big.NewInt(1 << 23)
-	errorDetailsFieldOperationIndex               = big.NewInt(1 << 24)
-	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 25)
-	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 26)
+	errorDetailsFieldNamespaceID                  = big.NewInt(1 << 24)
+	errorDetailsFieldOperationIndex               = big.NewInt(1 << 25)
+	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 26)
+	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 27)
 )
 
 type ErrorDetails struct {
@@ -1933,6 +1894,8 @@ type ErrorDetails struct {
 	InodeID *InodeID `json:"inode_id,omitempty" url:"inode_id,omitempty"`
 	// Maximum writer sessions admitted by the node.
 	MaxWriterSessions *int `json:"max_writer_sessions,omitempty" url:"max_writer_sessions,omitempty"`
+	// The deleted namespace that caused the operation to fail.
+	NamespaceID *NamespaceID `json:"namespace_id,omitempty" url:"namespace_id,omitempty"`
 	// The index of the failed operation in the request.
 	OperationIndex *int `json:"operation_index,omitempty" url:"operation_index,omitempty"`
 	// Zero-based position of the failed request precondition.
@@ -2113,6 +2076,13 @@ func (e *ErrorDetails) GetMaxWriterSessions() *int {
 		return nil
 	}
 	return e.MaxWriterSessions
+}
+
+func (e *ErrorDetails) GetNamespaceID() *NamespaceID {
+	if e == nil {
+		return nil
+	}
+	return e.NamespaceID
 }
 
 func (e *ErrorDetails) GetOperationIndex() *int {
@@ -2316,6 +2286,13 @@ func (e *ErrorDetails) SetInodeID(inodeID *InodeID) {
 func (e *ErrorDetails) SetMaxWriterSessions(maxWriterSessions *int) {
 	e.MaxWriterSessions = maxWriterSessions
 	e.require(errorDetailsFieldMaxWriterSessions)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetNamespaceID(namespaceID *NamespaceID) {
+	e.NamespaceID = namespaceID
+	e.require(errorDetailsFieldNamespaceID)
 }
 
 // SetOperationIndex sets the OperationIndex field and marks it as non-optional;
@@ -5881,13 +5858,12 @@ var (
 	namespaceDiagnosticsFieldCreatedBy         = big.NewInt(1 << 1)
 	namespaceDiagnosticsFieldCurrentManifestNo = big.NewInt(1 << 2)
 	namespaceDiagnosticsFieldForkBasis         = big.NewInt(1 << 3)
-	namespaceDiagnosticsFieldGeneration        = big.NewInt(1 << 4)
-	namespaceDiagnosticsFieldHeadSeq           = big.NewInt(1 << 5)
-	namespaceDiagnosticsFieldLiveCheckpoints   = big.NewInt(1 << 6)
-	namespaceDiagnosticsFieldLiveSnapshots     = big.NewInt(1 << 7)
-	namespaceDiagnosticsFieldNamespaceID       = big.NewInt(1 << 8)
-	namespaceDiagnosticsFieldRetentionFloorSeq = big.NewInt(1 << 9)
-	namespaceDiagnosticsFieldWalTailSegments   = big.NewInt(1 << 10)
+	namespaceDiagnosticsFieldHeadSeq           = big.NewInt(1 << 4)
+	namespaceDiagnosticsFieldLiveCheckpoints   = big.NewInt(1 << 5)
+	namespaceDiagnosticsFieldLiveSnapshots     = big.NewInt(1 << 6)
+	namespaceDiagnosticsFieldNamespaceID       = big.NewInt(1 << 7)
+	namespaceDiagnosticsFieldRetentionFloorSeq = big.NewInt(1 << 8)
+	namespaceDiagnosticsFieldWalTailSegments   = big.NewInt(1 << 9)
 )
 
 type NamespaceDiagnostics struct {
@@ -5899,8 +5875,6 @@ type NamespaceDiagnostics struct {
 	CurrentManifestNo *ManifestNo `json:"current_manifest_no,omitempty" url:"current_manifest_no,omitempty"`
 	// Present only for a fork: the source it was forked from.
 	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
-	// Which generation of its id this namespace is. Recreating a deleted id increments it.
-	Generation NamespaceGeneration `json:"generation" url:"generation"`
 	// Current visible namespace sequence.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// Number of active user checkpoints, including expired records awaiting collection.
@@ -5947,13 +5921,6 @@ func (n *NamespaceDiagnostics) GetForkBasis() *NamespaceForkBasis {
 		return nil
 	}
 	return n.ForkBasis
-}
-
-func (n *NamespaceDiagnostics) GetGeneration() NamespaceGeneration {
-	if n == nil {
-		return 0
-	}
-	return n.Generation
 }
 
 func (n *NamespaceDiagnostics) GetHeadSeq() ChangeSeq {
@@ -6038,13 +6005,6 @@ func (n *NamespaceDiagnostics) SetCurrentManifestNo(currentManifestNo *ManifestN
 func (n *NamespaceDiagnostics) SetForkBasis(forkBasis *NamespaceForkBasis) {
 	n.ForkBasis = forkBasis
 	n.require(namespaceDiagnosticsFieldForkBasis)
-}
-
-// SetGeneration sets the Generation field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceDiagnostics) SetGeneration(generation NamespaceGeneration) {
-	n.Generation = generation
-	n.require(namespaceDiagnosticsFieldGeneration)
 }
 
 // SetHeadSeq sets the HeadSeq field and marks it as non-optional;
@@ -6234,12 +6194,9 @@ func (n *NamespaceForkBasis) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
-// Which generation of its id a namespace is. A newly created namespace is generation 1; each recreation after a deletion increments it.
-type NamespaceGeneration = int64
-
 // Durable id for one namespace.
 //
-// A namespace id names successive filesystem generations. This id is not a display name.
+// A namespace id names one lifetime. This id is not a display name.
 // Its serialized form is 1 to 128
 // lowercase ASCII letters, digits, dots, underscores, or hyphens, starting
 // with a letter or digit; the `loonfs-` prefix is reserved for system use.
@@ -8817,7 +8774,7 @@ type RunMaintenanceResponseGc struct {
 	DeletedCheckpointsByOwner *DeletedCheckpointsByOwner `json:"deleted_checkpoints_by_owner" url:"deleted_checkpoints_by_owner"`
 	// Namespace the pass ran against.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The earliest pending generation deadline or future upload cleanup time.
+	// The earliest future retirement deadline, pin deletion time, or upload cleanup time.
 	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
 	// The current tombstone's deletion time plus the configured retirement grace.
 	ReclaimAfterMs *int64 `json:"reclaim_after_ms,omitempty" url:"reclaim_after_ms,omitempty"`
