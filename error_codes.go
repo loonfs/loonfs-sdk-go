@@ -33,6 +33,11 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
+	413: func(apiError *core.APIError) error {
+		return &ContentTooLargeError{
+			APIError: apiError,
+		}
+	},
 	404: func(apiError *core.APIError) error {
 		return &NotFoundError{
 			APIError: apiError,
@@ -40,11 +45,6 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 	},
 	501: func(apiError *core.APIError) error {
 		return &NotImplementedError{
-			APIError: apiError,
-		}
-	},
-	413: func(apiError *core.APIError) error {
-		return &ContentTooLargeError{
 			APIError: apiError,
 		}
 	},
