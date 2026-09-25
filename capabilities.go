@@ -24,7 +24,7 @@ type CapabilityDocument struct {
 	Features map[string]bool `json:"features,omitempty" url:"features,omitempty"`
 	// Advisory numeric limits clients may use to pre-validate requests.
 	Limits map[string]int64 `json:"limits,omitempty" url:"limits,omitempty"`
-	// The protocol generation, currently `v0`.
+	// The protocol version, `v0`.
 	ProtocolVersion string `json:"protocol_version" url:"protocol_version"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

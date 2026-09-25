@@ -820,14 +820,14 @@ func (c *CommitPreconditionPathAbsence) String() string {
 
 // Requires the path to retain the binding the caller read.
 var (
-	commitPreconditionPathBindingFieldExpectedBindingGeneration = big.NewInt(1 << 0)
-	commitPreconditionPathBindingFieldExpectedInodeID           = big.NewInt(1 << 1)
-	commitPreconditionPathBindingFieldPath                      = big.NewInt(1 << 2)
+	commitPreconditionPathBindingFieldExpectedBindingVersion = big.NewInt(1 << 0)
+	commitPreconditionPathBindingFieldExpectedInodeID        = big.NewInt(1 << 1)
+	commitPreconditionPathBindingFieldPath                   = big.NewInt(1 << 2)
 )
 
 type CommitPreconditionPathBinding struct {
 	// Detects moves away and back.
-	ExpectedBindingGeneration *BindingGeneration `json:"expected_binding_generation,omitempty" url:"expected_binding_generation,omitempty"`
+	ExpectedBindingVersion *BindingVersion `json:"expected_binding_version,omitempty" url:"expected_binding_version,omitempty"`
 	// Inode required at the path.
 	ExpectedInodeID InodeID `json:"expected_inode_id" url:"expected_inode_id"`
 	// Absolute path to check, including the root.
@@ -840,11 +840,11 @@ type CommitPreconditionPathBinding struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *CommitPreconditionPathBinding) GetExpectedBindingGeneration() *BindingGeneration {
+func (c *CommitPreconditionPathBinding) GetExpectedBindingVersion() *BindingVersion {
 	if c == nil {
 		return nil
 	}
-	return c.ExpectedBindingGeneration
+	return c.ExpectedBindingVersion
 }
 
 func (c *CommitPreconditionPathBinding) GetExpectedInodeID() InodeID {
@@ -875,11 +875,11 @@ func (c *CommitPreconditionPathBinding) require(field *big.Int) {
 	c.explicitFields.Or(c.explicitFields, field)
 }
 
-// SetExpectedBindingGeneration sets the ExpectedBindingGeneration field and marks it as non-optional;
+// SetExpectedBindingVersion sets the ExpectedBindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitPreconditionPathBinding) SetExpectedBindingGeneration(expectedBindingGeneration *BindingGeneration) {
-	c.ExpectedBindingGeneration = expectedBindingGeneration
-	c.require(commitPreconditionPathBindingFieldExpectedBindingGeneration)
+func (c *CommitPreconditionPathBinding) SetExpectedBindingVersion(expectedBindingVersion *BindingVersion) {
+	c.ExpectedBindingVersion = expectedBindingVersion
+	c.require(commitPreconditionPathBindingFieldExpectedBindingVersion)
 }
 
 // SetExpectedInodeID sets the ExpectedInodeID field and marks it as non-optional;
@@ -1902,16 +1902,16 @@ func (f *FilesystemOperationCreateFileByInode) String() string {
 
 // Delete an inode if its current binding matches.
 var (
-	filesystemOperationDeleteByInodeFieldBehavior                  = big.NewInt(1 << 0)
-	filesystemOperationDeleteByInodeFieldExpectedBindingGeneration = big.NewInt(1 << 1)
-	filesystemOperationDeleteByInodeFieldInodeID                   = big.NewInt(1 << 2)
+	filesystemOperationDeleteByInodeFieldBehavior               = big.NewInt(1 << 0)
+	filesystemOperationDeleteByInodeFieldExpectedBindingVersion = big.NewInt(1 << 1)
+	filesystemOperationDeleteByInodeFieldInodeID                = big.NewInt(1 << 2)
 )
 
 type FilesystemOperationDeleteByInode struct {
 	// Whether a non-empty directory may be tombstoned recursively.
 	Behavior *DeleteDirectoryBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// Binding generation required for the delete.
-	ExpectedBindingGeneration BindingGeneration `json:"expected_binding_generation" url:"expected_binding_generation"`
+	// Binding version required for the delete.
+	ExpectedBindingVersion BindingVersion `json:"expected_binding_version" url:"expected_binding_version"`
 	// Inode to delete.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
@@ -1929,11 +1929,11 @@ func (f *FilesystemOperationDeleteByInode) GetBehavior() *DeleteDirectoryBehavio
 	return f.Behavior
 }
 
-func (f *FilesystemOperationDeleteByInode) GetExpectedBindingGeneration() BindingGeneration {
+func (f *FilesystemOperationDeleteByInode) GetExpectedBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
-	return f.ExpectedBindingGeneration
+	return f.ExpectedBindingVersion
 }
 
 func (f *FilesystemOperationDeleteByInode) GetInodeID() InodeID {
@@ -1964,11 +1964,11 @@ func (f *FilesystemOperationDeleteByInode) SetBehavior(behavior *DeleteDirectory
 	f.require(filesystemOperationDeleteByInodeFieldBehavior)
 }
 
-// SetExpectedBindingGeneration sets the ExpectedBindingGeneration field and marks it as non-optional;
+// SetExpectedBindingVersion sets the ExpectedBindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemOperationDeleteByInode) SetExpectedBindingGeneration(expectedBindingGeneration BindingGeneration) {
-	f.ExpectedBindingGeneration = expectedBindingGeneration
-	f.require(filesystemOperationDeleteByInodeFieldExpectedBindingGeneration)
+func (f *FilesystemOperationDeleteByInode) SetExpectedBindingVersion(expectedBindingVersion BindingVersion) {
+	f.ExpectedBindingVersion = expectedBindingVersion
+	f.require(filesystemOperationDeleteByInodeFieldExpectedBindingVersion)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
@@ -2145,7 +2145,7 @@ var (
 	filesystemOperationMoveByInodeFieldBehavior                      = big.NewInt(1 << 0)
 	filesystemOperationMoveByInodeFieldDestinationDisplayName        = big.NewInt(1 << 1)
 	filesystemOperationMoveByInodeFieldDestinationParentInodeID      = big.NewInt(1 << 2)
-	filesystemOperationMoveByInodeFieldExpectedBindingGeneration     = big.NewInt(1 << 3)
+	filesystemOperationMoveByInodeFieldExpectedBindingVersion        = big.NewInt(1 << 3)
 	filesystemOperationMoveByInodeFieldExpectedDestinationInodeID    = big.NewInt(1 << 4)
 	filesystemOperationMoveByInodeFieldExpectedDestinationRevisionNo = big.NewInt(1 << 5)
 	filesystemOperationMoveByInodeFieldInodeID                       = big.NewInt(1 << 6)
@@ -2158,8 +2158,8 @@ type FilesystemOperationMoveByInode struct {
 	DestinationDisplayName DisplayName `json:"destination_display_name" url:"destination_display_name"`
 	// Destination directory.
 	DestinationParentInodeID InodeID `json:"destination_parent_inode_id" url:"destination_parent_inode_id"`
-	// Binding generation required for the move.
-	ExpectedBindingGeneration BindingGeneration `json:"expected_binding_generation" url:"expected_binding_generation"`
+	// Binding version required for the move.
+	ExpectedBindingVersion BindingVersion `json:"expected_binding_version" url:"expected_binding_version"`
 	// With `replace` behavior, the destination inode required by the request.
 	ExpectedDestinationInodeID *InodeID `json:"expected_destination_inode_id,omitempty" url:"expected_destination_inode_id,omitempty"`
 	// With `replace` behavior and an inode precondition, the required content revision.
@@ -2195,11 +2195,11 @@ func (f *FilesystemOperationMoveByInode) GetDestinationParentInodeID() InodeID {
 	return f.DestinationParentInodeID
 }
 
-func (f *FilesystemOperationMoveByInode) GetExpectedBindingGeneration() BindingGeneration {
+func (f *FilesystemOperationMoveByInode) GetExpectedBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
-	return f.ExpectedBindingGeneration
+	return f.ExpectedBindingVersion
 }
 
 func (f *FilesystemOperationMoveByInode) GetExpectedDestinationInodeID() *InodeID {
@@ -2258,11 +2258,11 @@ func (f *FilesystemOperationMoveByInode) SetDestinationParentInodeID(destination
 	f.require(filesystemOperationMoveByInodeFieldDestinationParentInodeID)
 }
 
-// SetExpectedBindingGeneration sets the ExpectedBindingGeneration field and marks it as non-optional;
+// SetExpectedBindingVersion sets the ExpectedBindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemOperationMoveByInode) SetExpectedBindingGeneration(expectedBindingGeneration BindingGeneration) {
-	f.ExpectedBindingGeneration = expectedBindingGeneration
-	f.require(filesystemOperationMoveByInodeFieldExpectedBindingGeneration)
+func (f *FilesystemOperationMoveByInode) SetExpectedBindingVersion(expectedBindingVersion BindingVersion) {
+	f.ExpectedBindingVersion = expectedBindingVersion
+	f.require(filesystemOperationMoveByInodeFieldExpectedBindingVersion)
 }
 
 // SetExpectedDestinationInodeID sets the ExpectedDestinationInodeID field and marks it as non-optional;
@@ -2903,7 +2903,7 @@ var (
 )
 
 type FilesystemOperationUndelete struct {
-	// Observed deletion sequence, which prevents cancelling a newer tombstone generation.
+	// Observed deletion sequence, which prevents cancelling a newer tombstone sequence.
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
 	// The restore destination, or `None` to use the recorded binding.
 	DestinationPath *AbsolutePath `json:"destination_path,omitempty" url:"destination_path,omitempty"`

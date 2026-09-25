@@ -19,7 +19,7 @@ type CreateCheckpointRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// The non-unique label recorded on the checkpoint.
 	Name string `json:"name" url:"-"`
-	// The checkpoint lifetime in milliseconds, or `None` for an explicit deletion only.
+	// The checkpoint lifetime in milliseconds, or `None` to keep the checkpoint until it is deleted.
 	TTLMs *int64 `json:"ttl_ms,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

@@ -2384,7 +2384,7 @@ client.Maintenance.Checkpoints.List(
 <dl>
 <dd>
 
-Creates a named, user-owned checkpoint record pinning the current namespace view. Every call mints a new record under a new id; the name is a label, not a key. The record is a garbage-collection root until it is deleted, so routine maintenance should flush the WAL instead. This is a maintenance operation, not a file mutation.
+Creates a user-owned checkpoint record pinning the current namespace view. It first folds any WAL tail after the current manifest. Every call creates a new record under a new id; the name is a label, not a key. The record retains its manifest until it is deleted, either explicitly or by collection after expiry plus grace, so routine maintenance should flush the WAL instead. This is a maintenance operation, not a file mutation.
 </dd>
 </dl>
 </dd>
@@ -2437,7 +2437,7 @@ client.Maintenance.Checkpoints.Create(
 <dl>
 <dd>
 
-**ttlMs:** `*int64` — The checkpoint lifetime in milliseconds, or `None` for an explicit deletion only.
+**ttlMs:** `*int64` — The checkpoint lifetime in milliseconds, or `None` to keep the checkpoint until it is deleted.
     
 </dd>
 </dl>
