@@ -355,7 +355,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_generation\": \"binding_generation\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"path\": \"/docs/report.txt\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_version\": \"binding_version\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"path\": \"/docs/report.txt\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -399,7 +399,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_generation\": \"binding_generation\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_version\": \"binding_version\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -561,7 +561,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_generation\": \"binding_generation\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_version\": \"binding_version\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -605,7 +605,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_generation\": \"binding_generation\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"parent_inode_id\": \"ino_123\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_version\": \"binding_version\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"parent_inode_id\": \"ino_123\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1343,42 +1343,6 @@
       }
     },
     {
-      "id": "50594101-4ce6-4757-be0e-cd3dfee2bac3",
-      "name": "Collect grep index garbage - default",
-      "request": {
-        "urlPathTemplate": "/v0/maintenance/namespaces/{namespace_id}/grep/index/gc",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"deleted_other_objects\": 1000000,\n  \"deleted_segments\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"namespace_reaped\": true,\n  \"retained_candidates\": 1000000\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "50594101-4ce6-4757-be0e-cd3dfee2bac3",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
       "id": "4d4075bf-bd7a-43d4-b06f-93c3d5f0cf6b",
       "name": "Run one maintenance job - default",
       "request": {
@@ -1397,7 +1361,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_segments\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"expired\": 1000000,\n    \"fork\": 1000000,\n    \"snapshot\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaim_after_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"kind\": \"gc\"\n}",
+        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_segments\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"fork\": 1000000,\n    \"snapshot\": 1000000,\n    \"user\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaimable_at_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"kind\": \"gc\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1447,6 +1411,6 @@
     }
   ],
   "meta": {
-    "total": 38
+    "total": 37
   }
 }

@@ -3,8 +3,6 @@
 package maintenance
 
 import (
-	json "encoding/json"
-	loonfssdkgo "github.com/loonfs/loonfs-sdk-go"
 	big "math/big"
 )
 
@@ -58,46 +56,6 @@ func (e *EnableGrepIndexRequest) require(field *big.Int) {
 func (e *EnableGrepIndexRequest) SetNamespaceID(namespaceID string) {
 	e.NamespaceID = namespaceID
 	e.require(enableGrepIndexRequestFieldNamespaceID)
-}
-
-var (
-	gcGrepIndexRequestFieldNamespaceID = big.NewInt(1 << 0)
-)
-
-type GcGrepIndexRequest struct {
-	// Namespace id
-	NamespaceID string                    `json:"-" url:"-"`
-	Body        loonfssdkgo.GrepGcRequest `json:"-" url:"-"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-}
-
-func (g *GcGrepIndexRequest) require(field *big.Int) {
-	if g.explicitFields == nil {
-		g.explicitFields = big.NewInt(0)
-	}
-	g.explicitFields.Or(g.explicitFields, field)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GcGrepIndexRequest) SetNamespaceID(namespaceID string) {
-	g.NamespaceID = namespaceID
-	g.require(gcGrepIndexRequestFieldNamespaceID)
-}
-
-func (g *GcGrepIndexRequest) UnmarshalJSON(data []byte) error {
-	var body loonfssdkgo.GrepGcRequest
-	if err := json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	g.Body = body
-	return nil
-}
-
-func (g *GcGrepIndexRequest) MarshalJSON() ([]byte, error) {
-	return json.Marshal(g.Body)
 }
 
 var (

@@ -86,8 +86,8 @@ type Attributes = map[string]AttributeValue
 // Revision number for an inode's attributes. It starts at 0 and increases whenever the attribute map changes.
 type AttributesRevisionNo = int64
 
-// Opaque token identifying one parent and name binding generation.
-type BindingGeneration = string
+// Opaque token identifying one parent and name binding version.
+type BindingVersion = string
 
 // Sequence number assigned to a namespace commit. It determines the order in which commits become visible.
 type ChangeSeq = int64
@@ -1017,9 +1017,11 @@ type CommitID = string
 // Random identity of one immutable content object.
 type ContentID = string
 
-// A reference to one immutable content object.
+// Identifies one piece of immutable file content.
 //
-// The object must be durable before the reference is published.
+// The owner namespace and content id name the content object that holds the
+// bytes. A reference is not proof that the object exists: content committed
+// inline has no object until a flush writes it.
 var (
 	contentRefFieldChecksum         = big.NewInt(1 << 0)
 	contentRefFieldContentID        = big.NewInt(1 << 1)
@@ -1031,9 +1033,9 @@ var (
 type ContentRef struct {
 	// Mandatory checksum over the complete object.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
-	// Immutable identity of the referenced object.
+	// Immutable identity of the content; with the owner, it determines the object key.
 	ContentID ContentID `json:"content_id" url:"content_id"`
-	// Content strategy used by the referenced object.
+	// Content strategy used by the referenced content.
 	Kind ContentRefKind `json:"kind" url:"kind"`
 	// Namespace that originally wrote the bytes.
 	OwnerNamespaceID NamespaceID `json:"owner_namespace_id" url:"owner_namespace_id"`
@@ -1401,31 +1403,24 @@ func (d *DeleteCheckpointResponse) String() string {
 
 // Checkpoint record counts deleted by one garbage-collection pass, grouped by owner.
 var (
-	deletedCheckpointsByOwnerFieldExpired  = big.NewInt(1 << 0)
-	deletedCheckpointsByOwnerFieldFork     = big.NewInt(1 << 1)
-	deletedCheckpointsByOwnerFieldSnapshot = big.NewInt(1 << 2)
+	deletedCheckpointsByOwnerFieldFork     = big.NewInt(1 << 0)
+	deletedCheckpointsByOwnerFieldSnapshot = big.NewInt(1 << 1)
+	deletedCheckpointsByOwnerFieldUser     = big.NewInt(1 << 2)
 )
 
 type DeletedCheckpointsByOwner struct {
-	// User-owned records deleted after expiry or namespace deletion.
-	Expired int64 `json:"expired" url:"expired"`
 	// Fork-owned records deleted because their target namespaces are gone.
 	Fork int64 `json:"fork" url:"fork"`
 	// Snapshot-owned records deleted after expiry or namespace deletion.
 	Snapshot int64 `json:"snapshot" url:"snapshot"`
+	// User-owned records deleted after expiry or namespace deletion.
+	User int64 `json:"user" url:"user"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (d *DeletedCheckpointsByOwner) GetExpired() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.Expired
 }
 
 func (d *DeletedCheckpointsByOwner) GetFork() int64 {
@@ -1442,6 +1437,13 @@ func (d *DeletedCheckpointsByOwner) GetSnapshot() int64 {
 	return d.Snapshot
 }
 
+func (d *DeletedCheckpointsByOwner) GetUser() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.User
+}
+
 func (d *DeletedCheckpointsByOwner) GetExtraProperties() map[string]interface{} {
 	if d == nil {
 		return nil
@@ -1456,13 +1458,6 @@ func (d *DeletedCheckpointsByOwner) require(field *big.Int) {
 	d.explicitFields.Or(d.explicitFields, field)
 }
 
-// SetExpired sets the Expired field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedCheckpointsByOwner) SetExpired(expired int64) {
-	d.Expired = expired
-	d.require(deletedCheckpointsByOwnerFieldExpired)
-}
-
 // SetFork sets the Fork field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (d *DeletedCheckpointsByOwner) SetFork(fork int64) {
@@ -1475,6 +1470,13 @@ func (d *DeletedCheckpointsByOwner) SetFork(fork int64) {
 func (d *DeletedCheckpointsByOwner) SetSnapshot(snapshot int64) {
 	d.Snapshot = snapshot
 	d.require(deletedCheckpointsByOwnerFieldSnapshot)
+}
+
+// SetUser sets the User field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedCheckpointsByOwner) SetUser(user int64) {
+	d.User = user
+	d.require(deletedCheckpointsByOwnerFieldUser)
 }
 
 func (d *DeletedCheckpointsByOwner) UnmarshalJSON(data []byte) error {
@@ -1816,11 +1818,11 @@ type DisplayName = string
 // Optional machine-readable identifiers and state for an [`ApiError`].
 var (
 	errorDetailsFieldActiveAcquiredAtMs           = big.NewInt(1 << 0)
-	errorDetailsFieldActiveWriter                 = big.NewInt(1 << 1)
-	errorDetailsFieldActiveWriterEpoch            = big.NewInt(1 << 2)
+	errorDetailsFieldActiveWriterEpoch            = big.NewInt(1 << 1)
+	errorDetailsFieldActiveWriterID               = big.NewInt(1 << 2)
 	errorDetailsFieldActualAccessRevisionNo       = big.NewInt(1 << 3)
 	errorDetailsFieldActualAttributesRevisionNo   = big.NewInt(1 << 4)
-	errorDetailsFieldActualBindingGeneration      = big.NewInt(1 << 5)
+	errorDetailsFieldActualBindingVersion         = big.NewInt(1 << 5)
 	errorDetailsFieldActualDeletionSeq            = big.NewInt(1 << 6)
 	errorDetailsFieldActualHeadSeq                = big.NewInt(1 << 7)
 	errorDetailsFieldActualInodeID                = big.NewInt(1 << 8)
@@ -1831,7 +1833,7 @@ var (
 	errorDetailsFieldCommittedSeq                 = big.NewInt(1 << 13)
 	errorDetailsFieldExpectedAccessRevisionNo     = big.NewInt(1 << 14)
 	errorDetailsFieldExpectedAttributesRevisionNo = big.NewInt(1 << 15)
-	errorDetailsFieldExpectedBindingGeneration    = big.NewInt(1 << 16)
+	errorDetailsFieldExpectedBindingVersion       = big.NewInt(1 << 16)
 	errorDetailsFieldExpectedDeletionSeq          = big.NewInt(1 << 17)
 	errorDetailsFieldExpectedHeadSeq              = big.NewInt(1 << 18)
 	errorDetailsFieldExpectedInodeID              = big.NewInt(1 << 19)
@@ -1848,17 +1850,17 @@ var (
 type ErrorDetails struct {
 	// The Unix-millisecond time when the current writer acquired its epoch, when available.
 	ActiveAcquiredAtMs *int64 `json:"active_acquired_at_ms,omitempty" url:"active_acquired_at_ms,omitempty"`
-	// The writer ID recorded for the current epoch, when available.
-	ActiveWriter *WriterID `json:"active_writer,omitempty" url:"active_writer,omitempty"`
 	// Epoch that currently owns the namespace.
 	ActiveWriterEpoch *WriterEpoch `json:"active_writer_epoch,omitempty" url:"active_writer_epoch,omitempty"`
+	// The writer ID recorded for the current epoch, when available.
+	ActiveWriterID *WriterID `json:"active_writer_id,omitempty" url:"active_writer_id,omitempty"`
 	// Access revision that is actually current for the inode.
 	ActualAccessRevisionNo *AccessRevisionNo `json:"actual_access_revision_no,omitempty" url:"actual_access_revision_no,omitempty"`
 	// Attribute revision that is actually current for the inode.
 	ActualAttributesRevisionNo *AttributesRevisionNo `json:"actual_attributes_revision_no,omitempty" url:"actual_attributes_revision_no,omitempty"`
 	// Current binding token; absent for the root, which has no binding.
-	ActualBindingGeneration *BindingGeneration `json:"actual_binding_generation,omitempty" url:"actual_binding_generation,omitempty"`
-	// Deletion generation actually active for the inode.
+	ActualBindingVersion *BindingVersion `json:"actual_binding_version,omitempty" url:"actual_binding_version,omitempty"`
+	// Deletion sequence actually active for the inode.
 	ActualDeletionSeq *ChangeSeq `json:"actual_deletion_seq,omitempty" url:"actual_deletion_seq,omitempty"`
 	// The actual namespace head sequence.
 	ActualHeadSeq *ChangeSeq `json:"actual_head_seq,omitempty" url:"actual_head_seq,omitempty"`
@@ -1879,8 +1881,8 @@ type ErrorDetails struct {
 	// Attribute revision the request expected to be current.
 	ExpectedAttributesRevisionNo *AttributesRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
 	// Opaque binding token supplied by the request.
-	ExpectedBindingGeneration *BindingGeneration `json:"expected_binding_generation,omitempty" url:"expected_binding_generation,omitempty"`
-	// Deletion generation the undelete expected to be active.
+	ExpectedBindingVersion *BindingVersion `json:"expected_binding_version,omitempty" url:"expected_binding_version,omitempty"`
+	// Deletion sequence the undelete expected to be active.
 	ExpectedDeletionSeq *ChangeSeq `json:"expected_deletion_seq,omitempty" url:"expected_deletion_seq,omitempty"`
 	// The head sequence required by the request.
 	ExpectedHeadSeq *ChangeSeq `json:"expected_head_seq,omitempty" url:"expected_head_seq,omitempty"`
@@ -1917,18 +1919,18 @@ func (e *ErrorDetails) GetActiveAcquiredAtMs() *int64 {
 	return e.ActiveAcquiredAtMs
 }
 
-func (e *ErrorDetails) GetActiveWriter() *WriterID {
-	if e == nil {
-		return nil
-	}
-	return e.ActiveWriter
-}
-
 func (e *ErrorDetails) GetActiveWriterEpoch() *WriterEpoch {
 	if e == nil {
 		return nil
 	}
 	return e.ActiveWriterEpoch
+}
+
+func (e *ErrorDetails) GetActiveWriterID() *WriterID {
+	if e == nil {
+		return nil
+	}
+	return e.ActiveWriterID
 }
 
 func (e *ErrorDetails) GetActualAccessRevisionNo() *AccessRevisionNo {
@@ -1945,11 +1947,11 @@ func (e *ErrorDetails) GetActualAttributesRevisionNo() *AttributesRevisionNo {
 	return e.ActualAttributesRevisionNo
 }
 
-func (e *ErrorDetails) GetActualBindingGeneration() *BindingGeneration {
+func (e *ErrorDetails) GetActualBindingVersion() *BindingVersion {
 	if e == nil {
 		return nil
 	}
-	return e.ActualBindingGeneration
+	return e.ActualBindingVersion
 }
 
 func (e *ErrorDetails) GetActualDeletionSeq() *ChangeSeq {
@@ -2022,11 +2024,11 @@ func (e *ErrorDetails) GetExpectedAttributesRevisionNo() *AttributesRevisionNo {
 	return e.ExpectedAttributesRevisionNo
 }
 
-func (e *ErrorDetails) GetExpectedBindingGeneration() *BindingGeneration {
+func (e *ErrorDetails) GetExpectedBindingVersion() *BindingVersion {
 	if e == nil {
 		return nil
 	}
-	return e.ExpectedBindingGeneration
+	return e.ExpectedBindingVersion
 }
 
 func (e *ErrorDetails) GetExpectedDeletionSeq() *ChangeSeq {
@@ -2127,18 +2129,18 @@ func (e *ErrorDetails) SetActiveAcquiredAtMs(activeAcquiredAtMs *int64) {
 	e.require(errorDetailsFieldActiveAcquiredAtMs)
 }
 
-// SetActiveWriter sets the ActiveWriter field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetActiveWriter(activeWriter *WriterID) {
-	e.ActiveWriter = activeWriter
-	e.require(errorDetailsFieldActiveWriter)
-}
-
 // SetActiveWriterEpoch sets the ActiveWriterEpoch field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (e *ErrorDetails) SetActiveWriterEpoch(activeWriterEpoch *WriterEpoch) {
 	e.ActiveWriterEpoch = activeWriterEpoch
 	e.require(errorDetailsFieldActiveWriterEpoch)
+}
+
+// SetActiveWriterID sets the ActiveWriterID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetActiveWriterID(activeWriterID *WriterID) {
+	e.ActiveWriterID = activeWriterID
+	e.require(errorDetailsFieldActiveWriterID)
 }
 
 // SetActualAccessRevisionNo sets the ActualAccessRevisionNo field and marks it as non-optional;
@@ -2155,11 +2157,11 @@ func (e *ErrorDetails) SetActualAttributesRevisionNo(actualAttributesRevisionNo 
 	e.require(errorDetailsFieldActualAttributesRevisionNo)
 }
 
-// SetActualBindingGeneration sets the ActualBindingGeneration field and marks it as non-optional;
+// SetActualBindingVersion sets the ActualBindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetActualBindingGeneration(actualBindingGeneration *BindingGeneration) {
-	e.ActualBindingGeneration = actualBindingGeneration
-	e.require(errorDetailsFieldActualBindingGeneration)
+func (e *ErrorDetails) SetActualBindingVersion(actualBindingVersion *BindingVersion) {
+	e.ActualBindingVersion = actualBindingVersion
+	e.require(errorDetailsFieldActualBindingVersion)
 }
 
 // SetActualDeletionSeq sets the ActualDeletionSeq field and marks it as non-optional;
@@ -2232,11 +2234,11 @@ func (e *ErrorDetails) SetExpectedAttributesRevisionNo(expectedAttributesRevisio
 	e.require(errorDetailsFieldExpectedAttributesRevisionNo)
 }
 
-// SetExpectedBindingGeneration sets the ExpectedBindingGeneration field and marks it as non-optional;
+// SetExpectedBindingVersion sets the ExpectedBindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetExpectedBindingGeneration(expectedBindingGeneration *BindingGeneration) {
-	e.ExpectedBindingGeneration = expectedBindingGeneration
-	e.require(errorDetailsFieldExpectedBindingGeneration)
+func (e *ErrorDetails) SetExpectedBindingVersion(expectedBindingVersion *BindingVersion) {
+	e.ExpectedBindingVersion = expectedBindingVersion
+	e.require(errorDetailsFieldExpectedBindingVersion)
 }
 
 // SetExpectedDeletionSeq sets the ExpectedDeletionSeq field and marks it as non-optional;
@@ -3474,15 +3476,15 @@ func (f *FilesystemChangeDeleted) String() string {
 
 // A directory was created.
 var (
-	filesystemChangeDirectoryCreatedFieldBindingGeneration = big.NewInt(1 << 0)
-	filesystemChangeDirectoryCreatedFieldDisplayName       = big.NewInt(1 << 1)
-	filesystemChangeDirectoryCreatedFieldInodeID           = big.NewInt(1 << 2)
-	filesystemChangeDirectoryCreatedFieldParentInodeID     = big.NewInt(1 << 3)
+	filesystemChangeDirectoryCreatedFieldBindingVersion = big.NewInt(1 << 0)
+	filesystemChangeDirectoryCreatedFieldDisplayName    = big.NewInt(1 << 1)
+	filesystemChangeDirectoryCreatedFieldInodeID        = big.NewInt(1 << 2)
+	filesystemChangeDirectoryCreatedFieldParentInodeID  = big.NewInt(1 << 3)
 )
 
 type FilesystemChangeDirectoryCreated struct {
 	// Opaque identifier for the binding created by this event.
-	BindingGeneration BindingGeneration `json:"binding_generation" url:"binding_generation"`
+	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
 	// User-facing spelling of the new entry.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
 	// Newly allocated namespace-scoped inode identity.
@@ -3497,11 +3499,11 @@ type FilesystemChangeDirectoryCreated struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeDirectoryCreated) GetBindingGeneration() BindingGeneration {
+func (f *FilesystemChangeDirectoryCreated) GetBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
-	return f.BindingGeneration
+	return f.BindingVersion
 }
 
 func (f *FilesystemChangeDirectoryCreated) GetDisplayName() DisplayName {
@@ -3539,11 +3541,11 @@ func (f *FilesystemChangeDirectoryCreated) require(field *big.Int) {
 	f.explicitFields.Or(f.explicitFields, field)
 }
 
-// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeDirectoryCreated) SetBindingGeneration(bindingGeneration BindingGeneration) {
-	f.BindingGeneration = bindingGeneration
-	f.require(filesystemChangeDirectoryCreatedFieldBindingGeneration)
+func (f *FilesystemChangeDirectoryCreated) SetBindingVersion(bindingVersion BindingVersion) {
+	f.BindingVersion = bindingVersion
+	f.require(filesystemChangeDirectoryCreatedFieldBindingVersion)
 }
 
 // SetDisplayName sets the DisplayName field and marks it as non-optional;
@@ -3611,17 +3613,17 @@ func (f *FilesystemChangeDirectoryCreated) String() string {
 
 // A file and its first revision were created.
 var (
-	filesystemChangeFileCreatedFieldBindingGeneration = big.NewInt(1 << 0)
-	filesystemChangeFileCreatedFieldContentRef        = big.NewInt(1 << 1)
-	filesystemChangeFileCreatedFieldDisplayName       = big.NewInt(1 << 2)
-	filesystemChangeFileCreatedFieldInodeID           = big.NewInt(1 << 3)
-	filesystemChangeFileCreatedFieldParentInodeID     = big.NewInt(1 << 4)
-	filesystemChangeFileCreatedFieldRevisionNo        = big.NewInt(1 << 5)
+	filesystemChangeFileCreatedFieldBindingVersion = big.NewInt(1 << 0)
+	filesystemChangeFileCreatedFieldContentRef     = big.NewInt(1 << 1)
+	filesystemChangeFileCreatedFieldDisplayName    = big.NewInt(1 << 2)
+	filesystemChangeFileCreatedFieldInodeID        = big.NewInt(1 << 3)
+	filesystemChangeFileCreatedFieldParentInodeID  = big.NewInt(1 << 4)
+	filesystemChangeFileCreatedFieldRevisionNo     = big.NewInt(1 << 5)
 )
 
 type FilesystemChangeFileCreated struct {
 	// Opaque identifier for the binding created by this event.
-	BindingGeneration BindingGeneration `json:"binding_generation" url:"binding_generation"`
+	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
 	// Content of the first revision.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// User-facing spelling of the new entry.
@@ -3640,11 +3642,11 @@ type FilesystemChangeFileCreated struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeFileCreated) GetBindingGeneration() BindingGeneration {
+func (f *FilesystemChangeFileCreated) GetBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
-	return f.BindingGeneration
+	return f.BindingVersion
 }
 
 func (f *FilesystemChangeFileCreated) GetContentRef() *ContentRef {
@@ -3696,11 +3698,11 @@ func (f *FilesystemChangeFileCreated) require(field *big.Int) {
 	f.explicitFields.Or(f.explicitFields, field)
 }
 
-// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeFileCreated) SetBindingGeneration(bindingGeneration BindingGeneration) {
-	f.BindingGeneration = bindingGeneration
-	f.require(filesystemChangeFileCreatedFieldBindingGeneration)
+func (f *FilesystemChangeFileCreated) SetBindingVersion(bindingVersion BindingVersion) {
+	f.BindingVersion = bindingVersion
+	f.require(filesystemChangeFileCreatedFieldBindingVersion)
 }
 
 // SetContentRef sets the ContentRef field and marks it as non-optional;
@@ -3782,7 +3784,7 @@ func (f *FilesystemChangeFileCreated) String() string {
 
 // An inode moved to a new parent directory or name.
 var (
-	filesystemChangeMovedFieldBindingGeneration        = big.NewInt(1 << 0)
+	filesystemChangeMovedFieldBindingVersion           = big.NewInt(1 << 0)
 	filesystemChangeMovedFieldDestinationDisplayName   = big.NewInt(1 << 1)
 	filesystemChangeMovedFieldDestinationParentInodeID = big.NewInt(1 << 2)
 	filesystemChangeMovedFieldInodeID                  = big.NewInt(1 << 3)
@@ -3792,7 +3794,7 @@ var (
 
 type FilesystemChangeMoved struct {
 	// Opaque identifier for the binding created by this event.
-	BindingGeneration BindingGeneration `json:"binding_generation" url:"binding_generation"`
+	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
 	// Spelling of the new binding.
 	DestinationDisplayName DisplayName `json:"destination_display_name" url:"destination_display_name"`
 	// Directory holding the new binding.
@@ -3811,11 +3813,11 @@ type FilesystemChangeMoved struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeMoved) GetBindingGeneration() BindingGeneration {
+func (f *FilesystemChangeMoved) GetBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
-	return f.BindingGeneration
+	return f.BindingVersion
 }
 
 func (f *FilesystemChangeMoved) GetDestinationDisplayName() DisplayName {
@@ -3867,11 +3869,11 @@ func (f *FilesystemChangeMoved) require(field *big.Int) {
 	f.explicitFields.Or(f.explicitFields, field)
 }
 
-// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetBindingGeneration(bindingGeneration BindingGeneration) {
-	f.BindingGeneration = bindingGeneration
-	f.require(filesystemChangeMovedFieldBindingGeneration)
+func (f *FilesystemChangeMoved) SetBindingVersion(bindingVersion BindingVersion) {
+	f.BindingVersion = bindingVersion
+	f.require(filesystemChangeMovedFieldBindingVersion)
 }
 
 // SetDestinationDisplayName sets the DestinationDisplayName field and marks it as non-optional;
@@ -3953,15 +3955,15 @@ func (f *FilesystemChangeMoved) String() string {
 
 // A deleted inode was recovered and re-bound.
 var (
-	filesystemChangeUndeletedFieldBindingGeneration = big.NewInt(1 << 0)
-	filesystemChangeUndeletedFieldDisplayName       = big.NewInt(1 << 1)
-	filesystemChangeUndeletedFieldInodeID           = big.NewInt(1 << 2)
-	filesystemChangeUndeletedFieldParentInodeID     = big.NewInt(1 << 3)
+	filesystemChangeUndeletedFieldBindingVersion = big.NewInt(1 << 0)
+	filesystemChangeUndeletedFieldDisplayName    = big.NewInt(1 << 1)
+	filesystemChangeUndeletedFieldInodeID        = big.NewInt(1 << 2)
+	filesystemChangeUndeletedFieldParentInodeID  = big.NewInt(1 << 3)
 )
 
 type FilesystemChangeUndeleted struct {
 	// Opaque identifier for the binding created by this event.
-	BindingGeneration BindingGeneration `json:"binding_generation" url:"binding_generation"`
+	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
 	// Spelling of the recovered binding.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
 	// Recovered inode.
@@ -3976,11 +3978,11 @@ type FilesystemChangeUndeleted struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeUndeleted) GetBindingGeneration() BindingGeneration {
+func (f *FilesystemChangeUndeleted) GetBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
-	return f.BindingGeneration
+	return f.BindingVersion
 }
 
 func (f *FilesystemChangeUndeleted) GetDisplayName() DisplayName {
@@ -4018,11 +4020,11 @@ func (f *FilesystemChangeUndeleted) require(field *big.Int) {
 	f.explicitFields.Or(f.explicitFields, field)
 }
 
-// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeUndeleted) SetBindingGeneration(bindingGeneration BindingGeneration) {
-	f.BindingGeneration = bindingGeneration
-	f.require(filesystemChangeUndeletedFieldBindingGeneration)
+func (f *FilesystemChangeUndeleted) SetBindingVersion(bindingVersion BindingVersion) {
+	f.BindingVersion = bindingVersion
+	f.require(filesystemChangeUndeletedFieldBindingVersion)
 }
 
 // SetDisplayName sets the DisplayName field and marks it as non-optional;
@@ -4086,163 +4088,6 @@ func (f *FilesystemChangeUndeleted) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", f)
-}
-
-// One explicit grep index garbage-collection pass (maintenance API group).
-type GrepGcRequest = map[string]any
-
-// Result of one explicit grep index garbage-collection pass (maintenance API group).
-var (
-	grepGcResponseFieldDeletedOtherObjects = big.NewInt(1 << 0)
-	grepGcResponseFieldDeletedSegments     = big.NewInt(1 << 1)
-	grepGcResponseFieldNamespaceID         = big.NewInt(1 << 2)
-	grepGcResponseFieldNamespaceReaped     = big.NewInt(1 << 3)
-	grepGcResponseFieldRetainedCandidates  = big.NewInt(1 << 4)
-)
-
-type GrepGcResponse struct {
-	// Other unreferenced grep objects deleted after the grace window.
-	DeletedOtherObjects int64 `json:"deleted_other_objects" url:"deleted_other_objects"`
-	// Unreferenced grep segments older than the minimum segment age.
-	DeletedSegments int64 `json:"deleted_segments" url:"deleted_segments"`
-	// Namespace whose grep-owned keyspace was inspected.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Whether an absent or tombstoned namespace had extension state reaped.
-	NamespaceReaped bool `json:"namespace_reaped" url:"namespace_reaped"`
-	// Referenced, young, or unrecognized candidates retained by the pass.
-	RetainedCandidates int64 `json:"retained_candidates" url:"retained_candidates"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (g *GrepGcResponse) GetDeletedOtherObjects() int64 {
-	if g == nil {
-		return 0
-	}
-	return g.DeletedOtherObjects
-}
-
-func (g *GrepGcResponse) GetDeletedSegments() int64 {
-	if g == nil {
-		return 0
-	}
-	return g.DeletedSegments
-}
-
-func (g *GrepGcResponse) GetNamespaceID() NamespaceID {
-	if g == nil {
-		return ""
-	}
-	return g.NamespaceID
-}
-
-func (g *GrepGcResponse) GetNamespaceReaped() bool {
-	if g == nil {
-		return false
-	}
-	return g.NamespaceReaped
-}
-
-func (g *GrepGcResponse) GetRetainedCandidates() int64 {
-	if g == nil {
-		return 0
-	}
-	return g.RetainedCandidates
-}
-
-func (g *GrepGcResponse) GetExtraProperties() map[string]interface{} {
-	if g == nil {
-		return nil
-	}
-	return g.extraProperties
-}
-
-func (g *GrepGcResponse) require(field *big.Int) {
-	if g.explicitFields == nil {
-		g.explicitFields = big.NewInt(0)
-	}
-	g.explicitFields.Or(g.explicitFields, field)
-}
-
-// SetDeletedOtherObjects sets the DeletedOtherObjects field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetDeletedOtherObjects(deletedOtherObjects int64) {
-	g.DeletedOtherObjects = deletedOtherObjects
-	g.require(grepGcResponseFieldDeletedOtherObjects)
-}
-
-// SetDeletedSegments sets the DeletedSegments field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetDeletedSegments(deletedSegments int64) {
-	g.DeletedSegments = deletedSegments
-	g.require(grepGcResponseFieldDeletedSegments)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetNamespaceID(namespaceID NamespaceID) {
-	g.NamespaceID = namespaceID
-	g.require(grepGcResponseFieldNamespaceID)
-}
-
-// SetNamespaceReaped sets the NamespaceReaped field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetNamespaceReaped(namespaceReaped bool) {
-	g.NamespaceReaped = namespaceReaped
-	g.require(grepGcResponseFieldNamespaceReaped)
-}
-
-// SetRetainedCandidates sets the RetainedCandidates field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetRetainedCandidates(retainedCandidates int64) {
-	g.RetainedCandidates = retainedCandidates
-	g.require(grepGcResponseFieldRetainedCandidates)
-}
-
-func (g *GrepGcResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler GrepGcResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*g = GrepGcResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *g)
-	if err != nil {
-		return err
-	}
-	g.extraProperties = extraProperties
-	g.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (g *GrepGcResponse) MarshalJSON() ([]byte, error) {
-	type embed GrepGcResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*g),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, g.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (g *GrepGcResponse) String() string {
-	if g == nil {
-		return "<nil>"
-	}
-	if len(g.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(g); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", g)
 }
 
 // The maintenance status of a namespace's grep index.
@@ -4553,15 +4398,17 @@ func (g *GrepIndexLifecycleActive) String() string {
 
 // An initial scan of a pinned checkpoint that is not yet searchable.
 var (
-	grepIndexLifecycleBackfillingFieldCheckpointID      = big.NewInt(1 << 0)
-	grepIndexLifecycleBackfillingFieldCursorInodeID     = big.NewInt(1 << 1)
-	grepIndexLifecycleBackfillingFieldNamespaceID       = big.NewInt(1 << 2)
-	grepIndexLifecycleBackfillingFieldNextRunNo         = big.NewInt(1 << 3)
-	grepIndexLifecycleBackfillingFieldReorganizePending = big.NewInt(1 << 4)
-	grepIndexLifecycleBackfillingFieldTargetSeq         = big.NewInt(1 << 5)
+	grepIndexLifecycleBackfillingFieldCapturedSeq       = big.NewInt(1 << 0)
+	grepIndexLifecycleBackfillingFieldCheckpointID      = big.NewInt(1 << 1)
+	grepIndexLifecycleBackfillingFieldCursorInodeID     = big.NewInt(1 << 2)
+	grepIndexLifecycleBackfillingFieldNamespaceID       = big.NewInt(1 << 3)
+	grepIndexLifecycleBackfillingFieldNextRunNo         = big.NewInt(1 << 4)
+	grepIndexLifecycleBackfillingFieldReorganizePending = big.NewInt(1 << 5)
 )
 
 type GrepIndexLifecycleBackfilling struct {
+	// The namespace sequence that completes the backfill when reached.
+	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
 	// Checkpoint pinning the state being walked.
 	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
 	// The inode after which the scan resumes, or `None` before the first page.
@@ -4572,14 +4419,19 @@ type GrepIndexLifecycleBackfilling struct {
 	NextRunNo RunNo `json:"next_run_no" url:"next_run_no"`
 	// True while a partitioned segment reorganization is in progress.
 	ReorganizePending bool `json:"reorganize_pending" url:"reorganize_pending"`
-	// The namespace sequence that completes the backfill when reached.
-	TargetSeq ChangeSeq `json:"target_seq" url:"target_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (g *GrepIndexLifecycleBackfilling) GetCapturedSeq() ChangeSeq {
+	if g == nil {
+		return 0
+	}
+	return g.CapturedSeq
 }
 
 func (g *GrepIndexLifecycleBackfilling) GetCheckpointID() PinID {
@@ -4617,13 +4469,6 @@ func (g *GrepIndexLifecycleBackfilling) GetReorganizePending() bool {
 	return g.ReorganizePending
 }
 
-func (g *GrepIndexLifecycleBackfilling) GetTargetSeq() ChangeSeq {
-	if g == nil {
-		return 0
-	}
-	return g.TargetSeq
-}
-
 func (g *GrepIndexLifecycleBackfilling) GetExtraProperties() map[string]interface{} {
 	if g == nil {
 		return nil
@@ -4636,6 +4481,13 @@ func (g *GrepIndexLifecycleBackfilling) require(field *big.Int) {
 		g.explicitFields = big.NewInt(0)
 	}
 	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetCapturedSeq sets the CapturedSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GrepIndexLifecycleBackfilling) SetCapturedSeq(capturedSeq ChangeSeq) {
+	g.CapturedSeq = capturedSeq
+	g.require(grepIndexLifecycleBackfillingFieldCapturedSeq)
 }
 
 // SetCheckpointID sets the CheckpointID field and marks it as non-optional;
@@ -4671,13 +4523,6 @@ func (g *GrepIndexLifecycleBackfilling) SetNextRunNo(nextRunNo RunNo) {
 func (g *GrepIndexLifecycleBackfilling) SetReorganizePending(reorganizePending bool) {
 	g.ReorganizePending = reorganizePending
 	g.require(grepIndexLifecycleBackfillingFieldReorganizePending)
-}
-
-// SetTargetSeq sets the TargetSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleBackfilling) SetTargetSeq(targetSeq ChangeSeq) {
-	g.TargetSeq = targetSeq
-	g.require(grepIndexLifecycleBackfillingFieldTargetSeq)
 }
 
 func (g *GrepIndexLifecycleBackfilling) UnmarshalJSON(data []byte) error {
@@ -4845,7 +4690,8 @@ func (g *GrepIndexLifecycleDisabled) String() string {
 // Stable inode ID within a namespace
 type InodeID = string
 
-// One page of active checkpoint records.
+// One page of existing checkpoint records, including expired records that
+// collection has not yet deleted.
 var (
 	listCheckpointsResponseFieldCheckpoints = big.NewInt(1 << 0)
 	listCheckpointsResponseFieldNamespaceID = big.NewInt(1 << 1)
@@ -4853,7 +4699,7 @@ var (
 )
 
 type ListCheckpointsResponse struct {
-	// The active records in ascending checkpoint ID order.
+	// The records in ascending checkpoint ID order.
 	Checkpoints []*Checkpoint `json:"checkpoints" url:"checkpoints"`
 	// Namespace the records belong to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
@@ -6577,7 +6423,7 @@ var (
 	pathEntryDirectoryFieldAttributesRevisionNo  = big.NewInt(1 << 1)
 	pathEntryDirectoryFieldAttributesUpdatedAtMs = big.NewInt(1 << 2)
 	pathEntryDirectoryFieldAttributesUpdatedBy   = big.NewInt(1 << 3)
-	pathEntryDirectoryFieldBindingGeneration     = big.NewInt(1 << 4)
+	pathEntryDirectoryFieldBindingVersion        = big.NewInt(1 << 4)
 	pathEntryDirectoryFieldCreatedAtMs           = big.NewInt(1 << 5)
 	pathEntryDirectoryFieldCreatedBy             = big.NewInt(1 << 6)
 	pathEntryDirectoryFieldDisplayName           = big.NewInt(1 << 7)
@@ -6601,7 +6447,7 @@ type PathEntryDirectory struct {
 	// initial empty state.
 	AttributesUpdatedBy *ActorID `json:"attributes_updated_by,omitempty" url:"attributes_updated_by,omitempty"`
 	// The opaque ID for the current parent and name binding, or `None` for the namespace root.
-	BindingGeneration *BindingGeneration `json:"binding_generation,omitempty" url:"binding_generation,omitempty"`
+	BindingVersion *BindingVersion `json:"binding_version,omitempty" url:"binding_version,omitempty"`
 	// The inode creation time in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
 	// Actor that created this inode, as supplied by the application.
@@ -6654,11 +6500,11 @@ func (p *PathEntryDirectory) GetAttributesUpdatedBy() *ActorID {
 	return p.AttributesUpdatedBy
 }
 
-func (p *PathEntryDirectory) GetBindingGeneration() *BindingGeneration {
+func (p *PathEntryDirectory) GetBindingVersion() *BindingVersion {
 	if p == nil {
 		return nil
 	}
-	return p.BindingGeneration
+	return p.BindingVersion
 }
 
 func (p *PathEntryDirectory) GetCreatedAtMs() int64 {
@@ -6759,11 +6605,11 @@ func (p *PathEntryDirectory) SetAttributesUpdatedBy(attributesUpdatedBy *ActorID
 	p.require(pathEntryDirectoryFieldAttributesUpdatedBy)
 }
 
-// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PathEntryDirectory) SetBindingGeneration(bindingGeneration *BindingGeneration) {
-	p.BindingGeneration = bindingGeneration
-	p.require(pathEntryDirectoryFieldBindingGeneration)
+func (p *PathEntryDirectory) SetBindingVersion(bindingVersion *BindingVersion) {
+	p.BindingVersion = bindingVersion
+	p.require(pathEntryDirectoryFieldBindingVersion)
 }
 
 // SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
@@ -6870,7 +6716,7 @@ var (
 	pathEntryFileFieldAttributesRevisionNo  = big.NewInt(1 << 1)
 	pathEntryFileFieldAttributesUpdatedAtMs = big.NewInt(1 << 2)
 	pathEntryFileFieldAttributesUpdatedBy   = big.NewInt(1 << 3)
-	pathEntryFileFieldBindingGeneration     = big.NewInt(1 << 4)
+	pathEntryFileFieldBindingVersion        = big.NewInt(1 << 4)
 	pathEntryFileFieldContentRef            = big.NewInt(1 << 5)
 	pathEntryFileFieldCreatedAtMs           = big.NewInt(1 << 6)
 	pathEntryFileFieldCreatedBy             = big.NewInt(1 << 7)
@@ -6899,7 +6745,7 @@ type PathEntryFile struct {
 	// initial empty state.
 	AttributesUpdatedBy *ActorID `json:"attributes_updated_by,omitempty" url:"attributes_updated_by,omitempty"`
 	// The opaque ID for the current parent and name binding, or `None` for the namespace root.
-	BindingGeneration *BindingGeneration `json:"binding_generation,omitempty" url:"binding_generation,omitempty"`
+	BindingVersion *BindingVersion `json:"binding_version,omitempty" url:"binding_version,omitempty"`
 	// Current content reference.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// The inode creation time in Unix milliseconds.
@@ -6962,11 +6808,11 @@ func (p *PathEntryFile) GetAttributesUpdatedBy() *ActorID {
 	return p.AttributesUpdatedBy
 }
 
-func (p *PathEntryFile) GetBindingGeneration() *BindingGeneration {
+func (p *PathEntryFile) GetBindingVersion() *BindingVersion {
 	if p == nil {
 		return nil
 	}
-	return p.BindingGeneration
+	return p.BindingVersion
 }
 
 func (p *PathEntryFile) GetContentRef() *ContentRef {
@@ -7102,11 +6948,11 @@ func (p *PathEntryFile) SetAttributesUpdatedBy(attributesUpdatedBy *ActorID) {
 	p.require(pathEntryFileFieldAttributesUpdatedBy)
 }
 
-// SetBindingGeneration sets the BindingGeneration field and marks it as non-optional;
+// SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PathEntryFile) SetBindingGeneration(bindingGeneration *BindingGeneration) {
-	p.BindingGeneration = bindingGeneration
-	p.require(pathEntryFileFieldBindingGeneration)
+func (p *PathEntryFile) SetBindingVersion(bindingVersion *BindingVersion) {
+	p.BindingVersion = bindingVersion
+	p.require(pathEntryFileFieldBindingVersion)
 }
 
 // SetContentRef sets the ContentRef field and marks it as non-optional;
@@ -7972,6 +7818,7 @@ type RevisionNo = int64
 type RunMaintenanceRequest struct {
 	Kind                 string
 	Gc                   *RunMaintenanceRequestGc
+	GrepGc               *RunMaintenanceRequestGrepGc
 	Metadata             *RunMaintenanceRequestMetadata
 	MetadataCompaction   *RunMaintenanceRequestMetadataCompaction
 	RecoverAdministrator *RunMaintenanceRequestRecoverAdministrator
@@ -7992,6 +7839,13 @@ func (r *RunMaintenanceRequest) GetGc() *RunMaintenanceRequestGc {
 		return nil
 	}
 	return r.Gc
+}
+
+func (r *RunMaintenanceRequest) GetGrepGc() *RunMaintenanceRequestGrepGc {
+	if r == nil {
+		return nil
+	}
+	return r.GrepGc
 }
 
 func (r *RunMaintenanceRequest) GetMetadata() *RunMaintenanceRequestMetadata {
@@ -8040,6 +7894,12 @@ func (r *RunMaintenanceRequest) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		r.Gc = value
+	case "grep_gc":
+		value := new(RunMaintenanceRequestGrepGc)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.GrepGc = value
 	case "metadata":
 		value := new(RunMaintenanceRequestMetadata)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -8076,6 +7936,9 @@ func (r RunMaintenanceRequest) MarshalJSON() ([]byte, error) {
 	if r.Gc != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
 	}
+	if r.GrepGc != nil {
+		return internal.MarshalJSONWithExtraProperty(r.GrepGc, "kind", "grep_gc")
+	}
 	if r.Metadata != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Metadata, "kind", "metadata")
 	}
@@ -8096,6 +7959,7 @@ func (r RunMaintenanceRequest) MarshalJSON() ([]byte, error) {
 
 type RunMaintenanceRequestVisitor interface {
 	VisitGc(*RunMaintenanceRequestGc) error
+	VisitGrepGc(*RunMaintenanceRequestGrepGc) error
 	VisitMetadata(*RunMaintenanceRequestMetadata) error
 	VisitMetadataCompaction(*RunMaintenanceRequestMetadataCompaction) error
 	VisitRecoverAdministrator(*RunMaintenanceRequestRecoverAdministrator) error
@@ -8105,6 +7969,9 @@ type RunMaintenanceRequestVisitor interface {
 func (r *RunMaintenanceRequest) Accept(visitor RunMaintenanceRequestVisitor) error {
 	if r.Gc != nil {
 		return visitor.VisitGc(r.Gc)
+	}
+	if r.GrepGc != nil {
+		return visitor.VisitGrepGc(r.GrepGc)
 	}
 	if r.Metadata != nil {
 		return visitor.VisitMetadata(r.Metadata)
@@ -8128,6 +7995,9 @@ func (r *RunMaintenanceRequest) validate() error {
 	var fields []string
 	if r.Gc != nil {
 		fields = append(fields, "gc")
+	}
+	if r.GrepGc != nil {
+		fields = append(fields, "grep_gc")
 	}
 	if r.Metadata != nil {
 		fields = append(fields, "metadata")
@@ -8254,6 +8124,72 @@ func (r *RunMaintenanceRequestGc) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// Collects aged, unreferenced grep index objects.
+type RunMaintenanceRequestGrepGc struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceRequestGrepGc) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunMaintenanceRequestGrepGc) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+func (r *RunMaintenanceRequestGrepGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceRequestGrepGc
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunMaintenanceRequestGrepGc(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunMaintenanceRequestGrepGc) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceRequestGrepGc
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunMaintenanceRequestGrepGc) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
 // Runs WAL flushing and one bounded metadata reorganization step.
 var (
 	runMaintenanceRequestMetadataFieldMaxWalTailSegments = big.NewInt(1 << 0)
@@ -8340,7 +8276,8 @@ func (r *RunMaintenanceRequestMetadata) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Runs one full metadata compaction.
+// Runs one metadata compaction unit: one bounded merge, or one streaming
+// compaction of a family group.
 type RunMaintenanceRequestMetadataCompaction struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8562,6 +8499,7 @@ func (r *RunMaintenanceRequestRetention) String() string {
 type RunMaintenanceResponse struct {
 	Kind                 string
 	Gc                   *RunMaintenanceResponseGc
+	GrepGc               *RunMaintenanceResponseGrepGc
 	Metadata             *RunMaintenanceResponseMetadata
 	MetadataCompaction   *RunMaintenanceResponseMetadataCompaction
 	RecoverAdministrator *RunMaintenanceResponseRecoverAdministrator
@@ -8582,6 +8520,13 @@ func (r *RunMaintenanceResponse) GetGc() *RunMaintenanceResponseGc {
 		return nil
 	}
 	return r.Gc
+}
+
+func (r *RunMaintenanceResponse) GetGrepGc() *RunMaintenanceResponseGrepGc {
+	if r == nil {
+		return nil
+	}
+	return r.GrepGc
 }
 
 func (r *RunMaintenanceResponse) GetMetadata() *RunMaintenanceResponseMetadata {
@@ -8630,6 +8575,12 @@ func (r *RunMaintenanceResponse) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		r.Gc = value
+	case "grep_gc":
+		value := new(RunMaintenanceResponseGrepGc)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.GrepGc = value
 	case "metadata":
 		value := new(RunMaintenanceResponseMetadata)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -8666,6 +8617,9 @@ func (r RunMaintenanceResponse) MarshalJSON() ([]byte, error) {
 	if r.Gc != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
 	}
+	if r.GrepGc != nil {
+		return internal.MarshalJSONWithExtraProperty(r.GrepGc, "kind", "grep_gc")
+	}
 	if r.Metadata != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Metadata, "kind", "metadata")
 	}
@@ -8686,6 +8640,7 @@ func (r RunMaintenanceResponse) MarshalJSON() ([]byte, error) {
 
 type RunMaintenanceResponseVisitor interface {
 	VisitGc(*RunMaintenanceResponseGc) error
+	VisitGrepGc(*RunMaintenanceResponseGrepGc) error
 	VisitMetadata(*RunMaintenanceResponseMetadata) error
 	VisitMetadataCompaction(*RunMaintenanceResponseMetadataCompaction) error
 	VisitRecoverAdministrator(*RunMaintenanceResponseRecoverAdministrator) error
@@ -8695,6 +8650,9 @@ type RunMaintenanceResponseVisitor interface {
 func (r *RunMaintenanceResponse) Accept(visitor RunMaintenanceResponseVisitor) error {
 	if r.Gc != nil {
 		return visitor.VisitGc(r.Gc)
+	}
+	if r.GrepGc != nil {
+		return visitor.VisitGrepGc(r.GrepGc)
 	}
 	if r.Metadata != nil {
 		return visitor.VisitMetadata(r.Metadata)
@@ -8718,6 +8676,9 @@ func (r *RunMaintenanceResponse) validate() error {
 	var fields []string
 	if r.Gc != nil {
 		fields = append(fields, "gc")
+	}
+	if r.GrepGc != nil {
+		fields = append(fields, "grep_gc")
 	}
 	if r.Metadata != nil {
 		fields = append(fields, "metadata")
@@ -8763,7 +8724,7 @@ var (
 	runMaintenanceResponseGcFieldDeletedCheckpointsByOwner = big.NewInt(1 << 1)
 	runMaintenanceResponseGcFieldNamespaceID               = big.NewInt(1 << 2)
 	runMaintenanceResponseGcFieldNextReclamationAtMs       = big.NewInt(1 << 3)
-	runMaintenanceResponseGcFieldReclaimAfterMs            = big.NewInt(1 << 4)
+	runMaintenanceResponseGcFieldReclaimableAtMs           = big.NewInt(1 << 4)
 	runMaintenanceResponseGcFieldRetained                  = big.NewInt(1 << 5)
 )
 
@@ -8777,7 +8738,7 @@ type RunMaintenanceResponseGc struct {
 	// The earliest future retirement deadline, pin deletion time, or upload cleanup time.
 	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
 	// The current tombstone's deletion time plus the configured retirement grace.
-	ReclaimAfterMs *int64 `json:"reclaim_after_ms,omitempty" url:"reclaim_after_ms,omitempty"`
+	ReclaimableAtMs *int64 `json:"reclaimable_at_ms,omitempty" url:"reclaimable_at_ms,omitempty"`
 	// Candidates retained at deletion time, grouped by reason.
 	Retained *RetainedCandidates `json:"retained" url:"retained"`
 
@@ -8816,11 +8777,11 @@ func (r *RunMaintenanceResponseGc) GetNextReclamationAtMs() *int64 {
 	return r.NextReclamationAtMs
 }
 
-func (r *RunMaintenanceResponseGc) GetReclaimAfterMs() *int64 {
+func (r *RunMaintenanceResponseGc) GetReclaimableAtMs() *int64 {
 	if r == nil {
 		return nil
 	}
-	return r.ReclaimAfterMs
+	return r.ReclaimableAtMs
 }
 
 func (r *RunMaintenanceResponseGc) GetRetained() *RetainedCandidates {
@@ -8872,11 +8833,11 @@ func (r *RunMaintenanceResponseGc) SetNextReclamationAtMs(nextReclamationAtMs *i
 	r.require(runMaintenanceResponseGcFieldNextReclamationAtMs)
 }
 
-// SetReclaimAfterMs sets the ReclaimAfterMs field and marks it as non-optional;
+// SetReclaimableAtMs sets the ReclaimableAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetReclaimAfterMs(reclaimAfterMs *int64) {
-	r.ReclaimAfterMs = reclaimAfterMs
-	r.require(runMaintenanceResponseGcFieldReclaimAfterMs)
+func (r *RunMaintenanceResponseGc) SetReclaimableAtMs(reclaimableAtMs *int64) {
+	r.ReclaimableAtMs = reclaimableAtMs
+	r.require(runMaintenanceResponseGcFieldReclaimableAtMs)
 }
 
 // SetRetained sets the Retained field and marks it as non-optional;
@@ -8914,6 +8875,160 @@ func (r *RunMaintenanceResponseGc) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RunMaintenanceResponseGc) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// Counts from one grep index collection pass.
+var (
+	runMaintenanceResponseGrepGcFieldDeletedOtherObjects = big.NewInt(1 << 0)
+	runMaintenanceResponseGrepGcFieldDeletedSegments     = big.NewInt(1 << 1)
+	runMaintenanceResponseGrepGcFieldNamespaceID         = big.NewInt(1 << 2)
+	runMaintenanceResponseGrepGcFieldNamespaceReaped     = big.NewInt(1 << 3)
+	runMaintenanceResponseGrepGcFieldRetainedCandidates  = big.NewInt(1 << 4)
+)
+
+type RunMaintenanceResponseGrepGc struct {
+	// Other unreferenced grep objects deleted after the grace window.
+	DeletedOtherObjects int64 `json:"deleted_other_objects" url:"deleted_other_objects"`
+	// Unreferenced grep segments older than the minimum segment age.
+	DeletedSegments int64 `json:"deleted_segments" url:"deleted_segments"`
+	// Namespace whose grep-owned keyspace was inspected.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// Whether an absent or tombstoned namespace had extension state reaped.
+	NamespaceReaped bool `json:"namespace_reaped" url:"namespace_reaped"`
+	// Referenced, young, or unrecognized candidates retained by the pass.
+	RetainedCandidates int64 `json:"retained_candidates" url:"retained_candidates"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetDeletedOtherObjects() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.DeletedOtherObjects
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetDeletedSegments() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.DeletedSegments
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetNamespaceID() NamespaceID {
+	if r == nil {
+		return ""
+	}
+	return r.NamespaceID
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetNamespaceReaped() bool {
+	if r == nil {
+		return false
+	}
+	return r.NamespaceReaped
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetRetainedCandidates() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.RetainedCandidates
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunMaintenanceResponseGrepGc) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetDeletedOtherObjects sets the DeletedOtherObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetDeletedOtherObjects(deletedOtherObjects int64) {
+	r.DeletedOtherObjects = deletedOtherObjects
+	r.require(runMaintenanceResponseGrepGcFieldDeletedOtherObjects)
+}
+
+// SetDeletedSegments sets the DeletedSegments field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetDeletedSegments(deletedSegments int64) {
+	r.DeletedSegments = deletedSegments
+	r.require(runMaintenanceResponseGrepGcFieldDeletedSegments)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetNamespaceID(namespaceID NamespaceID) {
+	r.NamespaceID = namespaceID
+	r.require(runMaintenanceResponseGrepGcFieldNamespaceID)
+}
+
+// SetNamespaceReaped sets the NamespaceReaped field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetNamespaceReaped(namespaceReaped bool) {
+	r.NamespaceReaped = namespaceReaped
+	r.require(runMaintenanceResponseGrepGcFieldNamespaceReaped)
+}
+
+// SetRetainedCandidates sets the RetainedCandidates field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetRetainedCandidates(retainedCandidates int64) {
+	r.RetainedCandidates = retainedCandidates
+	r.require(runMaintenanceResponseGrepGcFieldRetainedCandidates)
+}
+
+func (r *RunMaintenanceResponseGrepGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceResponseGrepGc
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunMaintenanceResponseGrepGc(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunMaintenanceResponseGrepGc) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceResponseGrepGc
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunMaintenanceResponseGrepGc) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -9048,7 +9163,7 @@ func (r *RunMaintenanceResponseMetadata) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Result of one full metadata compaction.
+// Result of one metadata compaction unit.
 var (
 	runMaintenanceResponseMetadataCompactionFieldCompaction  = big.NewInt(1 << 0)
 	runMaintenanceResponseMetadataCompactionFieldNamespaceID = big.NewInt(1 << 1)

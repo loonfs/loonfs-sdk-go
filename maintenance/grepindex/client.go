@@ -115,33 +115,3 @@ func (c *Client) Enable(
 	}
 	return response.Body, nil
 }
-
-// Runs one explicit garbage-collection pass over only this namespace's grep-owned extension keyspace. A tombstoned or absent namespace has aged extension state reaped. Every call reads durable roots and completes one pass. Unreadable or invalid roots fail before deletion. Requires this deployment to maintain the grep index.
-//
-// Example:
-//
-//	request := &maintenance.GcGrepIndexRequest{
-//	    NamespaceID: "namespace_id",
-//	    Body: map[string]any{
-//	        "key": "value",
-//	    },
-//	}
-//	client.Maintenance.GrepIndex.Gc(
-//	    context.TODO(),
-//	    request,
-//	)
-func (c *Client) Gc(
-	ctx context.Context,
-	request *maintenance.GcGrepIndexRequest,
-	opts ...option.RequestOption,
-) (*loonfs.GrepGcResponse, error) {
-	response, err := c.WithRawResponse.Gc(
-		ctx,
-		request,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
-}
