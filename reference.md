@@ -2760,77 +2760,6 @@ client.Maintenance.GrepIndex.Enable(
 </dl>
 </details>
 
-<details><summary><code>client.Maintenance.GrepIndex.Gc(NamespaceID, request) -> *loonfs.GrepGcResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Runs one explicit garbage-collection pass over only this namespace's grep-owned extension keyspace. A tombstoned or absent namespace has aged extension state reaped. Every call reads durable roots and completes one pass. Unreadable or invalid roots fail before deletion. Requires this deployment to maintain the grep index.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &maintenance.GcGrepIndexRequest{
-    NamespaceID: "namespace_id",
-    Body: map[string]any{
-        "key": "value",
-    },
-}
-client.Maintenance.GrepIndex.Gc(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — Namespace id
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**request:** `loonfs.GrepGcRequest` 
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
 ## Maintenance Runs
 <details><summary><code>client.Maintenance.Runs.Create(NamespaceID, request) -> *loonfs.RunMaintenanceResponse</code></summary>
 <dl>
@@ -2844,7 +2773,7 @@ client.Maintenance.GrepIndex.Gc(
 <dl>
 <dd>
 
-Runs one maintenance job for the namespace. The body names the job with `kind`: `metadata`, `metadata_compaction`, `gc`, `retention`, or `recover_administrator`. The response carries the same `kind` and that job's result. A deleted namespace accepts only `gc`. A `gc` call reads the current manifest and lists pins, then sweeps every family to the end. Each listing starts at the beginning. The call keeps no continuation.
+Runs one maintenance job for the namespace. The body names the job with `kind`: `metadata`, `metadata_compaction`, `gc`, `grep_gc`, `retention`, or `recover_administrator`. The response carries the same `kind` and that job's result. A deleted namespace accepts only `gc` or `grep_gc`. A `grep_gc` call collects aged, unreferenced grep index objects and requires `maintenance.grep.index`. A `gc` call reads the current manifest and lists pins, then sweeps every family to the end. Each listing starts at the beginning. The call keeps no continuation.
 </dd>
 </dl>
 </dd>

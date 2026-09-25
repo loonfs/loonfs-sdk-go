@@ -1343,42 +1343,6 @@
       }
     },
     {
-      "id": "50594101-4ce6-4757-be0e-cd3dfee2bac3",
-      "name": "Collect grep index garbage - default",
-      "request": {
-        "urlPathTemplate": "/v0/maintenance/namespaces/{namespace_id}/grep/index/gc",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"deleted_other_objects\": 1000000,\n  \"deleted_segments\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"namespace_reaped\": true,\n  \"retained_candidates\": 1000000\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "50594101-4ce6-4757-be0e-cd3dfee2bac3",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
       "id": "4d4075bf-bd7a-43d4-b06f-93c3d5f0cf6b",
       "name": "Run one maintenance job - default",
       "request": {
@@ -1447,6 +1411,6 @@
     }
   ],
   "meta": {
-    "total": 38
+    "total": 37
   }
 }

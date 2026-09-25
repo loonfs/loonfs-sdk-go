@@ -4090,163 +4090,6 @@ func (f *FilesystemChangeUndeleted) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// One explicit grep index garbage-collection pass (maintenance API group).
-type GrepGcRequest = map[string]any
-
-// Result of one explicit grep index garbage-collection pass (maintenance API group).
-var (
-	grepGcResponseFieldDeletedOtherObjects = big.NewInt(1 << 0)
-	grepGcResponseFieldDeletedSegments     = big.NewInt(1 << 1)
-	grepGcResponseFieldNamespaceID         = big.NewInt(1 << 2)
-	grepGcResponseFieldNamespaceReaped     = big.NewInt(1 << 3)
-	grepGcResponseFieldRetainedCandidates  = big.NewInt(1 << 4)
-)
-
-type GrepGcResponse struct {
-	// Other unreferenced grep objects deleted after the grace window.
-	DeletedOtherObjects int64 `json:"deleted_other_objects" url:"deleted_other_objects"`
-	// Unreferenced grep segments older than the minimum segment age.
-	DeletedSegments int64 `json:"deleted_segments" url:"deleted_segments"`
-	// Namespace whose grep-owned keyspace was inspected.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Whether an absent or tombstoned namespace had extension state reaped.
-	NamespaceReaped bool `json:"namespace_reaped" url:"namespace_reaped"`
-	// Referenced, young, or unrecognized candidates retained by the pass.
-	RetainedCandidates int64 `json:"retained_candidates" url:"retained_candidates"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (g *GrepGcResponse) GetDeletedOtherObjects() int64 {
-	if g == nil {
-		return 0
-	}
-	return g.DeletedOtherObjects
-}
-
-func (g *GrepGcResponse) GetDeletedSegments() int64 {
-	if g == nil {
-		return 0
-	}
-	return g.DeletedSegments
-}
-
-func (g *GrepGcResponse) GetNamespaceID() NamespaceID {
-	if g == nil {
-		return ""
-	}
-	return g.NamespaceID
-}
-
-func (g *GrepGcResponse) GetNamespaceReaped() bool {
-	if g == nil {
-		return false
-	}
-	return g.NamespaceReaped
-}
-
-func (g *GrepGcResponse) GetRetainedCandidates() int64 {
-	if g == nil {
-		return 0
-	}
-	return g.RetainedCandidates
-}
-
-func (g *GrepGcResponse) GetExtraProperties() map[string]interface{} {
-	if g == nil {
-		return nil
-	}
-	return g.extraProperties
-}
-
-func (g *GrepGcResponse) require(field *big.Int) {
-	if g.explicitFields == nil {
-		g.explicitFields = big.NewInt(0)
-	}
-	g.explicitFields.Or(g.explicitFields, field)
-}
-
-// SetDeletedOtherObjects sets the DeletedOtherObjects field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetDeletedOtherObjects(deletedOtherObjects int64) {
-	g.DeletedOtherObjects = deletedOtherObjects
-	g.require(grepGcResponseFieldDeletedOtherObjects)
-}
-
-// SetDeletedSegments sets the DeletedSegments field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetDeletedSegments(deletedSegments int64) {
-	g.DeletedSegments = deletedSegments
-	g.require(grepGcResponseFieldDeletedSegments)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetNamespaceID(namespaceID NamespaceID) {
-	g.NamespaceID = namespaceID
-	g.require(grepGcResponseFieldNamespaceID)
-}
-
-// SetNamespaceReaped sets the NamespaceReaped field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetNamespaceReaped(namespaceReaped bool) {
-	g.NamespaceReaped = namespaceReaped
-	g.require(grepGcResponseFieldNamespaceReaped)
-}
-
-// SetRetainedCandidates sets the RetainedCandidates field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepGcResponse) SetRetainedCandidates(retainedCandidates int64) {
-	g.RetainedCandidates = retainedCandidates
-	g.require(grepGcResponseFieldRetainedCandidates)
-}
-
-func (g *GrepGcResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler GrepGcResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*g = GrepGcResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *g)
-	if err != nil {
-		return err
-	}
-	g.extraProperties = extraProperties
-	g.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (g *GrepGcResponse) MarshalJSON() ([]byte, error) {
-	type embed GrepGcResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*g),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, g.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (g *GrepGcResponse) String() string {
-	if g == nil {
-		return "<nil>"
-	}
-	if len(g.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(g); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", g)
-}
-
 // The maintenance status of a namespace's grep index.
 type GrepIndex struct {
 	Status      string
@@ -7975,6 +7818,7 @@ type RevisionNo = int64
 type RunMaintenanceRequest struct {
 	Kind                 string
 	Gc                   *RunMaintenanceRequestGc
+	GrepGc               *RunMaintenanceRequestGrepGc
 	Metadata             *RunMaintenanceRequestMetadata
 	MetadataCompaction   *RunMaintenanceRequestMetadataCompaction
 	RecoverAdministrator *RunMaintenanceRequestRecoverAdministrator
@@ -7995,6 +7839,13 @@ func (r *RunMaintenanceRequest) GetGc() *RunMaintenanceRequestGc {
 		return nil
 	}
 	return r.Gc
+}
+
+func (r *RunMaintenanceRequest) GetGrepGc() *RunMaintenanceRequestGrepGc {
+	if r == nil {
+		return nil
+	}
+	return r.GrepGc
 }
 
 func (r *RunMaintenanceRequest) GetMetadata() *RunMaintenanceRequestMetadata {
@@ -8043,6 +7894,12 @@ func (r *RunMaintenanceRequest) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		r.Gc = value
+	case "grep_gc":
+		value := new(RunMaintenanceRequestGrepGc)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.GrepGc = value
 	case "metadata":
 		value := new(RunMaintenanceRequestMetadata)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -8079,6 +7936,9 @@ func (r RunMaintenanceRequest) MarshalJSON() ([]byte, error) {
 	if r.Gc != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
 	}
+	if r.GrepGc != nil {
+		return internal.MarshalJSONWithExtraProperty(r.GrepGc, "kind", "grep_gc")
+	}
 	if r.Metadata != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Metadata, "kind", "metadata")
 	}
@@ -8099,6 +7959,7 @@ func (r RunMaintenanceRequest) MarshalJSON() ([]byte, error) {
 
 type RunMaintenanceRequestVisitor interface {
 	VisitGc(*RunMaintenanceRequestGc) error
+	VisitGrepGc(*RunMaintenanceRequestGrepGc) error
 	VisitMetadata(*RunMaintenanceRequestMetadata) error
 	VisitMetadataCompaction(*RunMaintenanceRequestMetadataCompaction) error
 	VisitRecoverAdministrator(*RunMaintenanceRequestRecoverAdministrator) error
@@ -8108,6 +7969,9 @@ type RunMaintenanceRequestVisitor interface {
 func (r *RunMaintenanceRequest) Accept(visitor RunMaintenanceRequestVisitor) error {
 	if r.Gc != nil {
 		return visitor.VisitGc(r.Gc)
+	}
+	if r.GrepGc != nil {
+		return visitor.VisitGrepGc(r.GrepGc)
 	}
 	if r.Metadata != nil {
 		return visitor.VisitMetadata(r.Metadata)
@@ -8131,6 +7995,9 @@ func (r *RunMaintenanceRequest) validate() error {
 	var fields []string
 	if r.Gc != nil {
 		fields = append(fields, "gc")
+	}
+	if r.GrepGc != nil {
+		fields = append(fields, "grep_gc")
 	}
 	if r.Metadata != nil {
 		fields = append(fields, "metadata")
@@ -8243,6 +8110,72 @@ func (r *RunMaintenanceRequestGc) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RunMaintenanceRequestGc) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// Collects aged, unreferenced grep index objects.
+type RunMaintenanceRequestGrepGc struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceRequestGrepGc) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunMaintenanceRequestGrepGc) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+func (r *RunMaintenanceRequestGrepGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceRequestGrepGc
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunMaintenanceRequestGrepGc(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunMaintenanceRequestGrepGc) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceRequestGrepGc
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunMaintenanceRequestGrepGc) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -8566,6 +8499,7 @@ func (r *RunMaintenanceRequestRetention) String() string {
 type RunMaintenanceResponse struct {
 	Kind                 string
 	Gc                   *RunMaintenanceResponseGc
+	GrepGc               *RunMaintenanceResponseGrepGc
 	Metadata             *RunMaintenanceResponseMetadata
 	MetadataCompaction   *RunMaintenanceResponseMetadataCompaction
 	RecoverAdministrator *RunMaintenanceResponseRecoverAdministrator
@@ -8586,6 +8520,13 @@ func (r *RunMaintenanceResponse) GetGc() *RunMaintenanceResponseGc {
 		return nil
 	}
 	return r.Gc
+}
+
+func (r *RunMaintenanceResponse) GetGrepGc() *RunMaintenanceResponseGrepGc {
+	if r == nil {
+		return nil
+	}
+	return r.GrepGc
 }
 
 func (r *RunMaintenanceResponse) GetMetadata() *RunMaintenanceResponseMetadata {
@@ -8634,6 +8575,12 @@ func (r *RunMaintenanceResponse) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		r.Gc = value
+	case "grep_gc":
+		value := new(RunMaintenanceResponseGrepGc)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.GrepGc = value
 	case "metadata":
 		value := new(RunMaintenanceResponseMetadata)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -8670,6 +8617,9 @@ func (r RunMaintenanceResponse) MarshalJSON() ([]byte, error) {
 	if r.Gc != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
 	}
+	if r.GrepGc != nil {
+		return internal.MarshalJSONWithExtraProperty(r.GrepGc, "kind", "grep_gc")
+	}
 	if r.Metadata != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Metadata, "kind", "metadata")
 	}
@@ -8690,6 +8640,7 @@ func (r RunMaintenanceResponse) MarshalJSON() ([]byte, error) {
 
 type RunMaintenanceResponseVisitor interface {
 	VisitGc(*RunMaintenanceResponseGc) error
+	VisitGrepGc(*RunMaintenanceResponseGrepGc) error
 	VisitMetadata(*RunMaintenanceResponseMetadata) error
 	VisitMetadataCompaction(*RunMaintenanceResponseMetadataCompaction) error
 	VisitRecoverAdministrator(*RunMaintenanceResponseRecoverAdministrator) error
@@ -8699,6 +8650,9 @@ type RunMaintenanceResponseVisitor interface {
 func (r *RunMaintenanceResponse) Accept(visitor RunMaintenanceResponseVisitor) error {
 	if r.Gc != nil {
 		return visitor.VisitGc(r.Gc)
+	}
+	if r.GrepGc != nil {
+		return visitor.VisitGrepGc(r.GrepGc)
 	}
 	if r.Metadata != nil {
 		return visitor.VisitMetadata(r.Metadata)
@@ -8722,6 +8676,9 @@ func (r *RunMaintenanceResponse) validate() error {
 	var fields []string
 	if r.Gc != nil {
 		fields = append(fields, "gc")
+	}
+	if r.GrepGc != nil {
+		fields = append(fields, "grep_gc")
 	}
 	if r.Metadata != nil {
 		fields = append(fields, "metadata")
@@ -8918,6 +8875,160 @@ func (r *RunMaintenanceResponseGc) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RunMaintenanceResponseGc) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// Counts from one grep index collection pass.
+var (
+	runMaintenanceResponseGrepGcFieldDeletedOtherObjects = big.NewInt(1 << 0)
+	runMaintenanceResponseGrepGcFieldDeletedSegments     = big.NewInt(1 << 1)
+	runMaintenanceResponseGrepGcFieldNamespaceID         = big.NewInt(1 << 2)
+	runMaintenanceResponseGrepGcFieldNamespaceReaped     = big.NewInt(1 << 3)
+	runMaintenanceResponseGrepGcFieldRetainedCandidates  = big.NewInt(1 << 4)
+)
+
+type RunMaintenanceResponseGrepGc struct {
+	// Other unreferenced grep objects deleted after the grace window.
+	DeletedOtherObjects int64 `json:"deleted_other_objects" url:"deleted_other_objects"`
+	// Unreferenced grep segments older than the minimum segment age.
+	DeletedSegments int64 `json:"deleted_segments" url:"deleted_segments"`
+	// Namespace whose grep-owned keyspace was inspected.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// Whether an absent or tombstoned namespace had extension state reaped.
+	NamespaceReaped bool `json:"namespace_reaped" url:"namespace_reaped"`
+	// Referenced, young, or unrecognized candidates retained by the pass.
+	RetainedCandidates int64 `json:"retained_candidates" url:"retained_candidates"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetDeletedOtherObjects() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.DeletedOtherObjects
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetDeletedSegments() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.DeletedSegments
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetNamespaceID() NamespaceID {
+	if r == nil {
+		return ""
+	}
+	return r.NamespaceID
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetNamespaceReaped() bool {
+	if r == nil {
+		return false
+	}
+	return r.NamespaceReaped
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetRetainedCandidates() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.RetainedCandidates
+}
+
+func (r *RunMaintenanceResponseGrepGc) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunMaintenanceResponseGrepGc) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetDeletedOtherObjects sets the DeletedOtherObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetDeletedOtherObjects(deletedOtherObjects int64) {
+	r.DeletedOtherObjects = deletedOtherObjects
+	r.require(runMaintenanceResponseGrepGcFieldDeletedOtherObjects)
+}
+
+// SetDeletedSegments sets the DeletedSegments field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetDeletedSegments(deletedSegments int64) {
+	r.DeletedSegments = deletedSegments
+	r.require(runMaintenanceResponseGrepGcFieldDeletedSegments)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetNamespaceID(namespaceID NamespaceID) {
+	r.NamespaceID = namespaceID
+	r.require(runMaintenanceResponseGrepGcFieldNamespaceID)
+}
+
+// SetNamespaceReaped sets the NamespaceReaped field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetNamespaceReaped(namespaceReaped bool) {
+	r.NamespaceReaped = namespaceReaped
+	r.require(runMaintenanceResponseGrepGcFieldNamespaceReaped)
+}
+
+// SetRetainedCandidates sets the RetainedCandidates field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseGrepGc) SetRetainedCandidates(retainedCandidates int64) {
+	r.RetainedCandidates = retainedCandidates
+	r.require(runMaintenanceResponseGrepGcFieldRetainedCandidates)
+}
+
+func (r *RunMaintenanceResponseGrepGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceResponseGrepGc
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunMaintenanceResponseGrepGc(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunMaintenanceResponseGrepGc) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceResponseGrepGc
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunMaintenanceResponseGrepGc) String() string {
 	if r == nil {
 		return "<nil>"
 	}
