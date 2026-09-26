@@ -34,6 +34,11 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
+	413: func(apiError *core.APIError) error {
+		return &loonfs.ContentTooLargeError{
+			APIError: apiError,
+		}
+	},
 	500: func(apiError *core.APIError) error {
 		return &loonfs.InternalServerError{
 			APIError: apiError,

@@ -55,7 +55,7 @@ func (c *ConflictError) Unwrap() error {
 	return c.APIError
 }
 
-// Content exceeds the advertised `download.service_proxied.max_content_bytes` limit
+// JSON body exceeds the 2 MiB limit
 type ContentTooLargeError struct {
 	*core.APIError
 	Body *ErrorResponse
