@@ -670,7 +670,7 @@ client.Files.CreateDownload(
 
 **revisionNo:** `*loonfs.RevisionNo` 
 
-Revision to read, or `None` for the path's current revision.
+Revision to read. Omit it for the path's current revision.
 Cannot be combined with `snapshot_id`.
     
 </dd>
@@ -2437,7 +2437,7 @@ client.Maintenance.Checkpoints.Create(
 <dl>
 <dd>
 
-**ttlMs:** `*int64` — The checkpoint lifetime in milliseconds, or `None` to keep the checkpoint until it is deleted.
+**ttlMs:** `*int64` — The checkpoint lifetime in milliseconds. Omit it to keep the checkpoint until it is deleted.
     
 </dd>
 </dl>

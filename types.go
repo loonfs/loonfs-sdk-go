@@ -12,9 +12,8 @@ import (
 // Validated complete absolute namespace path, serialized as a plain string.
 type AbsolutePath = string
 
-// A validated map from principal to rights, limited to
-// [`MAX_ACCESS_GRANT_ENTRIES`] entries and [`MAX_ACCESS_GRANTS_PRINCIPAL_BYTES`]
-// bytes of principal ids. No entry has an empty set of rights. Decoding
+// A validated map from principal to rights, limited to 1,000 entries and
+// 65,536 bytes of principal ids. No entry has an empty set of rights. Decoding
 // rejects repeated principals.
 type AccessGrants = map[string]AccessRights
 
@@ -70,14 +69,14 @@ type AccessRights = []AccessRight
 // Stable opaque actor id containing 1 to 256 visible ASCII characters.
 type ActorID = string
 
-// A validated inode attribute value of at most [`MAX_ATTRIBUTE_VALUE_BYTES`] UTF-8 bytes.
+// A validated inode attribute value of at most 4,096 UTF-8 bytes.
 //
 // Empty strings and control characters are valid, and only an explicit remove
 // operation deletes an attribute.
 type AttributeValue = string
 
-// A validated attribute map limited to [`MAX_ATTRIBUTE_ENTRIES`] entries and
-// [`MAX_ATTRIBUTES_TOTAL_BYTES`] total key and value UTF-8 bytes.
+// A validated attribute map limited to 100 entries and 65,536 total key and
+// value UTF-8 bytes.
 //
 // Construction and decoding reject values over these limits; an empty map
 // represents cleared attributes.
@@ -117,7 +116,7 @@ type Checkpoint struct {
 	// Namespace that owns the checkpoint.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Who owns the checkpoint, including the label carried by a user pin.
-	Owner *CheckpointOwnerSummary `json:"owner" url:"owner"`
+	Owner *CheckpointOwner `json:"owner" url:"owner"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -168,7 +167,7 @@ func (c *Checkpoint) GetNamespaceID() NamespaceID {
 	return c.NamespaceID
 }
 
-func (c *Checkpoint) GetOwner() *CheckpointOwnerSummary {
+func (c *Checkpoint) GetOwner() *CheckpointOwner {
 	if c == nil {
 		return nil
 	}
@@ -233,7 +232,7 @@ func (c *Checkpoint) SetNamespaceID(namespaceID NamespaceID) {
 
 // SetOwner sets the Owner field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetOwner(owner *CheckpointOwnerSummary) {
+func (c *Checkpoint) SetOwner(owner *CheckpointOwner) {
 	c.Owner = owner
 	c.require(checkpointFieldOwner)
 }
@@ -278,6 +277,157 @@ func (c *Checkpoint) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+// The owner of a checkpoint record.
+type CheckpointOwner struct {
+	Kind     string
+	Fork     *CheckpointOwnerFork
+	Snapshot *CheckpointOwnerSnapshot
+	User     *CheckpointOwnerUser
+
+	rawJSON json.RawMessage
+}
+
+func (c *CheckpointOwner) GetKind() string {
+	if c == nil {
+		return ""
+	}
+	return c.Kind
+}
+
+func (c *CheckpointOwner) GetFork() *CheckpointOwnerFork {
+	if c == nil {
+		return nil
+	}
+	return c.Fork
+}
+
+func (c *CheckpointOwner) GetSnapshot() *CheckpointOwnerSnapshot {
+	if c == nil {
+		return nil
+	}
+	return c.Snapshot
+}
+
+func (c *CheckpointOwner) GetUser() *CheckpointOwnerUser {
+	if c == nil {
+		return nil
+	}
+	return c.User
+}
+
+func (c *CheckpointOwner) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Kind string `json:"kind"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	c.Kind = unmarshaler.Kind
+	if unmarshaler.Kind == "" {
+		return fmt.Errorf("%T did not include discriminant kind", c)
+	}
+	switch unmarshaler.Kind {
+	case "fork":
+		value := new(CheckpointOwnerFork)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Fork = value
+	case "snapshot":
+		value := new(CheckpointOwnerSnapshot)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Snapshot = value
+	case "user":
+		value := new(CheckpointOwnerUser)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.User = value
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c CheckpointOwner) MarshalJSON() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	if c.Fork != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Fork, "kind", "fork")
+	}
+	if c.Snapshot != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Snapshot, "kind", "snapshot")
+	}
+	if c.User != nil {
+		return internal.MarshalJSONWithExtraProperty(c.User, "kind", "user")
+	}
+	if len(c.rawJSON) > 0 {
+		return c.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+type CheckpointOwnerVisitor interface {
+	VisitFork(*CheckpointOwnerFork) error
+	VisitSnapshot(*CheckpointOwnerSnapshot) error
+	VisitUser(*CheckpointOwnerUser) error
+}
+
+func (c *CheckpointOwner) Accept(visitor CheckpointOwnerVisitor) error {
+	if c.Fork != nil {
+		return visitor.VisitFork(c.Fork)
+	}
+	if c.Snapshot != nil {
+		return visitor.VisitSnapshot(c.Snapshot)
+	}
+	if c.User != nil {
+		return visitor.VisitUser(c.User)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+func (c *CheckpointOwner) validate() error {
+	if c == nil {
+		return fmt.Errorf("type %T is nil", c)
+	}
+	var fields []string
+	if c.Fork != nil {
+		fields = append(fields, "fork")
+	}
+	if c.Snapshot != nil {
+		fields = append(fields, "snapshot")
+	}
+	if c.User != nil {
+		fields = append(fields, "user")
+	}
+	if len(fields) == 0 {
+		if c.Kind != "" {
+			if len(c.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Kind)
+		}
+		return fmt.Errorf("type %T is empty", c)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
+	}
+	if c.Kind != "" {
+		field := fields[0]
+		if c.Kind != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				c,
+				c.Kind,
+				c,
+			)
+		}
+	}
+	return nil
 }
 
 // A fork target retaining its source basis for one fork attempt.
@@ -450,157 +600,6 @@ func (c *CheckpointOwnerSnapshot) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
-}
-
-// The owner of a checkpoint record.
-type CheckpointOwnerSummary struct {
-	Kind     string
-	Fork     *CheckpointOwnerFork
-	Snapshot *CheckpointOwnerSnapshot
-	User     *CheckpointOwnerUser
-
-	rawJSON json.RawMessage
-}
-
-func (c *CheckpointOwnerSummary) GetKind() string {
-	if c == nil {
-		return ""
-	}
-	return c.Kind
-}
-
-func (c *CheckpointOwnerSummary) GetFork() *CheckpointOwnerFork {
-	if c == nil {
-		return nil
-	}
-	return c.Fork
-}
-
-func (c *CheckpointOwnerSummary) GetSnapshot() *CheckpointOwnerSnapshot {
-	if c == nil {
-		return nil
-	}
-	return c.Snapshot
-}
-
-func (c *CheckpointOwnerSummary) GetUser() *CheckpointOwnerUser {
-	if c == nil {
-		return nil
-	}
-	return c.User
-}
-
-func (c *CheckpointOwnerSummary) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Kind string `json:"kind"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	c.Kind = unmarshaler.Kind
-	if unmarshaler.Kind == "" {
-		return fmt.Errorf("%T did not include discriminant kind", c)
-	}
-	switch unmarshaler.Kind {
-	case "fork":
-		value := new(CheckpointOwnerFork)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.Fork = value
-	case "snapshot":
-		value := new(CheckpointOwnerSnapshot)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.Snapshot = value
-	case "user":
-		value := new(CheckpointOwnerUser)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.User = value
-	}
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c CheckpointOwnerSummary) MarshalJSON() ([]byte, error) {
-	if err := c.validate(); err != nil {
-		return nil, err
-	}
-	if c.Fork != nil {
-		return internal.MarshalJSONWithExtraProperty(c.Fork, "kind", "fork")
-	}
-	if c.Snapshot != nil {
-		return internal.MarshalJSONWithExtraProperty(c.Snapshot, "kind", "snapshot")
-	}
-	if c.User != nil {
-		return internal.MarshalJSONWithExtraProperty(c.User, "kind", "user")
-	}
-	if len(c.rawJSON) > 0 {
-		return c.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
-}
-
-type CheckpointOwnerSummaryVisitor interface {
-	VisitFork(*CheckpointOwnerFork) error
-	VisitSnapshot(*CheckpointOwnerSnapshot) error
-	VisitUser(*CheckpointOwnerUser) error
-}
-
-func (c *CheckpointOwnerSummary) Accept(visitor CheckpointOwnerSummaryVisitor) error {
-	if c.Fork != nil {
-		return visitor.VisitFork(c.Fork)
-	}
-	if c.Snapshot != nil {
-		return visitor.VisitSnapshot(c.Snapshot)
-	}
-	if c.User != nil {
-		return visitor.VisitUser(c.User)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", c)
-}
-
-func (c *CheckpointOwnerSummary) validate() error {
-	if c == nil {
-		return fmt.Errorf("type %T is nil", c)
-	}
-	var fields []string
-	if c.Fork != nil {
-		fields = append(fields, "fork")
-	}
-	if c.Snapshot != nil {
-		fields = append(fields, "snapshot")
-	}
-	if c.User != nil {
-		fields = append(fields, "user")
-	}
-	if len(fields) == 0 {
-		if c.Kind != "" {
-			if len(c.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Kind)
-		}
-		return fmt.Errorf("type %T is empty", c)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
-	}
-	if c.Kind != "" {
-		field := fields[0]
-		if c.Kind != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				c,
-				c.Kind,
-				c,
-			)
-		}
-	}
-	return nil
 }
 
 // An operator-created pin, deleted by id or by its own expiry.
@@ -1010,8 +1009,8 @@ func (c *Commit) String() string {
 //
 // Reuse the same `CommitId` when retrying the same request. The accepted
 // grammar is 1 to 128 lowercase ASCII letters, digits, dots, underscores,
-// or hyphens, starting with a letter or digit. [`CommitId::generate`] returns
-// `c_<32 lowercase hex>`, but callers may supply any value in that grammar.
+// or hyphens, starting with a letter or digit. Generated commit ids have the
+// form `c_<32 lowercase hex>`, but callers may supply any value in that grammar.
 type CommitID = string
 
 // Random identity of one immutable content object.
@@ -1815,7 +1814,7 @@ func (d *DirectoryBinding) String() string {
 // User-facing spelling of one path component.
 type DisplayName = string
 
-// Optional machine-readable identifiers and state for an [`ApiError`].
+// Optional machine-readable identifiers and state for an `ErrorResponse`.
 var (
 	errorDetailsFieldActiveAcquiredAtMs           = big.NewInt(1 << 0)
 	errorDetailsFieldActiveWriterEpoch            = big.NewInt(1 << 1)
@@ -4411,7 +4410,7 @@ type GrepIndexLifecycleBackfilling struct {
 	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
 	// Checkpoint pinning the state being walked.
 	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
-	// The inode after which the scan resumes, or `None` before the first page.
+	// The inode after which the scan resumes, absent before the first page.
 	CursorInodeID *InodeID `json:"cursor_inode_id,omitempty" url:"cursor_inode_id,omitempty"`
 	// Namespace the status describes.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
@@ -6440,13 +6439,13 @@ type PathEntryDirectory struct {
 	Attributes *Attributes `json:"attributes,omitempty" url:"attributes,omitempty"`
 	// The attribute revision this projection represents.
 	AttributesRevisionNo *AttributesRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
-	// The latest attribute update time in Unix milliseconds, or `None` for the
+	// The latest attribute update time in Unix milliseconds, absent for the
 	// initial empty state.
 	AttributesUpdatedAtMs *int64 `json:"attributes_updated_at_ms,omitempty" url:"attributes_updated_at_ms,omitempty"`
-	// The actor responsible for the latest attribute update, or `None` for the
+	// The actor responsible for the latest attribute update, absent for the
 	// initial empty state.
 	AttributesUpdatedBy *ActorID `json:"attributes_updated_by,omitempty" url:"attributes_updated_by,omitempty"`
-	// The opaque ID for the current parent and name binding, or `None` for the namespace root.
+	// The opaque ID for the current parent and name binding, absent for the namespace root.
 	BindingVersion *BindingVersion `json:"binding_version,omitempty" url:"binding_version,omitempty"`
 	// The inode creation time in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
@@ -6460,7 +6459,7 @@ type PathEntryDirectory struct {
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// Namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Parent directory inode, or `None` for the root.
+	// Parent directory inode, absent for the root.
 	ParentInodeID *InodeID `json:"parent_inode_id,omitempty" url:"parent_inode_id,omitempty"`
 	// Absolute path as rendered from stored display names.
 	Path AbsolutePath `json:"path" url:"path"`
@@ -6738,13 +6737,13 @@ type PathEntryFile struct {
 	Attributes *Attributes `json:"attributes,omitempty" url:"attributes,omitempty"`
 	// The attribute revision this projection represents.
 	AttributesRevisionNo *AttributesRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
-	// The latest attribute update time in Unix milliseconds, or `None` for the
+	// The latest attribute update time in Unix milliseconds, absent for the
 	// initial empty state.
 	AttributesUpdatedAtMs *int64 `json:"attributes_updated_at_ms,omitempty" url:"attributes_updated_at_ms,omitempty"`
-	// The actor responsible for the latest attribute update, or `None` for the
+	// The actor responsible for the latest attribute update, absent for the
 	// initial empty state.
 	AttributesUpdatedBy *ActorID `json:"attributes_updated_by,omitempty" url:"attributes_updated_by,omitempty"`
-	// The opaque ID for the current parent and name binding, or `None` for the namespace root.
+	// The opaque ID for the current parent and name binding, absent for the namespace root.
 	BindingVersion *BindingVersion `json:"binding_version,omitempty" url:"binding_version,omitempty"`
 	// Current content reference.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
@@ -6760,7 +6759,7 @@ type PathEntryFile struct {
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// Namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Parent directory inode, or `None` for the root.
+	// Parent directory inode, absent for the root.
 	ParentInodeID *InodeID `json:"parent_inode_id,omitempty" url:"parent_inode_id,omitempty"`
 	// Absolute path as rendered from stored display names.
 	Path AbsolutePath `json:"path" url:"path"`
@@ -8196,7 +8195,7 @@ var (
 )
 
 type RunMaintenanceRequestMetadata struct {
-	// The WAL-tail threshold for flushing, or `None` for the server default.
+	// The WAL-tail threshold for flushing. Omit it for the server default.
 	MaxWalTailSegments *int64 `json:"max_wal_tail_segments,omitempty" url:"max_wal_tail_segments,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

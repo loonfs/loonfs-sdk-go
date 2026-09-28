@@ -81,9 +81,9 @@ type ListChangesResponse struct {
 	Changes []*Commit `json:"changes" url:"changes"`
 	// Namespace whose ordered commit stream was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Cursor to request when another page remains, or `None` at `through_seq`.
+	// Cursor to request when another page remains, absent at `through_seq`.
 	NextAfterSeq *ChangeSeq `json:"next_after_seq,omitempty" url:"next_after_seq,omitempty"`
-	// Snapshot head through which this page was evaluated.
+	// Namespace head through which this page was evaluated.
 	ThroughSeq ChangeSeq `json:"through_seq" url:"through_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
