@@ -921,7 +921,7 @@ var (
 )
 
 type CreateUploadBodyDirectMultipart struct {
-	// The byte length of every part except the last, or `None` for the server default.
+	// The byte length of every part except the last. Omit it for the server default.
 	PartSizeBytes *int64 `json:"part_size_bytes,omitempty" url:"part_size_bytes,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1914,7 +1914,7 @@ type UploadSessionStatusCompleted struct {
 	CompletedAtMs int64 `json:"completed_at_ms" url:"completed_at_ms"`
 	// Verified content selected by this session.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// Fresh proof for a later commit, or `None` after the token minting window closes.
+	// Fresh proof for a later commit, absent after the token minting window closes.
 	ContentToken *ContentToken `json:"content_token,omitempty" url:"content_token,omitempty"`
 	// Transport selected when the session began.
 	Mode UploadMode `json:"mode" url:"mode"`

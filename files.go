@@ -77,7 +77,7 @@ type CreateDownloadRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// Absolute path of the file to read.
 	Path AbsolutePath `json:"path" url:"-"`
-	// Revision to read, or `None` for the path's current revision.
+	// Revision to read. Omit it for the path's current revision.
 	// Cannot be combined with `snapshot_id`.
 	RevisionNo *RevisionNo `json:"revision_no,omitempty" url:"-"`
 	// Read the file revision captured by this snapshot.

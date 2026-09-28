@@ -2905,7 +2905,7 @@ var (
 type FilesystemOperationUndelete struct {
 	// Observed deletion sequence, which prevents cancelling a newer tombstone sequence.
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
-	// The restore destination, or `None` to use the recorded binding.
+	// The restore destination. Omit it to use the recorded binding.
 	DestinationPath *AbsolutePath `json:"destination_path,omitempty" url:"destination_path,omitempty"`
 	// Deleted inode to make reachable again.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
