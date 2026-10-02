@@ -109,7 +109,7 @@ func (c *Client) List(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Creates a snapshot of the current namespace state. Every call creates a new snapshot.
+// Creates a snapshot of the current namespace state. Every accepted call creates a new snapshot.
 //
 // Example:
 //

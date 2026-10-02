@@ -36,7 +36,7 @@ func (r *RawClient) Create(
 	ctx context.Context,
 	request *loonfs.CreateNamespaceRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.Namespace], error) {
+) (*core.Response[*loonfs.NamespaceMetadata], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -49,7 +49,7 @@ func (r *RawClient) Create(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *loonfs.Namespace
+	var response *loonfs.NamespaceMetadata
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -69,7 +69,7 @@ func (r *RawClient) Create(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.Namespace]{
+	return &core.Response[*loonfs.NamespaceMetadata]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -80,7 +80,7 @@ func (r *RawClient) Retrieve(
 	ctx context.Context,
 	request *loonfs.GetNamespaceRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.Namespace], error) {
+) (*core.Response[*loonfs.NamespaceMetadata], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -95,7 +95,7 @@ func (r *RawClient) Retrieve(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.Namespace
+	var response *loonfs.NamespaceMetadata
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -114,7 +114,7 @@ func (r *RawClient) Retrieve(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.Namespace]{
+	return &core.Response[*loonfs.NamespaceMetadata]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -177,7 +177,7 @@ func (r *RawClient) Fork(
 	ctx context.Context,
 	request *loonfs.ForkNamespaceRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.Namespace], error) {
+) (*core.Response[*loonfs.NamespaceMetadata], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -193,7 +193,7 @@ func (r *RawClient) Fork(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *loonfs.Namespace
+	var response *loonfs.NamespaceMetadata
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -213,7 +213,7 @@ func (r *RawClient) Fork(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.Namespace]{
+	return &core.Response[*loonfs.NamespaceMetadata]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

@@ -1013,6 +1013,536 @@ func (c *Commit) String() string {
 // form `c_<32 lowercase hex>`, but callers may supply any value in that grammar.
 type CommitID = string
 
+// What the bounded compaction part of a maintenance pass did.
+type CompactionStepOutcome struct {
+	Outcome                    string
+	Fenced                     *CompactionStepOutcomeFenced
+	ManifestAdvanced           *CompactionStepOutcomeManifestAdvanced
+	MetadataCompactionRequired *CompactionStepOutcomeMetadataCompactionRequired
+	NotNeeded                  *CompactionStepOutcomeNotNeeded
+	UnitPublished              *CompactionStepOutcomeUnitPublished
+
+	rawJSON json.RawMessage
+}
+
+func (c *CompactionStepOutcome) GetOutcome() string {
+	if c == nil {
+		return ""
+	}
+	return c.Outcome
+}
+
+func (c *CompactionStepOutcome) GetFenced() *CompactionStepOutcomeFenced {
+	if c == nil {
+		return nil
+	}
+	return c.Fenced
+}
+
+func (c *CompactionStepOutcome) GetManifestAdvanced() *CompactionStepOutcomeManifestAdvanced {
+	if c == nil {
+		return nil
+	}
+	return c.ManifestAdvanced
+}
+
+func (c *CompactionStepOutcome) GetMetadataCompactionRequired() *CompactionStepOutcomeMetadataCompactionRequired {
+	if c == nil {
+		return nil
+	}
+	return c.MetadataCompactionRequired
+}
+
+func (c *CompactionStepOutcome) GetNotNeeded() *CompactionStepOutcomeNotNeeded {
+	if c == nil {
+		return nil
+	}
+	return c.NotNeeded
+}
+
+func (c *CompactionStepOutcome) GetUnitPublished() *CompactionStepOutcomeUnitPublished {
+	if c == nil {
+		return nil
+	}
+	return c.UnitPublished
+}
+
+func (c *CompactionStepOutcome) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Outcome string `json:"outcome"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	c.Outcome = unmarshaler.Outcome
+	if unmarshaler.Outcome == "" {
+		return fmt.Errorf("%T did not include discriminant outcome", c)
+	}
+	switch unmarshaler.Outcome {
+	case "fenced":
+		value := new(CompactionStepOutcomeFenced)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Fenced = value
+	case "manifest_advanced":
+		value := new(CompactionStepOutcomeManifestAdvanced)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.ManifestAdvanced = value
+	case "metadata_compaction_required":
+		value := new(CompactionStepOutcomeMetadataCompactionRequired)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.MetadataCompactionRequired = value
+	case "not_needed":
+		value := new(CompactionStepOutcomeNotNeeded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.NotNeeded = value
+	case "unit_published":
+		value := new(CompactionStepOutcomeUnitPublished)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.UnitPublished = value
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c CompactionStepOutcome) MarshalJSON() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	if c.Fenced != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Fenced, "outcome", "fenced")
+	}
+	if c.ManifestAdvanced != nil {
+		return internal.MarshalJSONWithExtraProperty(c.ManifestAdvanced, "outcome", "manifest_advanced")
+	}
+	if c.MetadataCompactionRequired != nil {
+		return internal.MarshalJSONWithExtraProperty(c.MetadataCompactionRequired, "outcome", "metadata_compaction_required")
+	}
+	if c.NotNeeded != nil {
+		return internal.MarshalJSONWithExtraProperty(c.NotNeeded, "outcome", "not_needed")
+	}
+	if c.UnitPublished != nil {
+		return internal.MarshalJSONWithExtraProperty(c.UnitPublished, "outcome", "unit_published")
+	}
+	if len(c.rawJSON) > 0 {
+		return c.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+type CompactionStepOutcomeVisitor interface {
+	VisitFenced(*CompactionStepOutcomeFenced) error
+	VisitManifestAdvanced(*CompactionStepOutcomeManifestAdvanced) error
+	VisitMetadataCompactionRequired(*CompactionStepOutcomeMetadataCompactionRequired) error
+	VisitNotNeeded(*CompactionStepOutcomeNotNeeded) error
+	VisitUnitPublished(*CompactionStepOutcomeUnitPublished) error
+}
+
+func (c *CompactionStepOutcome) Accept(visitor CompactionStepOutcomeVisitor) error {
+	if c.Fenced != nil {
+		return visitor.VisitFenced(c.Fenced)
+	}
+	if c.ManifestAdvanced != nil {
+		return visitor.VisitManifestAdvanced(c.ManifestAdvanced)
+	}
+	if c.MetadataCompactionRequired != nil {
+		return visitor.VisitMetadataCompactionRequired(c.MetadataCompactionRequired)
+	}
+	if c.NotNeeded != nil {
+		return visitor.VisitNotNeeded(c.NotNeeded)
+	}
+	if c.UnitPublished != nil {
+		return visitor.VisitUnitPublished(c.UnitPublished)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+func (c *CompactionStepOutcome) validate() error {
+	if c == nil {
+		return fmt.Errorf("type %T is nil", c)
+	}
+	var fields []string
+	if c.Fenced != nil {
+		fields = append(fields, "fenced")
+	}
+	if c.ManifestAdvanced != nil {
+		fields = append(fields, "manifest_advanced")
+	}
+	if c.MetadataCompactionRequired != nil {
+		fields = append(fields, "metadata_compaction_required")
+	}
+	if c.NotNeeded != nil {
+		fields = append(fields, "not_needed")
+	}
+	if c.UnitPublished != nil {
+		fields = append(fields, "unit_published")
+	}
+	if len(fields) == 0 {
+		if c.Outcome != "" {
+			if len(c.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Outcome)
+		}
+		return fmt.Errorf("type %T is empty", c)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
+	}
+	if c.Outcome != "" {
+		field := fields[0]
+		if c.Outcome != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				c,
+				c.Outcome,
+				c,
+			)
+		}
+	}
+	return nil
+}
+
+// A newer runtime holds the compactor epoch.
+type CompactionStepOutcomeFenced struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CompactionStepOutcomeFenced) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CompactionStepOutcomeFenced) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+func (c *CompactionStepOutcomeFenced) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompactionStepOutcomeFenced
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CompactionStepOutcomeFenced(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CompactionStepOutcomeFenced) MarshalJSON() ([]byte, error) {
+	type embed CompactionStepOutcomeFenced
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CompactionStepOutcomeFenced) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// Another publisher changed the current manifest before this step could publish.
+type CompactionStepOutcomeManifestAdvanced struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CompactionStepOutcomeManifestAdvanced) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CompactionStepOutcomeManifestAdvanced) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+func (c *CompactionStepOutcomeManifestAdvanced) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompactionStepOutcomeManifestAdvanced
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CompactionStepOutcomeManifestAdvanced(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CompactionStepOutcomeManifestAdvanced) MarshalJSON() ([]byte, error) {
+	type embed CompactionStepOutcomeManifestAdvanced
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CompactionStepOutcomeManifestAdvanced) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// A family group's window is too large for one bounded merge. Run the
+// `metadata_compaction` job, which compacts it by streaming.
+type CompactionStepOutcomeMetadataCompactionRequired struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CompactionStepOutcomeMetadataCompactionRequired) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CompactionStepOutcomeMetadataCompactionRequired) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+func (c *CompactionStepOutcomeMetadataCompactionRequired) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompactionStepOutcomeMetadataCompactionRequired
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CompactionStepOutcomeMetadataCompactionRequired(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CompactionStepOutcomeMetadataCompactionRequired) MarshalJSON() ([]byte, error) {
+	type embed CompactionStepOutcomeMetadataCompactionRequired
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CompactionStepOutcomeMetadataCompactionRequired) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// No family group had enough delta runs to merge.
+type CompactionStepOutcomeNotNeeded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CompactionStepOutcomeNotNeeded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CompactionStepOutcomeNotNeeded) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+func (c *CompactionStepOutcomeNotNeeded) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompactionStepOutcomeNotNeeded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CompactionStepOutcomeNotNeeded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CompactionStepOutcomeNotNeeded) MarshalJSON() ([]byte, error) {
+	type embed CompactionStepOutcomeNotNeeded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CompactionStepOutcomeNotNeeded) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// One family group was merged and a manifest published.
+type CompactionStepOutcomeUnitPublished struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CompactionStepOutcomeUnitPublished) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CompactionStepOutcomeUnitPublished) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+func (c *CompactionStepOutcomeUnitPublished) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompactionStepOutcomeUnitPublished
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CompactionStepOutcomeUnitPublished(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CompactionStepOutcomeUnitPublished) MarshalJSON() ([]byte, error) {
+	type embed CompactionStepOutcomeUnitPublished
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CompactionStepOutcomeUnitPublished) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
 // Random identity of one immutable content object.
 type ContentID = string
 
@@ -1020,7 +1550,7 @@ type ContentID = string
 //
 // The owner namespace and content id name the content object that holds the
 // bytes. A reference is not proof that the object exists: content committed
-// inline has no object until a flush writes it.
+// inline has no object until a fold writes it.
 var (
 	contentRefFieldChecksum         = big.NewInt(1 << 0)
 	contentRefFieldContentID        = big.NewInt(1 << 1)
@@ -1527,7 +2057,7 @@ var (
 	deletedObjectCountsFieldMetadataSegments      = big.NewInt(1 << 2)
 	deletedObjectCountsFieldRetiredContentObjects = big.NewInt(1 << 3)
 	deletedObjectCountsFieldUploadSessions        = big.NewInt(1 << 4)
-	deletedObjectCountsFieldWalSegments           = big.NewInt(1 << 5)
+	deletedObjectCountsFieldWalObjects            = big.NewInt(1 << 5)
 )
 
 type DeletedObjectCounts struct {
@@ -1541,8 +2071,8 @@ type DeletedObjectCounts struct {
 	RetiredContentObjects int64 `json:"retired_content_objects" url:"retired_content_objects"`
 	// Upload-session control objects deleted after the reap window.
 	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
-	// Unreferenced WAL segments deleted.
-	WalSegments int64 `json:"wal_segments" url:"wal_segments"`
+	// Unreferenced WAL objects deleted.
+	WalObjects int64 `json:"wal_objects" url:"wal_objects"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1586,11 +2116,11 @@ func (d *DeletedObjectCounts) GetUploadSessions() int64 {
 	return d.UploadSessions
 }
 
-func (d *DeletedObjectCounts) GetWalSegments() int64 {
+func (d *DeletedObjectCounts) GetWalObjects() int64 {
 	if d == nil {
 		return 0
 	}
-	return d.WalSegments
+	return d.WalObjects
 }
 
 func (d *DeletedObjectCounts) GetExtraProperties() map[string]interface{} {
@@ -1642,11 +2172,11 @@ func (d *DeletedObjectCounts) SetUploadSessions(uploadSessions int64) {
 	d.require(deletedObjectCountsFieldUploadSessions)
 }
 
-// SetWalSegments sets the WalSegments field and marks it as non-optional;
+// SetWalObjects sets the WalObjects field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedObjectCounts) SetWalSegments(walSegments int64) {
-	d.WalSegments = walSegments
-	d.require(deletedObjectCountsFieldWalSegments)
+func (d *DeletedObjectCounts) SetWalObjects(walObjects int64) {
+	d.WalObjects = walObjects
+	d.require(deletedObjectCountsFieldWalObjects)
 }
 
 func (d *DeletedObjectCounts) UnmarshalJSON(data []byte) error {
@@ -1839,11 +2369,10 @@ var (
 	errorDetailsFieldExpectedRevisionNo           = big.NewInt(1 << 20)
 	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 21)
 	errorDetailsFieldInodeID                      = big.NewInt(1 << 22)
-	errorDetailsFieldMaxWriterSessions            = big.NewInt(1 << 23)
-	errorDetailsFieldNamespaceID                  = big.NewInt(1 << 24)
-	errorDetailsFieldOperationIndex               = big.NewInt(1 << 25)
-	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 26)
-	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 27)
+	errorDetailsFieldNamespaceID                  = big.NewInt(1 << 23)
+	errorDetailsFieldOperationIndex               = big.NewInt(1 << 24)
+	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 25)
+	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 26)
 )
 
 type ErrorDetails struct {
@@ -1857,7 +2386,7 @@ type ErrorDetails struct {
 	ActualAccessRevisionNo *AccessRevisionNo `json:"actual_access_revision_no,omitempty" url:"actual_access_revision_no,omitempty"`
 	// Attribute revision that is actually current for the inode.
 	ActualAttributesRevisionNo *AttributesRevisionNo `json:"actual_attributes_revision_no,omitempty" url:"actual_attributes_revision_no,omitempty"`
-	// Current binding token; absent for the root, which has no binding.
+	// Current binding token.
 	ActualBindingVersion *BindingVersion `json:"actual_binding_version,omitempty" url:"actual_binding_version,omitempty"`
 	// Deletion sequence actually active for the inode.
 	ActualDeletionSeq *ChangeSeq `json:"actual_deletion_seq,omitempty" url:"actual_deletion_seq,omitempty"`
@@ -1893,15 +2422,14 @@ type ErrorDetails struct {
 	FencedWriterEpoch *WriterEpoch `json:"fenced_writer_epoch,omitempty" url:"fenced_writer_epoch,omitempty"`
 	// Inode the failed precondition or operation targeted.
 	InodeID *InodeID `json:"inode_id,omitempty" url:"inode_id,omitempty"`
-	// Maximum writer sessions admitted by the node.
-	MaxWriterSessions *int `json:"max_writer_sessions,omitempty" url:"max_writer_sessions,omitempty"`
 	// The deleted namespace that caused the operation to fail.
 	NamespaceID *NamespaceID `json:"namespace_id,omitempty" url:"namespace_id,omitempty"`
 	// The index of the failed operation in the request.
 	OperationIndex *int `json:"operation_index,omitempty" url:"operation_index,omitempty"`
 	// Zero-based position of the failed request precondition.
 	PreconditionIndex *int `json:"precondition_index,omitempty" url:"precondition_index,omitempty"`
-	// Oldest sequence still promised for incremental replay.
+	// Oldest position a change feed can resume after. The feed returns
+	// changes above it.
 	RetentionFloorSeq *ChangeSeq `json:"retention_floor_seq,omitempty" url:"retention_floor_seq,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2070,13 +2598,6 @@ func (e *ErrorDetails) GetInodeID() *InodeID {
 		return nil
 	}
 	return e.InodeID
-}
-
-func (e *ErrorDetails) GetMaxWriterSessions() *int {
-	if e == nil {
-		return nil
-	}
-	return e.MaxWriterSessions
 }
 
 func (e *ErrorDetails) GetNamespaceID() *NamespaceID {
@@ -2280,13 +2801,6 @@ func (e *ErrorDetails) SetFencedWriterEpoch(fencedWriterEpoch *WriterEpoch) {
 func (e *ErrorDetails) SetInodeID(inodeID *InodeID) {
 	e.InodeID = inodeID
 	e.require(errorDetailsFieldInodeID)
-}
-
-// SetMaxWriterSessions sets the MaxWriterSessions field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetMaxWriterSessions(maxWriterSessions *int) {
-	e.MaxWriterSessions = maxWriterSessions
-	e.require(errorDetailsFieldMaxWriterSessions)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
@@ -5708,7 +6222,7 @@ var (
 	namespaceDiagnosticsFieldLiveSnapshots     = big.NewInt(1 << 6)
 	namespaceDiagnosticsFieldNamespaceID       = big.NewInt(1 << 7)
 	namespaceDiagnosticsFieldRetentionFloorSeq = big.NewInt(1 << 8)
-	namespaceDiagnosticsFieldWalTailSegments   = big.NewInt(1 << 9)
+	namespaceDiagnosticsFieldWalTailObjects    = big.NewInt(1 << 9)
 )
 
 type NamespaceDiagnostics struct {
@@ -5722,16 +6236,17 @@ type NamespaceDiagnostics struct {
 	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
 	// Current visible namespace sequence.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Number of active user checkpoints, including expired records awaiting collection.
+	// Number of user checkpoints, including expired records awaiting collection.
 	LiveCheckpoints int64 `json:"live_checkpoints" url:"live_checkpoints"`
 	// Number of snapshots that had not expired when diagnostics began.
 	LiveSnapshots int64 `json:"live_snapshots" url:"live_snapshots"`
 	// Namespace ID.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Oldest sequence still promised for incremental replay.
+	// Oldest position a change feed can resume after. The feed returns
+	// changes above it.
 	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
-	// Number of visible WAL segments after the current manifest.
-	WalTailSegments int64 `json:"wal_tail_segments" url:"wal_tail_segments"`
+	// Number of visible WAL objects after the current manifest.
+	WalTailObjects int64 `json:"wal_tail_objects" url:"wal_tail_objects"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -5803,11 +6318,11 @@ func (n *NamespaceDiagnostics) GetRetentionFloorSeq() ChangeSeq {
 	return n.RetentionFloorSeq
 }
 
-func (n *NamespaceDiagnostics) GetWalTailSegments() int64 {
+func (n *NamespaceDiagnostics) GetWalTailObjects() int64 {
 	if n == nil {
 		return 0
 	}
-	return n.WalTailSegments
+	return n.WalTailObjects
 }
 
 func (n *NamespaceDiagnostics) GetExtraProperties() map[string]interface{} {
@@ -5887,11 +6402,11 @@ func (n *NamespaceDiagnostics) SetRetentionFloorSeq(retentionFloorSeq ChangeSeq)
 	n.require(namespaceDiagnosticsFieldRetentionFloorSeq)
 }
 
-// SetWalTailSegments sets the WalTailSegments field and marks it as non-optional;
+// SetWalTailObjects sets the WalTailObjects field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceDiagnostics) SetWalTailSegments(walTailSegments int64) {
-	n.WalTailSegments = walTailSegments
-	n.require(namespaceDiagnosticsFieldWalTailSegments)
+func (n *NamespaceDiagnostics) SetWalTailObjects(walTailObjects int64) {
+	n.WalTailObjects = walTailObjects
+	n.require(namespaceDiagnosticsFieldWalTailObjects)
 }
 
 func (n *NamespaceDiagnostics) UnmarshalJSON(data []byte) error {
@@ -7093,535 +7608,6 @@ type PinID = string
 // Stable opaque principal id containing 1 to 256 visible ASCII characters other than the comma.
 type PrincipalID = string
 
-// The outcome of the metadata-reorganization part of a maintenance pass.
-type ReorganizeStepOutcome struct {
-	Outcome            string
-	CompactionRequired *ReorganizeStepOutcomeCompactionRequired
-	Fenced             *ReorganizeStepOutcomeFenced
-	ManifestAdvanced   *ReorganizeStepOutcomeManifestAdvanced
-	NotNeeded          *ReorganizeStepOutcomeNotNeeded
-	UnitPublished      *ReorganizeStepOutcomeUnitPublished
-
-	rawJSON json.RawMessage
-}
-
-func (r *ReorganizeStepOutcome) GetOutcome() string {
-	if r == nil {
-		return ""
-	}
-	return r.Outcome
-}
-
-func (r *ReorganizeStepOutcome) GetCompactionRequired() *ReorganizeStepOutcomeCompactionRequired {
-	if r == nil {
-		return nil
-	}
-	return r.CompactionRequired
-}
-
-func (r *ReorganizeStepOutcome) GetFenced() *ReorganizeStepOutcomeFenced {
-	if r == nil {
-		return nil
-	}
-	return r.Fenced
-}
-
-func (r *ReorganizeStepOutcome) GetManifestAdvanced() *ReorganizeStepOutcomeManifestAdvanced {
-	if r == nil {
-		return nil
-	}
-	return r.ManifestAdvanced
-}
-
-func (r *ReorganizeStepOutcome) GetNotNeeded() *ReorganizeStepOutcomeNotNeeded {
-	if r == nil {
-		return nil
-	}
-	return r.NotNeeded
-}
-
-func (r *ReorganizeStepOutcome) GetUnitPublished() *ReorganizeStepOutcomeUnitPublished {
-	if r == nil {
-		return nil
-	}
-	return r.UnitPublished
-}
-
-func (r *ReorganizeStepOutcome) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Outcome string `json:"outcome"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	r.Outcome = unmarshaler.Outcome
-	if unmarshaler.Outcome == "" {
-		return fmt.Errorf("%T did not include discriminant outcome", r)
-	}
-	switch unmarshaler.Outcome {
-	case "compaction_required":
-		value := new(ReorganizeStepOutcomeCompactionRequired)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.CompactionRequired = value
-	case "fenced":
-		value := new(ReorganizeStepOutcomeFenced)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.Fenced = value
-	case "manifest_advanced":
-		value := new(ReorganizeStepOutcomeManifestAdvanced)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.ManifestAdvanced = value
-	case "not_needed":
-		value := new(ReorganizeStepOutcomeNotNeeded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.NotNeeded = value
-	case "unit_published":
-		value := new(ReorganizeStepOutcomeUnitPublished)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.UnitPublished = value
-	}
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r ReorganizeStepOutcome) MarshalJSON() ([]byte, error) {
-	if err := r.validate(); err != nil {
-		return nil, err
-	}
-	if r.CompactionRequired != nil {
-		return internal.MarshalJSONWithExtraProperty(r.CompactionRequired, "outcome", "compaction_required")
-	}
-	if r.Fenced != nil {
-		return internal.MarshalJSONWithExtraProperty(r.Fenced, "outcome", "fenced")
-	}
-	if r.ManifestAdvanced != nil {
-		return internal.MarshalJSONWithExtraProperty(r.ManifestAdvanced, "outcome", "manifest_advanced")
-	}
-	if r.NotNeeded != nil {
-		return internal.MarshalJSONWithExtraProperty(r.NotNeeded, "outcome", "not_needed")
-	}
-	if r.UnitPublished != nil {
-		return internal.MarshalJSONWithExtraProperty(r.UnitPublished, "outcome", "unit_published")
-	}
-	if len(r.rawJSON) > 0 {
-		return r.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", r)
-}
-
-type ReorganizeStepOutcomeVisitor interface {
-	VisitCompactionRequired(*ReorganizeStepOutcomeCompactionRequired) error
-	VisitFenced(*ReorganizeStepOutcomeFenced) error
-	VisitManifestAdvanced(*ReorganizeStepOutcomeManifestAdvanced) error
-	VisitNotNeeded(*ReorganizeStepOutcomeNotNeeded) error
-	VisitUnitPublished(*ReorganizeStepOutcomeUnitPublished) error
-}
-
-func (r *ReorganizeStepOutcome) Accept(visitor ReorganizeStepOutcomeVisitor) error {
-	if r.CompactionRequired != nil {
-		return visitor.VisitCompactionRequired(r.CompactionRequired)
-	}
-	if r.Fenced != nil {
-		return visitor.VisitFenced(r.Fenced)
-	}
-	if r.ManifestAdvanced != nil {
-		return visitor.VisitManifestAdvanced(r.ManifestAdvanced)
-	}
-	if r.NotNeeded != nil {
-		return visitor.VisitNotNeeded(r.NotNeeded)
-	}
-	if r.UnitPublished != nil {
-		return visitor.VisitUnitPublished(r.UnitPublished)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", r)
-}
-
-func (r *ReorganizeStepOutcome) validate() error {
-	if r == nil {
-		return fmt.Errorf("type %T is nil", r)
-	}
-	var fields []string
-	if r.CompactionRequired != nil {
-		fields = append(fields, "compaction_required")
-	}
-	if r.Fenced != nil {
-		fields = append(fields, "fenced")
-	}
-	if r.ManifestAdvanced != nil {
-		fields = append(fields, "manifest_advanced")
-	}
-	if r.NotNeeded != nil {
-		fields = append(fields, "not_needed")
-	}
-	if r.UnitPublished != nil {
-		fields = append(fields, "unit_published")
-	}
-	if len(fields) == 0 {
-		if r.Outcome != "" {
-			if len(r.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", r, r.Outcome)
-		}
-		return fmt.Errorf("type %T is empty", r)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", r, fields)
-	}
-	if r.Outcome != "" {
-		field := fields[0]
-		if r.Outcome != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				r,
-				r.Outcome,
-				r,
-			)
-		}
-	}
-	return nil
-}
-
-// A family group needs a streaming compaction. Run the `metadata_compaction` job.
-type ReorganizeStepOutcomeCompactionRequired struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *ReorganizeStepOutcomeCompactionRequired) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *ReorganizeStepOutcomeCompactionRequired) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-func (r *ReorganizeStepOutcomeCompactionRequired) UnmarshalJSON(data []byte) error {
-	type unmarshaler ReorganizeStepOutcomeCompactionRequired
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = ReorganizeStepOutcomeCompactionRequired(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *ReorganizeStepOutcomeCompactionRequired) MarshalJSON() ([]byte, error) {
-	type embed ReorganizeStepOutcomeCompactionRequired
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *ReorganizeStepOutcomeCompactionRequired) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// A newer runtime holds the compactor epoch.
-type ReorganizeStepOutcomeFenced struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *ReorganizeStepOutcomeFenced) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *ReorganizeStepOutcomeFenced) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-func (r *ReorganizeStepOutcomeFenced) UnmarshalJSON(data []byte) error {
-	type unmarshaler ReorganizeStepOutcomeFenced
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = ReorganizeStepOutcomeFenced(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *ReorganizeStepOutcomeFenced) MarshalJSON() ([]byte, error) {
-	type embed ReorganizeStepOutcomeFenced
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *ReorganizeStepOutcomeFenced) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// Another publisher changed the current manifest before this step could publish.
-type ReorganizeStepOutcomeManifestAdvanced struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *ReorganizeStepOutcomeManifestAdvanced) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *ReorganizeStepOutcomeManifestAdvanced) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-func (r *ReorganizeStepOutcomeManifestAdvanced) UnmarshalJSON(data []byte) error {
-	type unmarshaler ReorganizeStepOutcomeManifestAdvanced
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = ReorganizeStepOutcomeManifestAdvanced(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *ReorganizeStepOutcomeManifestAdvanced) MarshalJSON() ([]byte, error) {
-	type embed ReorganizeStepOutcomeManifestAdvanced
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *ReorganizeStepOutcomeManifestAdvanced) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// No family group had enough delta runs to merge.
-type ReorganizeStepOutcomeNotNeeded struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *ReorganizeStepOutcomeNotNeeded) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *ReorganizeStepOutcomeNotNeeded) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-func (r *ReorganizeStepOutcomeNotNeeded) UnmarshalJSON(data []byte) error {
-	type unmarshaler ReorganizeStepOutcomeNotNeeded
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = ReorganizeStepOutcomeNotNeeded(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *ReorganizeStepOutcomeNotNeeded) MarshalJSON() ([]byte, error) {
-	type embed ReorganizeStepOutcomeNotNeeded
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *ReorganizeStepOutcomeNotNeeded) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// One family group was merged and a manifest published.
-type ReorganizeStepOutcomeUnitPublished struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *ReorganizeStepOutcomeUnitPublished) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *ReorganizeStepOutcomeUnitPublished) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-func (r *ReorganizeStepOutcomeUnitPublished) UnmarshalJSON(data []byte) error {
-	type unmarshaler ReorganizeStepOutcomeUnitPublished
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = ReorganizeStepOutcomeUnitPublished(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *ReorganizeStepOutcomeUnitPublished) MarshalJSON() ([]byte, error) {
-	type embed ReorganizeStepOutcomeUnitPublished
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *ReorganizeStepOutcomeUnitPublished) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
 // The candidates inspected but not deleted by one garbage-collection pass.
 var (
 	retainedCandidatesFieldCheckpointNotDeletable = big.NewInt(1 << 0)
@@ -8189,14 +8175,15 @@ func (r *RunMaintenanceRequestGrepGc) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Runs WAL flushing and one bounded metadata reorganization step.
+// Folds the WAL tail and runs one bounded compaction step.
 var (
-	runMaintenanceRequestMetadataFieldMaxWalTailSegments = big.NewInt(1 << 0)
+	runMaintenanceRequestMetadataFieldMaxWalTailObjects = big.NewInt(1 << 0)
 )
 
 type RunMaintenanceRequestMetadata struct {
-	// The WAL-tail threshold for flushing. Omit it for the server default.
-	MaxWalTailSegments *int64 `json:"max_wal_tail_segments,omitempty" url:"max_wal_tail_segments,omitempty"`
+	// The WAL tail length, in WAL objects, that triggers a fold. Omit it for
+	// the server default.
+	MaxWalTailObjects *int64 `json:"max_wal_tail_objects,omitempty" url:"max_wal_tail_objects,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -8205,11 +8192,11 @@ type RunMaintenanceRequestMetadata struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceRequestMetadata) GetMaxWalTailSegments() *int64 {
+func (r *RunMaintenanceRequestMetadata) GetMaxWalTailObjects() *int64 {
 	if r == nil {
 		return nil
 	}
-	return r.MaxWalTailSegments
+	return r.MaxWalTailObjects
 }
 
 func (r *RunMaintenanceRequestMetadata) GetExtraProperties() map[string]interface{} {
@@ -8226,11 +8213,11 @@ func (r *RunMaintenanceRequestMetadata) require(field *big.Int) {
 	r.explicitFields.Or(r.explicitFields, field)
 }
 
-// SetMaxWalTailSegments sets the MaxWalTailSegments field and marks it as non-optional;
+// SetMaxWalTailObjects sets the MaxWalTailObjects field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceRequestMetadata) SetMaxWalTailSegments(maxWalTailSegments *int64) {
-	r.MaxWalTailSegments = maxWalTailSegments
-	r.require(runMaintenanceRequestMetadataFieldMaxWalTailSegments)
+func (r *RunMaintenanceRequestMetadata) SetMaxWalTailObjects(maxWalTailObjects *int64) {
+	r.MaxWalTailObjects = maxWalTailObjects
+	r.require(runMaintenanceRequestMetadataFieldMaxWalTailObjects)
 }
 
 func (r *RunMaintenanceRequestMetadata) UnmarshalJSON(data []byte) error {
@@ -8428,7 +8415,7 @@ func (r *RunMaintenanceRequestRecoverAdministrator) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Advances the retention floor to the flushed manifest head.
+// Advances the retention floor to the folded manifest head.
 type RunMaintenanceRequestRetention struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -9042,26 +9029,33 @@ func (r *RunMaintenanceResponseGrepGc) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Result of WAL flushing and one bounded metadata reorganization step.
+// Result of the WAL fold and one bounded compaction step.
 var (
-	runMaintenanceResponseMetadataFieldNamespaceID = big.NewInt(1 << 0)
-	runMaintenanceResponseMetadataFieldReorganize  = big.NewInt(1 << 1)
-	runMaintenanceResponseMetadataFieldWalFlush    = big.NewInt(1 << 2)
+	runMaintenanceResponseMetadataFieldCompaction  = big.NewInt(1 << 0)
+	runMaintenanceResponseMetadataFieldNamespaceID = big.NewInt(1 << 1)
+	runMaintenanceResponseMetadataFieldWalFold     = big.NewInt(1 << 2)
 )
 
 type RunMaintenanceResponseMetadata struct {
+	// What the bounded compaction step did.
+	Compaction *CompactionStepOutcome `json:"compaction" url:"compaction"`
 	// Namespace maintained by this run.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// What the reorganization unit did.
-	Reorganize *ReorganizeStepOutcome `json:"reorganize" url:"reorganize"`
-	// What the WAL flush did.
-	WalFlush *WalFlushStepOutcome `json:"wal_flush" url:"wal_flush"`
+	// What the WAL fold did.
+	WalFold *WalFoldStepOutcome `json:"wal_fold" url:"wal_fold"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceResponseMetadata) GetCompaction() *CompactionStepOutcome {
+	if r == nil {
+		return nil
+	}
+	return r.Compaction
 }
 
 func (r *RunMaintenanceResponseMetadata) GetNamespaceID() NamespaceID {
@@ -9071,18 +9065,11 @@ func (r *RunMaintenanceResponseMetadata) GetNamespaceID() NamespaceID {
 	return r.NamespaceID
 }
 
-func (r *RunMaintenanceResponseMetadata) GetReorganize() *ReorganizeStepOutcome {
+func (r *RunMaintenanceResponseMetadata) GetWalFold() *WalFoldStepOutcome {
 	if r == nil {
 		return nil
 	}
-	return r.Reorganize
-}
-
-func (r *RunMaintenanceResponseMetadata) GetWalFlush() *WalFlushStepOutcome {
-	if r == nil {
-		return nil
-	}
-	return r.WalFlush
+	return r.WalFold
 }
 
 func (r *RunMaintenanceResponseMetadata) GetExtraProperties() map[string]interface{} {
@@ -9099,6 +9086,13 @@ func (r *RunMaintenanceResponseMetadata) require(field *big.Int) {
 	r.explicitFields.Or(r.explicitFields, field)
 }
 
+// SetCompaction sets the Compaction field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceResponseMetadata) SetCompaction(compaction *CompactionStepOutcome) {
+	r.Compaction = compaction
+	r.require(runMaintenanceResponseMetadataFieldCompaction)
+}
+
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (r *RunMaintenanceResponseMetadata) SetNamespaceID(namespaceID NamespaceID) {
@@ -9106,18 +9100,11 @@ func (r *RunMaintenanceResponseMetadata) SetNamespaceID(namespaceID NamespaceID)
 	r.require(runMaintenanceResponseMetadataFieldNamespaceID)
 }
 
-// SetReorganize sets the Reorganize field and marks it as non-optional;
+// SetWalFold sets the WalFold field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseMetadata) SetReorganize(reorganize *ReorganizeStepOutcome) {
-	r.Reorganize = reorganize
-	r.require(runMaintenanceResponseMetadataFieldReorganize)
-}
-
-// SetWalFlush sets the WalFlush field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseMetadata) SetWalFlush(walFlush *WalFlushStepOutcome) {
-	r.WalFlush = walFlush
-	r.require(runMaintenanceResponseMetadataFieldWalFlush)
+func (r *RunMaintenanceResponseMetadata) SetWalFold(walFold *WalFoldStepOutcome) {
+	r.WalFold = walFold
+	r.require(runMaintenanceResponseMetadataFieldWalFold)
 }
 
 func (r *RunMaintenanceResponseMetadata) UnmarshalJSON(data []byte) error {
@@ -9931,53 +9918,53 @@ func (s *StoreProbeResponse) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// What the WAL-flush part of a maintenance pass did.
-type WalFlushStepOutcome struct {
+// What the WAL fold part of a maintenance pass did.
+type WalFoldStepOutcome struct {
 	Outcome          string
-	AlreadyPublished *WalFlushStepOutcomeAlreadyPublished
-	Flushed          *WalFlushStepOutcomeFlushed
-	NotNeeded        *WalFlushStepOutcomeNotNeeded
-	RetriesExhausted *WalFlushStepOutcomeRetriesExhausted
+	AlreadyPublished *WalFoldStepOutcomeAlreadyPublished
+	Folded           *WalFoldStepOutcomeFolded
+	NotNeeded        *WalFoldStepOutcomeNotNeeded
+	RetriesExhausted *WalFoldStepOutcomeRetriesExhausted
 
 	rawJSON json.RawMessage
 }
 
-func (w *WalFlushStepOutcome) GetOutcome() string {
+func (w *WalFoldStepOutcome) GetOutcome() string {
 	if w == nil {
 		return ""
 	}
 	return w.Outcome
 }
 
-func (w *WalFlushStepOutcome) GetAlreadyPublished() *WalFlushStepOutcomeAlreadyPublished {
+func (w *WalFoldStepOutcome) GetAlreadyPublished() *WalFoldStepOutcomeAlreadyPublished {
 	if w == nil {
 		return nil
 	}
 	return w.AlreadyPublished
 }
 
-func (w *WalFlushStepOutcome) GetFlushed() *WalFlushStepOutcomeFlushed {
+func (w *WalFoldStepOutcome) GetFolded() *WalFoldStepOutcomeFolded {
 	if w == nil {
 		return nil
 	}
-	return w.Flushed
+	return w.Folded
 }
 
-func (w *WalFlushStepOutcome) GetNotNeeded() *WalFlushStepOutcomeNotNeeded {
+func (w *WalFoldStepOutcome) GetNotNeeded() *WalFoldStepOutcomeNotNeeded {
 	if w == nil {
 		return nil
 	}
 	return w.NotNeeded
 }
 
-func (w *WalFlushStepOutcome) GetRetriesExhausted() *WalFlushStepOutcomeRetriesExhausted {
+func (w *WalFoldStepOutcome) GetRetriesExhausted() *WalFoldStepOutcomeRetriesExhausted {
 	if w == nil {
 		return nil
 	}
 	return w.RetriesExhausted
 }
 
-func (w *WalFlushStepOutcome) UnmarshalJSON(data []byte) error {
+func (w *WalFoldStepOutcome) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Outcome string `json:"outcome"`
 	}
@@ -9990,25 +9977,25 @@ func (w *WalFlushStepOutcome) UnmarshalJSON(data []byte) error {
 	}
 	switch unmarshaler.Outcome {
 	case "already_published":
-		value := new(WalFlushStepOutcomeAlreadyPublished)
+		value := new(WalFoldStepOutcomeAlreadyPublished)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		w.AlreadyPublished = value
-	case "flushed":
-		value := new(WalFlushStepOutcomeFlushed)
+	case "folded":
+		value := new(WalFoldStepOutcomeFolded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		w.Flushed = value
+		w.Folded = value
 	case "not_needed":
-		value := new(WalFlushStepOutcomeNotNeeded)
+		value := new(WalFoldStepOutcomeNotNeeded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		w.NotNeeded = value
 	case "retries_exhausted":
-		value := new(WalFlushStepOutcomeRetriesExhausted)
+		value := new(WalFoldStepOutcomeRetriesExhausted)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
@@ -10018,15 +10005,15 @@ func (w *WalFlushStepOutcome) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (w WalFlushStepOutcome) MarshalJSON() ([]byte, error) {
+func (w WalFoldStepOutcome) MarshalJSON() ([]byte, error) {
 	if err := w.validate(); err != nil {
 		return nil, err
 	}
 	if w.AlreadyPublished != nil {
 		return internal.MarshalJSONWithExtraProperty(w.AlreadyPublished, "outcome", "already_published")
 	}
-	if w.Flushed != nil {
-		return internal.MarshalJSONWithExtraProperty(w.Flushed, "outcome", "flushed")
+	if w.Folded != nil {
+		return internal.MarshalJSONWithExtraProperty(w.Folded, "outcome", "folded")
 	}
 	if w.NotNeeded != nil {
 		return internal.MarshalJSONWithExtraProperty(w.NotNeeded, "outcome", "not_needed")
@@ -10040,19 +10027,19 @@ func (w WalFlushStepOutcome) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not define a non-empty union type", w)
 }
 
-type WalFlushStepOutcomeVisitor interface {
-	VisitAlreadyPublished(*WalFlushStepOutcomeAlreadyPublished) error
-	VisitFlushed(*WalFlushStepOutcomeFlushed) error
-	VisitNotNeeded(*WalFlushStepOutcomeNotNeeded) error
-	VisitRetriesExhausted(*WalFlushStepOutcomeRetriesExhausted) error
+type WalFoldStepOutcomeVisitor interface {
+	VisitAlreadyPublished(*WalFoldStepOutcomeAlreadyPublished) error
+	VisitFolded(*WalFoldStepOutcomeFolded) error
+	VisitNotNeeded(*WalFoldStepOutcomeNotNeeded) error
+	VisitRetriesExhausted(*WalFoldStepOutcomeRetriesExhausted) error
 }
 
-func (w *WalFlushStepOutcome) Accept(visitor WalFlushStepOutcomeVisitor) error {
+func (w *WalFoldStepOutcome) Accept(visitor WalFoldStepOutcomeVisitor) error {
 	if w.AlreadyPublished != nil {
 		return visitor.VisitAlreadyPublished(w.AlreadyPublished)
 	}
-	if w.Flushed != nil {
-		return visitor.VisitFlushed(w.Flushed)
+	if w.Folded != nil {
+		return visitor.VisitFolded(w.Folded)
 	}
 	if w.NotNeeded != nil {
 		return visitor.VisitNotNeeded(w.NotNeeded)
@@ -10063,7 +10050,7 @@ func (w *WalFlushStepOutcome) Accept(visitor WalFlushStepOutcomeVisitor) error {
 	return fmt.Errorf("type %T does not define a non-empty union type", w)
 }
 
-func (w *WalFlushStepOutcome) validate() error {
+func (w *WalFoldStepOutcome) validate() error {
 	if w == nil {
 		return fmt.Errorf("type %T is nil", w)
 	}
@@ -10071,8 +10058,8 @@ func (w *WalFlushStepOutcome) validate() error {
 	if w.AlreadyPublished != nil {
 		fields = append(fields, "already_published")
 	}
-	if w.Flushed != nil {
-		fields = append(fields, "flushed")
+	if w.Folded != nil {
+		fields = append(fields, "folded")
 	}
 	if w.NotNeeded != nil {
 		fields = append(fields, "not_needed")
@@ -10108,12 +10095,12 @@ func (w *WalFlushStepOutcome) validate() error {
 
 // The current manifest already covered the captured WAL tail; this step published no manifest.
 var (
-	walFlushStepOutcomeAlreadyPublishedFieldAttemptedSeq      = big.NewInt(1 << 0)
-	walFlushStepOutcomeAlreadyPublishedFieldCurrentManifestNo = big.NewInt(1 << 1)
+	walFoldStepOutcomeAlreadyPublishedFieldAttemptedSeq      = big.NewInt(1 << 0)
+	walFoldStepOutcomeAlreadyPublishedFieldCurrentManifestNo = big.NewInt(1 << 1)
 )
 
-type WalFlushStepOutcomeAlreadyPublished struct {
-	// Sequence this step attempted to flush through.
+type WalFoldStepOutcomeAlreadyPublished struct {
+	// Sequence this step attempted to fold through.
 	AttemptedSeq ChangeSeq `json:"attempted_seq" url:"attempted_seq"`
 	// The namespace's current manifest number.
 	CurrentManifestNo ManifestNo `json:"current_manifest_no" url:"current_manifest_no"`
@@ -10125,28 +10112,28 @@ type WalFlushStepOutcomeAlreadyPublished struct {
 	rawJSON         json.RawMessage
 }
 
-func (w *WalFlushStepOutcomeAlreadyPublished) GetAttemptedSeq() ChangeSeq {
+func (w *WalFoldStepOutcomeAlreadyPublished) GetAttemptedSeq() ChangeSeq {
 	if w == nil {
 		return 0
 	}
 	return w.AttemptedSeq
 }
 
-func (w *WalFlushStepOutcomeAlreadyPublished) GetCurrentManifestNo() ManifestNo {
+func (w *WalFoldStepOutcomeAlreadyPublished) GetCurrentManifestNo() ManifestNo {
 	if w == nil {
 		return 0
 	}
 	return w.CurrentManifestNo
 }
 
-func (w *WalFlushStepOutcomeAlreadyPublished) GetExtraProperties() map[string]interface{} {
+func (w *WalFoldStepOutcomeAlreadyPublished) GetExtraProperties() map[string]interface{} {
 	if w == nil {
 		return nil
 	}
 	return w.extraProperties
 }
 
-func (w *WalFlushStepOutcomeAlreadyPublished) require(field *big.Int) {
+func (w *WalFoldStepOutcomeAlreadyPublished) require(field *big.Int) {
 	if w.explicitFields == nil {
 		w.explicitFields = big.NewInt(0)
 	}
@@ -10155,25 +10142,25 @@ func (w *WalFlushStepOutcomeAlreadyPublished) require(field *big.Int) {
 
 // SetAttemptedSeq sets the AttemptedSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (w *WalFlushStepOutcomeAlreadyPublished) SetAttemptedSeq(attemptedSeq ChangeSeq) {
+func (w *WalFoldStepOutcomeAlreadyPublished) SetAttemptedSeq(attemptedSeq ChangeSeq) {
 	w.AttemptedSeq = attemptedSeq
-	w.require(walFlushStepOutcomeAlreadyPublishedFieldAttemptedSeq)
+	w.require(walFoldStepOutcomeAlreadyPublishedFieldAttemptedSeq)
 }
 
 // SetCurrentManifestNo sets the CurrentManifestNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (w *WalFlushStepOutcomeAlreadyPublished) SetCurrentManifestNo(currentManifestNo ManifestNo) {
+func (w *WalFoldStepOutcomeAlreadyPublished) SetCurrentManifestNo(currentManifestNo ManifestNo) {
 	w.CurrentManifestNo = currentManifestNo
-	w.require(walFlushStepOutcomeAlreadyPublishedFieldCurrentManifestNo)
+	w.require(walFoldStepOutcomeAlreadyPublishedFieldCurrentManifestNo)
 }
 
-func (w *WalFlushStepOutcomeAlreadyPublished) UnmarshalJSON(data []byte) error {
-	type unmarshaler WalFlushStepOutcomeAlreadyPublished
+func (w *WalFoldStepOutcomeAlreadyPublished) UnmarshalJSON(data []byte) error {
+	type unmarshaler WalFoldStepOutcomeAlreadyPublished
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*w = WalFlushStepOutcomeAlreadyPublished(value)
+	*w = WalFoldStepOutcomeAlreadyPublished(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *w)
 	if err != nil {
 		return err
@@ -10183,8 +10170,8 @@ func (w *WalFlushStepOutcomeAlreadyPublished) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (w *WalFlushStepOutcomeAlreadyPublished) MarshalJSON() ([]byte, error) {
-	type embed WalFlushStepOutcomeAlreadyPublished
+func (w *WalFoldStepOutcomeAlreadyPublished) MarshalJSON() ([]byte, error) {
+	type embed WalFoldStepOutcomeAlreadyPublished
 	var marshaler = struct {
 		embed
 	}{
@@ -10194,7 +10181,7 @@ func (w *WalFlushStepOutcomeAlreadyPublished) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (w *WalFlushStepOutcomeAlreadyPublished) String() string {
+func (w *WalFoldStepOutcomeAlreadyPublished) String() string {
 	if w == nil {
 		return "<nil>"
 	}
@@ -10209,12 +10196,12 @@ func (w *WalFlushStepOutcomeAlreadyPublished) String() string {
 	return fmt.Sprintf("%#v", w)
 }
 
-// The step flushed the WAL tail and published the next current manifest.
+// The step folded the WAL tail and published the next current manifest.
 var (
-	walFlushStepOutcomeFlushedFieldManifestHeadSeq = big.NewInt(1 << 0)
+	walFoldStepOutcomeFoldedFieldManifestHeadSeq = big.NewInt(1 << 0)
 )
 
-type WalFlushStepOutcomeFlushed struct {
+type WalFoldStepOutcomeFolded struct {
 	// Sequence covered by the published manifest.
 	ManifestHeadSeq ChangeSeq `json:"manifest_head_seq" url:"manifest_head_seq"`
 
@@ -10225,21 +10212,21 @@ type WalFlushStepOutcomeFlushed struct {
 	rawJSON         json.RawMessage
 }
 
-func (w *WalFlushStepOutcomeFlushed) GetManifestHeadSeq() ChangeSeq {
+func (w *WalFoldStepOutcomeFolded) GetManifestHeadSeq() ChangeSeq {
 	if w == nil {
 		return 0
 	}
 	return w.ManifestHeadSeq
 }
 
-func (w *WalFlushStepOutcomeFlushed) GetExtraProperties() map[string]interface{} {
+func (w *WalFoldStepOutcomeFolded) GetExtraProperties() map[string]interface{} {
 	if w == nil {
 		return nil
 	}
 	return w.extraProperties
 }
 
-func (w *WalFlushStepOutcomeFlushed) require(field *big.Int) {
+func (w *WalFoldStepOutcomeFolded) require(field *big.Int) {
 	if w.explicitFields == nil {
 		w.explicitFields = big.NewInt(0)
 	}
@@ -10248,18 +10235,18 @@ func (w *WalFlushStepOutcomeFlushed) require(field *big.Int) {
 
 // SetManifestHeadSeq sets the ManifestHeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (w *WalFlushStepOutcomeFlushed) SetManifestHeadSeq(manifestHeadSeq ChangeSeq) {
+func (w *WalFoldStepOutcomeFolded) SetManifestHeadSeq(manifestHeadSeq ChangeSeq) {
 	w.ManifestHeadSeq = manifestHeadSeq
-	w.require(walFlushStepOutcomeFlushedFieldManifestHeadSeq)
+	w.require(walFoldStepOutcomeFoldedFieldManifestHeadSeq)
 }
 
-func (w *WalFlushStepOutcomeFlushed) UnmarshalJSON(data []byte) error {
-	type unmarshaler WalFlushStepOutcomeFlushed
+func (w *WalFoldStepOutcomeFolded) UnmarshalJSON(data []byte) error {
+	type unmarshaler WalFoldStepOutcomeFolded
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*w = WalFlushStepOutcomeFlushed(value)
+	*w = WalFoldStepOutcomeFolded(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *w)
 	if err != nil {
 		return err
@@ -10269,8 +10256,8 @@ func (w *WalFlushStepOutcomeFlushed) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (w *WalFlushStepOutcomeFlushed) MarshalJSON() ([]byte, error) {
-	type embed WalFlushStepOutcomeFlushed
+func (w *WalFoldStepOutcomeFolded) MarshalJSON() ([]byte, error) {
+	type embed WalFoldStepOutcomeFolded
 	var marshaler = struct {
 		embed
 	}{
@@ -10280,7 +10267,7 @@ func (w *WalFlushStepOutcomeFlushed) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (w *WalFlushStepOutcomeFlushed) String() string {
+func (w *WalFoldStepOutcomeFolded) String() string {
 	if w == nil {
 		return "<nil>"
 	}
@@ -10295,8 +10282,8 @@ func (w *WalFlushStepOutcomeFlushed) String() string {
 	return fmt.Sprintf("%#v", w)
 }
 
-// The tail was below the threshold, so there was nothing to flush.
-type WalFlushStepOutcomeNotNeeded struct {
+// The tail was below the threshold, so there was nothing to fold.
+type WalFoldStepOutcomeNotNeeded struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -10305,27 +10292,27 @@ type WalFlushStepOutcomeNotNeeded struct {
 	rawJSON         json.RawMessage
 }
 
-func (w *WalFlushStepOutcomeNotNeeded) GetExtraProperties() map[string]interface{} {
+func (w *WalFoldStepOutcomeNotNeeded) GetExtraProperties() map[string]interface{} {
 	if w == nil {
 		return nil
 	}
 	return w.extraProperties
 }
 
-func (w *WalFlushStepOutcomeNotNeeded) require(field *big.Int) {
+func (w *WalFoldStepOutcomeNotNeeded) require(field *big.Int) {
 	if w.explicitFields == nil {
 		w.explicitFields = big.NewInt(0)
 	}
 	w.explicitFields.Or(w.explicitFields, field)
 }
 
-func (w *WalFlushStepOutcomeNotNeeded) UnmarshalJSON(data []byte) error {
-	type unmarshaler WalFlushStepOutcomeNotNeeded
+func (w *WalFoldStepOutcomeNotNeeded) UnmarshalJSON(data []byte) error {
+	type unmarshaler WalFoldStepOutcomeNotNeeded
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*w = WalFlushStepOutcomeNotNeeded(value)
+	*w = WalFoldStepOutcomeNotNeeded(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *w)
 	if err != nil {
 		return err
@@ -10335,8 +10322,8 @@ func (w *WalFlushStepOutcomeNotNeeded) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (w *WalFlushStepOutcomeNotNeeded) MarshalJSON() ([]byte, error) {
-	type embed WalFlushStepOutcomeNotNeeded
+func (w *WalFoldStepOutcomeNotNeeded) MarshalJSON() ([]byte, error) {
+	type embed WalFoldStepOutcomeNotNeeded
 	var marshaler = struct {
 		embed
 	}{
@@ -10346,7 +10333,7 @@ func (w *WalFlushStepOutcomeNotNeeded) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (w *WalFlushStepOutcomeNotNeeded) String() string {
+func (w *WalFoldStepOutcomeNotNeeded) String() string {
 	if w == nil {
 		return "<nil>"
 	}
@@ -10363,10 +10350,10 @@ func (w *WalFlushStepOutcomeNotNeeded) String() string {
 
 // Concurrent updates prevented every publication attempt.
 var (
-	walFlushStepOutcomeRetriesExhaustedFieldObservedHeadSeq = big.NewInt(1 << 0)
+	walFoldStepOutcomeRetriesExhaustedFieldObservedHeadSeq = big.NewInt(1 << 0)
 )
 
-type WalFlushStepOutcomeRetriesExhausted struct {
+type WalFoldStepOutcomeRetriesExhausted struct {
 	// Head sequence observed before the step ran.
 	ObservedHeadSeq ChangeSeq `json:"observed_head_seq" url:"observed_head_seq"`
 
@@ -10377,21 +10364,21 @@ type WalFlushStepOutcomeRetriesExhausted struct {
 	rawJSON         json.RawMessage
 }
 
-func (w *WalFlushStepOutcomeRetriesExhausted) GetObservedHeadSeq() ChangeSeq {
+func (w *WalFoldStepOutcomeRetriesExhausted) GetObservedHeadSeq() ChangeSeq {
 	if w == nil {
 		return 0
 	}
 	return w.ObservedHeadSeq
 }
 
-func (w *WalFlushStepOutcomeRetriesExhausted) GetExtraProperties() map[string]interface{} {
+func (w *WalFoldStepOutcomeRetriesExhausted) GetExtraProperties() map[string]interface{} {
 	if w == nil {
 		return nil
 	}
 	return w.extraProperties
 }
 
-func (w *WalFlushStepOutcomeRetriesExhausted) require(field *big.Int) {
+func (w *WalFoldStepOutcomeRetriesExhausted) require(field *big.Int) {
 	if w.explicitFields == nil {
 		w.explicitFields = big.NewInt(0)
 	}
@@ -10400,18 +10387,18 @@ func (w *WalFlushStepOutcomeRetriesExhausted) require(field *big.Int) {
 
 // SetObservedHeadSeq sets the ObservedHeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (w *WalFlushStepOutcomeRetriesExhausted) SetObservedHeadSeq(observedHeadSeq ChangeSeq) {
+func (w *WalFoldStepOutcomeRetriesExhausted) SetObservedHeadSeq(observedHeadSeq ChangeSeq) {
 	w.ObservedHeadSeq = observedHeadSeq
-	w.require(walFlushStepOutcomeRetriesExhaustedFieldObservedHeadSeq)
+	w.require(walFoldStepOutcomeRetriesExhaustedFieldObservedHeadSeq)
 }
 
-func (w *WalFlushStepOutcomeRetriesExhausted) UnmarshalJSON(data []byte) error {
-	type unmarshaler WalFlushStepOutcomeRetriesExhausted
+func (w *WalFoldStepOutcomeRetriesExhausted) UnmarshalJSON(data []byte) error {
+	type unmarshaler WalFoldStepOutcomeRetriesExhausted
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*w = WalFlushStepOutcomeRetriesExhausted(value)
+	*w = WalFoldStepOutcomeRetriesExhausted(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *w)
 	if err != nil {
 		return err
@@ -10421,8 +10408,8 @@ func (w *WalFlushStepOutcomeRetriesExhausted) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (w *WalFlushStepOutcomeRetriesExhausted) MarshalJSON() ([]byte, error) {
-	type embed WalFlushStepOutcomeRetriesExhausted
+func (w *WalFoldStepOutcomeRetriesExhausted) MarshalJSON() ([]byte, error) {
+	type embed WalFoldStepOutcomeRetriesExhausted
 	var marshaler = struct {
 		embed
 	}{
@@ -10432,7 +10419,7 @@ func (w *WalFlushStepOutcomeRetriesExhausted) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (w *WalFlushStepOutcomeRetriesExhausted) String() string {
+func (w *WalFoldStepOutcomeRetriesExhausted) String() string {
 	if w == nil {
 		return "<nil>"
 	}
