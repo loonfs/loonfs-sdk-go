@@ -42,7 +42,7 @@ client.Capabilities.Retrieve(
 </details>
 
 ## namespaces
-<details><summary><code>client.Namespaces.Create(request) -> *loonfs.Namespace</code></summary>
+<details><summary><code>client.Namespaces.Create(request) -> *loonfs.NamespaceMetadata</code></summary>
 <dl>
 <dd>
 
@@ -113,7 +113,7 @@ unrestricted.
 </dl>
 </details>
 
-<details><summary><code>client.Namespaces.Retrieve(NamespaceID) -> *loonfs.Namespace</code></summary>
+<details><summary><code>client.Namespaces.Retrieve(NamespaceID) -> *loonfs.NamespaceMetadata</code></summary>
 <dl>
 <dd>
 
@@ -241,7 +241,7 @@ client.Namespaces.Delete(
 </dl>
 </details>
 
-<details><summary><code>client.Namespaces.Fork(NamespaceID, request) -> *loonfs.Namespace</code></summary>
+<details><summary><code>client.Namespaces.Fork(NamespaceID, request) -> *loonfs.NamespaceMetadata</code></summary>
 <dl>
 <dd>
 
@@ -1688,7 +1688,7 @@ client.Snapshots.List(
 <dl>
 <dd>
 
-Creates a snapshot of the current namespace state. Every call creates a new snapshot.
+Creates a snapshot of the current namespace state. Every accepted call creates a new snapshot.
 </dd>
 </dl>
 </dd>
@@ -2384,7 +2384,7 @@ client.Maintenance.Checkpoints.List(
 <dl>
 <dd>
 
-Creates a user-owned checkpoint record pinning the current namespace view. It first folds any WAL tail after the current manifest. Every call creates a new record under a new id; the name is a label, not a key. The record retains its manifest until it is deleted, either explicitly or by collection after expiry plus grace, so routine maintenance should flush the WAL instead. This is a maintenance operation, not a file mutation.
+Creates a user-owned checkpoint record pinning the current namespace view. It first folds any WAL tail after the current manifest. Every call creates a new record under a new id; the name is a label, not a key. The record retains its manifest until it is deleted, either explicitly or by collection after expiry plus grace, so routine maintenance should fold the WAL instead. This is a maintenance operation, not a file mutation.
 </dd>
 </dl>
 </dd>
@@ -2712,7 +2712,7 @@ client.Maintenance.GrepIndex.Disable(
 <dl>
 <dd>
 
-Enables the namespace's grep index and asks this deployment's maintenance runner for the backfill's first step. The response reports the lifecycle and bookkeeping read after the transition: a fresh enable is `backfilling` with the sequence its checkpoint captured, while an already-enabled namespace answers with its current status. Idempotent. Requires this deployment to maintain the grep index.
+Enables the namespace's grep index. A deployment that runs maintenance builds the backfill on its next maintenance pass. The response reports the lifecycle and bookkeeping read after the transition: a fresh enable is `backfilling` with the sequence its checkpoint captured, while an already-enabled namespace answers with its current status. Idempotent. Requires this deployment to maintain the grep index.
 </dd>
 </dl>
 </dd>

@@ -49,7 +49,7 @@ func (c *Client) Create(
 	ctx context.Context,
 	request *loonfs.CreateNamespaceRequest,
 	opts ...option.RequestOption,
-) (*loonfs.Namespace, error) {
+) (*loonfs.NamespaceMetadata, error) {
 	response, err := c.WithRawResponse.Create(
 		ctx,
 		request,
@@ -76,7 +76,7 @@ func (c *Client) Retrieve(
 	ctx context.Context,
 	request *loonfs.GetNamespaceRequest,
 	opts ...option.RequestOption,
-) (*loonfs.Namespace, error) {
+) (*loonfs.NamespaceMetadata, error) {
 	response, err := c.WithRawResponse.Retrieve(
 		ctx,
 		request,
@@ -131,7 +131,7 @@ func (c *Client) Fork(
 	ctx context.Context,
 	request *loonfs.ForkNamespaceRequest,
 	opts ...option.RequestOption,
-) (*loonfs.Namespace, error) {
+) (*loonfs.NamespaceMetadata, error) {
 	response, err := c.WithRawResponse.Fork(
 		ctx,
 		request,

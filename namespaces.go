@@ -299,194 +299,6 @@ func (d *DeleteNamespaceResponse) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// Current state for one namespace.
-var (
-	namespaceFieldAccess            = big.NewInt(1 << 0)
-	namespaceFieldCreatedAtMs       = big.NewInt(1 << 1)
-	namespaceFieldCreatedBy         = big.NewInt(1 << 2)
-	namespaceFieldForkBasis         = big.NewInt(1 << 3)
-	namespaceFieldHeadSeq           = big.NewInt(1 << 4)
-	namespaceFieldNamespaceID       = big.NewInt(1 << 5)
-	namespaceFieldRetentionFloorSeq = big.NewInt(1 << 6)
-)
-
-type Namespace struct {
-	// The namespace's access mode.
-	Access *NamespaceAccessMode `json:"access" url:"access"`
-	// Time the namespace was created, in Unix milliseconds.
-	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// Actor that created the namespace, as supplied by the application.
-	CreatedBy ActorID `json:"created_by" url:"created_by"`
-	// Present only for a fork: the source it was forked from.
-	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
-	// Current visible namespace sequence.
-	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Namespace ID.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Oldest sequence still promised for incremental replay.
-	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (n *Namespace) GetAccess() *NamespaceAccessMode {
-	if n == nil {
-		return nil
-	}
-	return n.Access
-}
-
-func (n *Namespace) GetCreatedAtMs() int64 {
-	if n == nil {
-		return 0
-	}
-	return n.CreatedAtMs
-}
-
-func (n *Namespace) GetCreatedBy() ActorID {
-	if n == nil {
-		return ""
-	}
-	return n.CreatedBy
-}
-
-func (n *Namespace) GetForkBasis() *NamespaceForkBasis {
-	if n == nil {
-		return nil
-	}
-	return n.ForkBasis
-}
-
-func (n *Namespace) GetHeadSeq() ChangeSeq {
-	if n == nil {
-		return 0
-	}
-	return n.HeadSeq
-}
-
-func (n *Namespace) GetNamespaceID() NamespaceID {
-	if n == nil {
-		return ""
-	}
-	return n.NamespaceID
-}
-
-func (n *Namespace) GetRetentionFloorSeq() ChangeSeq {
-	if n == nil {
-		return 0
-	}
-	return n.RetentionFloorSeq
-}
-
-func (n *Namespace) GetExtraProperties() map[string]interface{} {
-	if n == nil {
-		return nil
-	}
-	return n.extraProperties
-}
-
-func (n *Namespace) require(field *big.Int) {
-	if n.explicitFields == nil {
-		n.explicitFields = big.NewInt(0)
-	}
-	n.explicitFields.Or(n.explicitFields, field)
-}
-
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *Namespace) SetAccess(access *NamespaceAccessMode) {
-	n.Access = access
-	n.require(namespaceFieldAccess)
-}
-
-// SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *Namespace) SetCreatedAtMs(createdAtMs int64) {
-	n.CreatedAtMs = createdAtMs
-	n.require(namespaceFieldCreatedAtMs)
-}
-
-// SetCreatedBy sets the CreatedBy field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *Namespace) SetCreatedBy(createdBy ActorID) {
-	n.CreatedBy = createdBy
-	n.require(namespaceFieldCreatedBy)
-}
-
-// SetForkBasis sets the ForkBasis field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *Namespace) SetForkBasis(forkBasis *NamespaceForkBasis) {
-	n.ForkBasis = forkBasis
-	n.require(namespaceFieldForkBasis)
-}
-
-// SetHeadSeq sets the HeadSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *Namespace) SetHeadSeq(headSeq ChangeSeq) {
-	n.HeadSeq = headSeq
-	n.require(namespaceFieldHeadSeq)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *Namespace) SetNamespaceID(namespaceID NamespaceID) {
-	n.NamespaceID = namespaceID
-	n.require(namespaceFieldNamespaceID)
-}
-
-// SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *Namespace) SetRetentionFloorSeq(retentionFloorSeq ChangeSeq) {
-	n.RetentionFloorSeq = retentionFloorSeq
-	n.require(namespaceFieldRetentionFloorSeq)
-}
-
-func (n *Namespace) UnmarshalJSON(data []byte) error {
-	type unmarshaler Namespace
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*n = Namespace(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *n)
-	if err != nil {
-		return err
-	}
-	n.extraProperties = extraProperties
-	n.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (n *Namespace) MarshalJSON() ([]byte, error) {
-	type embed Namespace
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*n),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (n *Namespace) String() string {
-	if n == nil {
-		return "<nil>"
-	}
-	if len(n.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(n); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", n)
-}
-
 // A namespace's access mode, fixed at creation.
 type NamespaceAccess struct {
 	Kind         string
@@ -1049,6 +861,195 @@ func (n *NamespaceAccessUnrestricted) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NamespaceAccessUnrestricted) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+// Current state for one namespace.
+var (
+	namespaceMetadataFieldAccess            = big.NewInt(1 << 0)
+	namespaceMetadataFieldCreatedAtMs       = big.NewInt(1 << 1)
+	namespaceMetadataFieldCreatedBy         = big.NewInt(1 << 2)
+	namespaceMetadataFieldForkBasis         = big.NewInt(1 << 3)
+	namespaceMetadataFieldHeadSeq           = big.NewInt(1 << 4)
+	namespaceMetadataFieldNamespaceID       = big.NewInt(1 << 5)
+	namespaceMetadataFieldRetentionFloorSeq = big.NewInt(1 << 6)
+)
+
+type NamespaceMetadata struct {
+	// The namespace's access mode.
+	Access *NamespaceAccessMode `json:"access" url:"access"`
+	// Time the namespace was created, in Unix milliseconds.
+	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
+	// Actor that created the namespace, as supplied by the application.
+	CreatedBy ActorID `json:"created_by" url:"created_by"`
+	// Present only for a fork: the source it was forked from.
+	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
+	// Current visible namespace sequence.
+	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
+	// Namespace ID.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// Oldest position a change feed can resume after. The feed returns
+	// changes above it.
+	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NamespaceMetadata) GetAccess() *NamespaceAccessMode {
+	if n == nil {
+		return nil
+	}
+	return n.Access
+}
+
+func (n *NamespaceMetadata) GetCreatedAtMs() int64 {
+	if n == nil {
+		return 0
+	}
+	return n.CreatedAtMs
+}
+
+func (n *NamespaceMetadata) GetCreatedBy() ActorID {
+	if n == nil {
+		return ""
+	}
+	return n.CreatedBy
+}
+
+func (n *NamespaceMetadata) GetForkBasis() *NamespaceForkBasis {
+	if n == nil {
+		return nil
+	}
+	return n.ForkBasis
+}
+
+func (n *NamespaceMetadata) GetHeadSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.HeadSeq
+}
+
+func (n *NamespaceMetadata) GetNamespaceID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.NamespaceID
+}
+
+func (n *NamespaceMetadata) GetRetentionFloorSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.RetentionFloorSeq
+}
+
+func (n *NamespaceMetadata) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NamespaceMetadata) require(field *big.Int) {
+	if n.explicitFields == nil {
+		n.explicitFields = big.NewInt(0)
+	}
+	n.explicitFields.Or(n.explicitFields, field)
+}
+
+// SetAccess sets the Access field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetAccess(access *NamespaceAccessMode) {
+	n.Access = access
+	n.require(namespaceMetadataFieldAccess)
+}
+
+// SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetCreatedAtMs(createdAtMs int64) {
+	n.CreatedAtMs = createdAtMs
+	n.require(namespaceMetadataFieldCreatedAtMs)
+}
+
+// SetCreatedBy sets the CreatedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetCreatedBy(createdBy ActorID) {
+	n.CreatedBy = createdBy
+	n.require(namespaceMetadataFieldCreatedBy)
+}
+
+// SetForkBasis sets the ForkBasis field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetForkBasis(forkBasis *NamespaceForkBasis) {
+	n.ForkBasis = forkBasis
+	n.require(namespaceMetadataFieldForkBasis)
+}
+
+// SetHeadSeq sets the HeadSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetHeadSeq(headSeq ChangeSeq) {
+	n.HeadSeq = headSeq
+	n.require(namespaceMetadataFieldHeadSeq)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetNamespaceID(namespaceID NamespaceID) {
+	n.NamespaceID = namespaceID
+	n.require(namespaceMetadataFieldNamespaceID)
+}
+
+// SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetRetentionFloorSeq(retentionFloorSeq ChangeSeq) {
+	n.RetentionFloorSeq = retentionFloorSeq
+	n.require(namespaceMetadataFieldRetentionFloorSeq)
+}
+
+func (n *NamespaceMetadata) UnmarshalJSON(data []byte) error {
+	type unmarshaler NamespaceMetadata
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NamespaceMetadata(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NamespaceMetadata) MarshalJSON() ([]byte, error) {
+	type embed NamespaceMetadata
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NamespaceMetadata) String() string {
 	if n == nil {
 		return "<nil>"
 	}

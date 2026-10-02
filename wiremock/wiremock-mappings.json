@@ -1217,7 +1217,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"current_manifest_no\": 1000000,\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"live_checkpoints\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_segments\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"current_manifest_no\": 1000000,\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"live_checkpoints\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_objects\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1361,7 +1361,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_segments\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"fork\": 1000000,\n    \"snapshot\": 1000000,\n    \"user\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaimable_at_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"kind\": \"gc\"\n}",
+        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_objects\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"fork\": 1000000,\n    \"snapshot\": 1000000,\n    \"user\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaimable_at_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"kind\": \"gc\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
