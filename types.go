@@ -3235,6 +3235,8 @@ func (f *FileRevision) String() string {
 // One filesystem change within a commit.
 //
 // One request operation can produce multiple changes.
+//
+// Newer servers may report other event kinds; clients ignore them.
 type FilesystemChange struct {
 	Kind              string
 	AccessChanged     *FilesystemChangeAccessChanged
@@ -6805,6 +6807,8 @@ func (o *ObjectTransferAccessPresignedURL) String() string {
 // Metadata for one path returned by stat and directory listings.
 //
 // Attribute fields are included only when requested.
+//
+// Newer servers may report other inode kinds; clients read only the fields every entry carries.
 type PathEntry struct {
 	InodeKind string
 	Dir       *PathEntryDirectory
@@ -8415,14 +8419,42 @@ func (r *RunMaintenanceRequestRecoverAdministrator) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Advances the retention floor to the folded manifest head.
+// Advances the retention floor, to the folded manifest head unless the
+// request names a target.
+var (
+	runMaintenanceRequestRetentionFieldCutoffAtMs = big.NewInt(1 << 0)
+	runMaintenanceRequestRetentionFieldToSeq      = big.NewInt(1 << 1)
+)
+
 type RunMaintenanceRequestRetention struct {
+	// Advance the floor to the last commit committed at or before this Unix
+	// time in milliseconds. Commits are read upward from the floor, and the
+	// first one committed after this time ends the advance. Cannot be
+	// combined with `to_seq`.
+	CutoffAtMs *int64 `json:"cutoff_at_ms,omitempty" url:"cutoff_at_ms,omitempty"`
+	// Advance the floor to this sequence, or to the folded manifest head
+	// when that is lower. Cannot be combined with `cutoff_at_ms`.
+	ToSeq *ChangeSeq `json:"to_seq,omitempty" url:"to_seq,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceRequestRetention) GetCutoffAtMs() *int64 {
+	if r == nil {
+		return nil
+	}
+	return r.CutoffAtMs
+}
+
+func (r *RunMaintenanceRequestRetention) GetToSeq() *ChangeSeq {
+	if r == nil {
+		return nil
+	}
+	return r.ToSeq
 }
 
 func (r *RunMaintenanceRequestRetention) GetExtraProperties() map[string]interface{} {
@@ -8437,6 +8469,20 @@ func (r *RunMaintenanceRequestRetention) require(field *big.Int) {
 		r.explicitFields = big.NewInt(0)
 	}
 	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetCutoffAtMs sets the CutoffAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceRequestRetention) SetCutoffAtMs(cutoffAtMs *int64) {
+	r.CutoffAtMs = cutoffAtMs
+	r.require(runMaintenanceRequestRetentionFieldCutoffAtMs)
+}
+
+// SetToSeq sets the ToSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceRequestRetention) SetToSeq(toSeq *ChangeSeq) {
+	r.ToSeq = toSeq
+	r.require(runMaintenanceRequestRetentionFieldToSeq)
 }
 
 func (r *RunMaintenanceRequestRetention) UnmarshalJSON(data []byte) error {

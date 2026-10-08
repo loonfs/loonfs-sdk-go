@@ -120,6 +120,8 @@ type CommitPrecondition struct {
 	AccessRevision     *CommitPreconditionAccessRevision
 	AttributesRevision *CommitPreconditionAttributesRevision
 	FileRevision       *CommitPreconditionFileRevision
+	InodeBinding       *CommitPreconditionInodeBinding
+	NameAbsence        *CommitPreconditionNameAbsence
 	NamespaceHead      *CommitPreconditionNamespaceHead
 	PathAbsence        *CommitPreconditionPathAbsence
 	PathBinding        *CommitPreconditionPathBinding
@@ -153,6 +155,20 @@ func (c *CommitPrecondition) GetFileRevision() *CommitPreconditionFileRevision {
 		return nil
 	}
 	return c.FileRevision
+}
+
+func (c *CommitPrecondition) GetInodeBinding() *CommitPreconditionInodeBinding {
+	if c == nil {
+		return nil
+	}
+	return c.InodeBinding
+}
+
+func (c *CommitPrecondition) GetNameAbsence() *CommitPreconditionNameAbsence {
+	if c == nil {
+		return nil
+	}
+	return c.NameAbsence
 }
 
 func (c *CommitPrecondition) GetNamespaceHead() *CommitPreconditionNamespaceHead {
@@ -206,6 +222,18 @@ func (c *CommitPrecondition) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		c.FileRevision = value
+	case "inode_binding":
+		value := new(CommitPreconditionInodeBinding)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.InodeBinding = value
+	case "name_absence":
+		value := new(CommitPreconditionNameAbsence)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.NameAbsence = value
 	case "namespace_head":
 		value := new(CommitPreconditionNamespaceHead)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -242,6 +270,12 @@ func (c CommitPrecondition) MarshalJSON() ([]byte, error) {
 	if c.FileRevision != nil {
 		return internal.MarshalJSONWithExtraProperty(c.FileRevision, "kind", "file_revision")
 	}
+	if c.InodeBinding != nil {
+		return internal.MarshalJSONWithExtraProperty(c.InodeBinding, "kind", "inode_binding")
+	}
+	if c.NameAbsence != nil {
+		return internal.MarshalJSONWithExtraProperty(c.NameAbsence, "kind", "name_absence")
+	}
 	if c.NamespaceHead != nil {
 		return internal.MarshalJSONWithExtraProperty(c.NamespaceHead, "kind", "namespace_head")
 	}
@@ -261,6 +295,8 @@ type CommitPreconditionVisitor interface {
 	VisitAccessRevision(*CommitPreconditionAccessRevision) error
 	VisitAttributesRevision(*CommitPreconditionAttributesRevision) error
 	VisitFileRevision(*CommitPreconditionFileRevision) error
+	VisitInodeBinding(*CommitPreconditionInodeBinding) error
+	VisitNameAbsence(*CommitPreconditionNameAbsence) error
 	VisitNamespaceHead(*CommitPreconditionNamespaceHead) error
 	VisitPathAbsence(*CommitPreconditionPathAbsence) error
 	VisitPathBinding(*CommitPreconditionPathBinding) error
@@ -275,6 +311,12 @@ func (c *CommitPrecondition) Accept(visitor CommitPreconditionVisitor) error {
 	}
 	if c.FileRevision != nil {
 		return visitor.VisitFileRevision(c.FileRevision)
+	}
+	if c.InodeBinding != nil {
+		return visitor.VisitInodeBinding(c.InodeBinding)
+	}
+	if c.NameAbsence != nil {
+		return visitor.VisitNameAbsence(c.NameAbsence)
 	}
 	if c.NamespaceHead != nil {
 		return visitor.VisitNamespaceHead(c.NamespaceHead)
@@ -301,6 +343,12 @@ func (c *CommitPrecondition) validate() error {
 	}
 	if c.FileRevision != nil {
 		fields = append(fields, "file_revision")
+	}
+	if c.InodeBinding != nil {
+		fields = append(fields, "inode_binding")
+	}
+	if c.NameAbsence != nil {
+		fields = append(fields, "name_absence")
 	}
 	if c.NamespaceHead != nil {
 		fields = append(fields, "namespace_head")
@@ -632,6 +680,212 @@ func (c *CommitPreconditionFileRevision) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CommitPreconditionFileRevision) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// Requires a visible inode to retain the binding the caller read.
+var (
+	commitPreconditionInodeBindingFieldExpectedBindingVersion = big.NewInt(1 << 0)
+	commitPreconditionInodeBindingFieldInodeID                = big.NewInt(1 << 1)
+)
+
+type CommitPreconditionInodeBinding struct {
+	// Binding version observed by the caller.
+	ExpectedBindingVersion BindingVersion `json:"expected_binding_version" url:"expected_binding_version"`
+	// Inode whose binding the caller read.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CommitPreconditionInodeBinding) GetExpectedBindingVersion() BindingVersion {
+	if c == nil {
+		return ""
+	}
+	return c.ExpectedBindingVersion
+}
+
+func (c *CommitPreconditionInodeBinding) GetInodeID() InodeID {
+	if c == nil {
+		return ""
+	}
+	return c.InodeID
+}
+
+func (c *CommitPreconditionInodeBinding) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CommitPreconditionInodeBinding) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetExpectedBindingVersion sets the ExpectedBindingVersion field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitPreconditionInodeBinding) SetExpectedBindingVersion(expectedBindingVersion BindingVersion) {
+	c.ExpectedBindingVersion = expectedBindingVersion
+	c.require(commitPreconditionInodeBindingFieldExpectedBindingVersion)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitPreconditionInodeBinding) SetInodeID(inodeID InodeID) {
+	c.InodeID = inodeID
+	c.require(commitPreconditionInodeBindingFieldInodeID)
+}
+
+func (c *CommitPreconditionInodeBinding) UnmarshalJSON(data []byte) error {
+	type unmarshaler CommitPreconditionInodeBinding
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CommitPreconditionInodeBinding(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CommitPreconditionInodeBinding) MarshalJSON() ([]byte, error) {
+	type embed CommitPreconditionInodeBinding
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CommitPreconditionInodeBinding) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// Requires no visible entry with the name under the parent inode.
+var (
+	commitPreconditionNameAbsenceFieldDisplayName   = big.NewInt(1 << 0)
+	commitPreconditionNameAbsenceFieldParentInodeID = big.NewInt(1 << 1)
+)
+
+type CommitPreconditionNameAbsence struct {
+	// Name to check.
+	DisplayName DisplayName `json:"display_name" url:"display_name"`
+	// Directory to check.
+	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CommitPreconditionNameAbsence) GetDisplayName() DisplayName {
+	if c == nil {
+		return ""
+	}
+	return c.DisplayName
+}
+
+func (c *CommitPreconditionNameAbsence) GetParentInodeID() InodeID {
+	if c == nil {
+		return ""
+	}
+	return c.ParentInodeID
+}
+
+func (c *CommitPreconditionNameAbsence) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CommitPreconditionNameAbsence) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetDisplayName sets the DisplayName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitPreconditionNameAbsence) SetDisplayName(displayName DisplayName) {
+	c.DisplayName = displayName
+	c.require(commitPreconditionNameAbsenceFieldDisplayName)
+}
+
+// SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommitPreconditionNameAbsence) SetParentInodeID(parentInodeID InodeID) {
+	c.ParentInodeID = parentInodeID
+	c.require(commitPreconditionNameAbsenceFieldParentInodeID)
+}
+
+func (c *CommitPreconditionNameAbsence) UnmarshalJSON(data []byte) error {
+	type unmarshaler CommitPreconditionNameAbsence
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CommitPreconditionNameAbsence(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CommitPreconditionNameAbsence) MarshalJSON() ([]byte, error) {
+	type embed CommitPreconditionNameAbsence
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CommitPreconditionNameAbsence) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -988,21 +1242,25 @@ func (d DestinationBehavior) Ptr() *DestinationBehavior {
 //
 // Unknown fields are rejected, and fieldless variants require empty objects.
 type FilesystemOperation struct {
-	Kind                   string
-	CopyPath               *FilesystemOperationCopyPath
-	CreateDirectory        *FilesystemOperationCreateDirectory
-	CreateDirectoryByInode *FilesystemOperationCreateDirectoryByInode
-	CreateFileByInode      *FilesystemOperationCreateFileByInode
-	DeleteByInode          *FilesystemOperationDeleteByInode
-	DeletePath             *FilesystemOperationDeletePath
-	MoveByInode            *FilesystemOperationMoveByInode
-	MovePath               *FilesystemOperationMovePath
-	PutFile                *FilesystemOperationPutFile
-	PutFileRevisionByInode *FilesystemOperationPutFileRevisionByInode
-	RestoreRevision        *FilesystemOperationRestoreRevision
-	Undelete               *FilesystemOperationUndelete
-	UpdateAccess           *FilesystemOperationUpdateAccess
-	UpdateAttributes       *FilesystemOperationUpdateAttributes
+	Kind                    string
+	CopyByInode             *FilesystemOperationCopyByInode
+	CopyPath                *FilesystemOperationCopyPath
+	CreateDirectory         *FilesystemOperationCreateDirectory
+	CreateDirectoryByInode  *FilesystemOperationCreateDirectoryByInode
+	CreateFileByInode       *FilesystemOperationCreateFileByInode
+	DeleteByInode           *FilesystemOperationDeleteByInode
+	DeletePath              *FilesystemOperationDeletePath
+	MoveByInode             *FilesystemOperationMoveByInode
+	MovePath                *FilesystemOperationMovePath
+	PutFile                 *FilesystemOperationPutFile
+	PutFileRevisionByInode  *FilesystemOperationPutFileRevisionByInode
+	RestoreRevision         *FilesystemOperationRestoreRevision
+	RestoreRevisionByInode  *FilesystemOperationRestoreRevisionByInode
+	Undelete                *FilesystemOperationUndelete
+	UpdateAccess            *FilesystemOperationUpdateAccess
+	UpdateAccessByInode     *FilesystemOperationUpdateAccessByInode
+	UpdateAttributes        *FilesystemOperationUpdateAttributes
+	UpdateAttributesByInode *FilesystemOperationUpdateAttributesByInode
 
 	rawJSON json.RawMessage
 }
@@ -1012,6 +1270,13 @@ func (f *FilesystemOperation) GetKind() string {
 		return ""
 	}
 	return f.Kind
+}
+
+func (f *FilesystemOperation) GetCopyByInode() *FilesystemOperationCopyByInode {
+	if f == nil {
+		return nil
+	}
+	return f.CopyByInode
 }
 
 func (f *FilesystemOperation) GetCopyPath() *FilesystemOperationCopyPath {
@@ -1091,6 +1356,13 @@ func (f *FilesystemOperation) GetRestoreRevision() *FilesystemOperationRestoreRe
 	return f.RestoreRevision
 }
 
+func (f *FilesystemOperation) GetRestoreRevisionByInode() *FilesystemOperationRestoreRevisionByInode {
+	if f == nil {
+		return nil
+	}
+	return f.RestoreRevisionByInode
+}
+
 func (f *FilesystemOperation) GetUndelete() *FilesystemOperationUndelete {
 	if f == nil {
 		return nil
@@ -1105,11 +1377,25 @@ func (f *FilesystemOperation) GetUpdateAccess() *FilesystemOperationUpdateAccess
 	return f.UpdateAccess
 }
 
+func (f *FilesystemOperation) GetUpdateAccessByInode() *FilesystemOperationUpdateAccessByInode {
+	if f == nil {
+		return nil
+	}
+	return f.UpdateAccessByInode
+}
+
 func (f *FilesystemOperation) GetUpdateAttributes() *FilesystemOperationUpdateAttributes {
 	if f == nil {
 		return nil
 	}
 	return f.UpdateAttributes
+}
+
+func (f *FilesystemOperation) GetUpdateAttributesByInode() *FilesystemOperationUpdateAttributesByInode {
+	if f == nil {
+		return nil
+	}
+	return f.UpdateAttributesByInode
 }
 
 func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
@@ -1124,6 +1410,12 @@ func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant kind", f)
 	}
 	switch unmarshaler.Kind {
+	case "copy_by_inode":
+		value := new(FilesystemOperationCopyByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.CopyByInode = value
 	case "copy_path":
 		value := new(FilesystemOperationCopyPath)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -1190,6 +1482,12 @@ func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		f.RestoreRevision = value
+	case "restore_revision_by_inode":
+		value := new(FilesystemOperationRestoreRevisionByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.RestoreRevisionByInode = value
 	case "undelete":
 		value := new(FilesystemOperationUndelete)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -1202,12 +1500,24 @@ func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		f.UpdateAccess = value
+	case "update_access_by_inode":
+		value := new(FilesystemOperationUpdateAccessByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.UpdateAccessByInode = value
 	case "update_attributes":
 		value := new(FilesystemOperationUpdateAttributes)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.UpdateAttributes = value
+	case "update_attributes_by_inode":
+		value := new(FilesystemOperationUpdateAttributesByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.UpdateAttributesByInode = value
 	}
 	f.rawJSON = json.RawMessage(data)
 	return nil
@@ -1216,6 +1526,9 @@ func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
 func (f FilesystemOperation) MarshalJSON() ([]byte, error) {
 	if err := f.validate(); err != nil {
 		return nil, err
+	}
+	if f.CopyByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.CopyByInode, "kind", "copy_by_inode")
 	}
 	if f.CopyPath != nil {
 		return internal.MarshalJSONWithExtraProperty(f.CopyPath, "kind", "copy_path")
@@ -1250,14 +1563,23 @@ func (f FilesystemOperation) MarshalJSON() ([]byte, error) {
 	if f.RestoreRevision != nil {
 		return internal.MarshalJSONWithExtraProperty(f.RestoreRevision, "kind", "restore_revision")
 	}
+	if f.RestoreRevisionByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.RestoreRevisionByInode, "kind", "restore_revision_by_inode")
+	}
 	if f.Undelete != nil {
 		return internal.MarshalJSONWithExtraProperty(f.Undelete, "kind", "undelete")
 	}
 	if f.UpdateAccess != nil {
 		return internal.MarshalJSONWithExtraProperty(f.UpdateAccess, "kind", "update_access")
 	}
+	if f.UpdateAccessByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.UpdateAccessByInode, "kind", "update_access_by_inode")
+	}
 	if f.UpdateAttributes != nil {
 		return internal.MarshalJSONWithExtraProperty(f.UpdateAttributes, "kind", "update_attributes")
+	}
+	if f.UpdateAttributesByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.UpdateAttributesByInode, "kind", "update_attributes_by_inode")
 	}
 	if len(f.rawJSON) > 0 {
 		return f.rawJSON, nil
@@ -1266,6 +1588,7 @@ func (f FilesystemOperation) MarshalJSON() ([]byte, error) {
 }
 
 type FilesystemOperationVisitor interface {
+	VisitCopyByInode(*FilesystemOperationCopyByInode) error
 	VisitCopyPath(*FilesystemOperationCopyPath) error
 	VisitCreateDirectory(*FilesystemOperationCreateDirectory) error
 	VisitCreateDirectoryByInode(*FilesystemOperationCreateDirectoryByInode) error
@@ -1277,12 +1600,18 @@ type FilesystemOperationVisitor interface {
 	VisitPutFile(*FilesystemOperationPutFile) error
 	VisitPutFileRevisionByInode(*FilesystemOperationPutFileRevisionByInode) error
 	VisitRestoreRevision(*FilesystemOperationRestoreRevision) error
+	VisitRestoreRevisionByInode(*FilesystemOperationRestoreRevisionByInode) error
 	VisitUndelete(*FilesystemOperationUndelete) error
 	VisitUpdateAccess(*FilesystemOperationUpdateAccess) error
+	VisitUpdateAccessByInode(*FilesystemOperationUpdateAccessByInode) error
 	VisitUpdateAttributes(*FilesystemOperationUpdateAttributes) error
+	VisitUpdateAttributesByInode(*FilesystemOperationUpdateAttributesByInode) error
 }
 
 func (f *FilesystemOperation) Accept(visitor FilesystemOperationVisitor) error {
+	if f.CopyByInode != nil {
+		return visitor.VisitCopyByInode(f.CopyByInode)
+	}
 	if f.CopyPath != nil {
 		return visitor.VisitCopyPath(f.CopyPath)
 	}
@@ -1316,14 +1645,23 @@ func (f *FilesystemOperation) Accept(visitor FilesystemOperationVisitor) error {
 	if f.RestoreRevision != nil {
 		return visitor.VisitRestoreRevision(f.RestoreRevision)
 	}
+	if f.RestoreRevisionByInode != nil {
+		return visitor.VisitRestoreRevisionByInode(f.RestoreRevisionByInode)
+	}
 	if f.Undelete != nil {
 		return visitor.VisitUndelete(f.Undelete)
 	}
 	if f.UpdateAccess != nil {
 		return visitor.VisitUpdateAccess(f.UpdateAccess)
 	}
+	if f.UpdateAccessByInode != nil {
+		return visitor.VisitUpdateAccessByInode(f.UpdateAccessByInode)
+	}
 	if f.UpdateAttributes != nil {
 		return visitor.VisitUpdateAttributes(f.UpdateAttributes)
+	}
+	if f.UpdateAttributesByInode != nil {
+		return visitor.VisitUpdateAttributesByInode(f.UpdateAttributesByInode)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", f)
 }
@@ -1333,6 +1671,9 @@ func (f *FilesystemOperation) validate() error {
 		return fmt.Errorf("type %T is nil", f)
 	}
 	var fields []string
+	if f.CopyByInode != nil {
+		fields = append(fields, "copy_by_inode")
+	}
 	if f.CopyPath != nil {
 		fields = append(fields, "copy_path")
 	}
@@ -1366,14 +1707,23 @@ func (f *FilesystemOperation) validate() error {
 	if f.RestoreRevision != nil {
 		fields = append(fields, "restore_revision")
 	}
+	if f.RestoreRevisionByInode != nil {
+		fields = append(fields, "restore_revision_by_inode")
+	}
 	if f.Undelete != nil {
 		fields = append(fields, "undelete")
 	}
 	if f.UpdateAccess != nil {
 		fields = append(fields, "update_access")
 	}
+	if f.UpdateAccessByInode != nil {
+		fields = append(fields, "update_access_by_inode")
+	}
 	if f.UpdateAttributes != nil {
 		fields = append(fields, "update_attributes")
+	}
+	if f.UpdateAttributesByInode != nil {
+		fields = append(fields, "update_attributes_by_inode")
 	}
 	if len(fields) == 0 {
 		if f.Kind != "" {
@@ -1399,6 +1749,177 @@ func (f *FilesystemOperation) validate() error {
 		}
 	}
 	return nil
+}
+
+// Copy a file inode to a name under a parent inode.
+var (
+	filesystemOperationCopyByInodeFieldBehavior                      = big.NewInt(1 << 0)
+	filesystemOperationCopyByInodeFieldDestinationDisplayName        = big.NewInt(1 << 1)
+	filesystemOperationCopyByInodeFieldDestinationParentInodeID      = big.NewInt(1 << 2)
+	filesystemOperationCopyByInodeFieldExpectedDestinationInodeID    = big.NewInt(1 << 3)
+	filesystemOperationCopyByInodeFieldExpectedDestinationRevisionNo = big.NewInt(1 << 4)
+	filesystemOperationCopyByInodeFieldInodeID                       = big.NewInt(1 << 5)
+)
+
+type FilesystemOperationCopyByInode struct {
+	// Whether an existing destination file may be replaced.
+	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
+	// Name of the copy.
+	DestinationDisplayName DisplayName `json:"destination_display_name" url:"destination_display_name"`
+	// Destination directory.
+	DestinationParentInodeID InodeID `json:"destination_parent_inode_id" url:"destination_parent_inode_id"`
+	// With `replace` behavior, the destination inode required by the request.
+	ExpectedDestinationInodeID *InodeID `json:"expected_destination_inode_id,omitempty" url:"expected_destination_inode_id,omitempty"`
+	// With `replace` behavior and an inode precondition, the required content revision.
+	ExpectedDestinationRevisionNo *RevisionNo `json:"expected_destination_revision_no,omitempty" url:"expected_destination_revision_no,omitempty"`
+	// File to copy.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationCopyByInode) GetBehavior() *DestinationBehavior {
+	if f == nil {
+		return nil
+	}
+	return f.Behavior
+}
+
+func (f *FilesystemOperationCopyByInode) GetDestinationDisplayName() DisplayName {
+	if f == nil {
+		return ""
+	}
+	return f.DestinationDisplayName
+}
+
+func (f *FilesystemOperationCopyByInode) GetDestinationParentInodeID() InodeID {
+	if f == nil {
+		return ""
+	}
+	return f.DestinationParentInodeID
+}
+
+func (f *FilesystemOperationCopyByInode) GetExpectedDestinationInodeID() *InodeID {
+	if f == nil {
+		return nil
+	}
+	return f.ExpectedDestinationInodeID
+}
+
+func (f *FilesystemOperationCopyByInode) GetExpectedDestinationRevisionNo() *RevisionNo {
+	if f == nil {
+		return nil
+	}
+	return f.ExpectedDestinationRevisionNo
+}
+
+func (f *FilesystemOperationCopyByInode) GetInodeID() InodeID {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemOperationCopyByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationCopyByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetBehavior sets the Behavior field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationCopyByInode) SetBehavior(behavior *DestinationBehavior) {
+	f.Behavior = behavior
+	f.require(filesystemOperationCopyByInodeFieldBehavior)
+}
+
+// SetDestinationDisplayName sets the DestinationDisplayName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationCopyByInode) SetDestinationDisplayName(destinationDisplayName DisplayName) {
+	f.DestinationDisplayName = destinationDisplayName
+	f.require(filesystemOperationCopyByInodeFieldDestinationDisplayName)
+}
+
+// SetDestinationParentInodeID sets the DestinationParentInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationCopyByInode) SetDestinationParentInodeID(destinationParentInodeID InodeID) {
+	f.DestinationParentInodeID = destinationParentInodeID
+	f.require(filesystemOperationCopyByInodeFieldDestinationParentInodeID)
+}
+
+// SetExpectedDestinationInodeID sets the ExpectedDestinationInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationCopyByInode) SetExpectedDestinationInodeID(expectedDestinationInodeID *InodeID) {
+	f.ExpectedDestinationInodeID = expectedDestinationInodeID
+	f.require(filesystemOperationCopyByInodeFieldExpectedDestinationInodeID)
+}
+
+// SetExpectedDestinationRevisionNo sets the ExpectedDestinationRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationCopyByInode) SetExpectedDestinationRevisionNo(expectedDestinationRevisionNo *RevisionNo) {
+	f.ExpectedDestinationRevisionNo = expectedDestinationRevisionNo
+	f.require(filesystemOperationCopyByInodeFieldExpectedDestinationRevisionNo)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationCopyByInode) SetInodeID(inodeID InodeID) {
+	f.InodeID = inodeID
+	f.require(filesystemOperationCopyByInodeFieldInodeID)
+}
+
+func (f *FilesystemOperationCopyByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationCopyByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationCopyByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationCopyByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationCopyByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationCopyByInode) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
 }
 
 // Copy one file path to another path.
@@ -2895,17 +3416,129 @@ func (f *FilesystemOperationRestoreRevision) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Restore the deletion identified by `inode_id` and `deletion_seq`.
+// Restore an older revision as the current revision of a file inode.
 var (
-	filesystemOperationUndeleteFieldDeletionSeq     = big.NewInt(1 << 0)
-	filesystemOperationUndeleteFieldDestinationPath = big.NewInt(1 << 1)
-	filesystemOperationUndeleteFieldInodeID         = big.NewInt(1 << 2)
+	filesystemOperationRestoreRevisionByInodeFieldInodeID          = big.NewInt(1 << 0)
+	filesystemOperationRestoreRevisionByInodeFieldSourceRevisionNo = big.NewInt(1 << 1)
+)
+
+type FilesystemOperationRestoreRevisionByInode struct {
+	// Visible file to restore.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+	// Existing historical revision whose content will be copied into a new current revision.
+	SourceRevisionNo RevisionNo `json:"source_revision_no" url:"source_revision_no"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationRestoreRevisionByInode) GetInodeID() InodeID {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemOperationRestoreRevisionByInode) GetSourceRevisionNo() RevisionNo {
+	if f == nil {
+		return 0
+	}
+	return f.SourceRevisionNo
+}
+
+func (f *FilesystemOperationRestoreRevisionByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationRestoreRevisionByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationRestoreRevisionByInode) SetInodeID(inodeID InodeID) {
+	f.InodeID = inodeID
+	f.require(filesystemOperationRestoreRevisionByInodeFieldInodeID)
+}
+
+// SetSourceRevisionNo sets the SourceRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationRestoreRevisionByInode) SetSourceRevisionNo(sourceRevisionNo RevisionNo) {
+	f.SourceRevisionNo = sourceRevisionNo
+	f.require(filesystemOperationRestoreRevisionByInodeFieldSourceRevisionNo)
+}
+
+func (f *FilesystemOperationRestoreRevisionByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationRestoreRevisionByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationRestoreRevisionByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationRestoreRevisionByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationRestoreRevisionByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationRestoreRevisionByInode) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Restore the deletion identified by `inode_id` and `deletion_seq`.
+// Name the destination with `destination_path`, or with
+// `destination_parent_inode_id` and `destination_display_name`; omit
+// both to use the recorded binding.
+var (
+	filesystemOperationUndeleteFieldDeletionSeq              = big.NewInt(1 << 0)
+	filesystemOperationUndeleteFieldDestinationDisplayName   = big.NewInt(1 << 1)
+	filesystemOperationUndeleteFieldDestinationParentInodeID = big.NewInt(1 << 2)
+	filesystemOperationUndeleteFieldDestinationPath          = big.NewInt(1 << 3)
+	filesystemOperationUndeleteFieldInodeID                  = big.NewInt(1 << 4)
 )
 
 type FilesystemOperationUndelete struct {
 	// Observed deletion sequence, which prevents cancelling a newer tombstone sequence.
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
-	// The restore destination. Omit it to use the recorded binding.
+	// Name to restore under `destination_parent_inode_id`.
+	DestinationDisplayName *DisplayName `json:"destination_display_name,omitempty" url:"destination_display_name,omitempty"`
+	// Directory to restore into; requires `destination_display_name`.
+	DestinationParentInodeID *InodeID `json:"destination_parent_inode_id,omitempty" url:"destination_parent_inode_id,omitempty"`
+	// Absolute restore destination; cannot be combined with a parent inode destination.
 	DestinationPath *AbsolutePath `json:"destination_path,omitempty" url:"destination_path,omitempty"`
 	// Deleted inode to make reachable again.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
@@ -2922,6 +3555,20 @@ func (f *FilesystemOperationUndelete) GetDeletionSeq() ChangeSeq {
 		return 0
 	}
 	return f.DeletionSeq
+}
+
+func (f *FilesystemOperationUndelete) GetDestinationDisplayName() *DisplayName {
+	if f == nil {
+		return nil
+	}
+	return f.DestinationDisplayName
+}
+
+func (f *FilesystemOperationUndelete) GetDestinationParentInodeID() *InodeID {
+	if f == nil {
+		return nil
+	}
+	return f.DestinationParentInodeID
 }
 
 func (f *FilesystemOperationUndelete) GetDestinationPath() *AbsolutePath {
@@ -2957,6 +3604,20 @@ func (f *FilesystemOperationUndelete) require(field *big.Int) {
 func (f *FilesystemOperationUndelete) SetDeletionSeq(deletionSeq ChangeSeq) {
 	f.DeletionSeq = deletionSeq
 	f.require(filesystemOperationUndeleteFieldDeletionSeq)
+}
+
+// SetDestinationDisplayName sets the DestinationDisplayName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUndelete) SetDestinationDisplayName(destinationDisplayName *DisplayName) {
+	f.DestinationDisplayName = destinationDisplayName
+	f.require(filesystemOperationUndeleteFieldDestinationDisplayName)
+}
+
+// SetDestinationParentInodeID sets the DestinationParentInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUndelete) SetDestinationParentInodeID(destinationParentInodeID *InodeID) {
+	f.DestinationParentInodeID = destinationParentInodeID
+	f.require(filesystemOperationUndeleteFieldDestinationParentInodeID)
 }
 
 // SetDestinationPath sets the DestinationPath field and marks it as non-optional;
@@ -3170,6 +3831,144 @@ func (f *FilesystemOperationUpdateAccess) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
+// Replace the access row of a visible inode. The root inode is a valid
+// target.
+var (
+	filesystemOperationUpdateAccessByInodeFieldBoundary                 = big.NewInt(1 << 0)
+	filesystemOperationUpdateAccessByInodeFieldExpectedAccessRevisionNo = big.NewInt(1 << 1)
+	filesystemOperationUpdateAccessByInodeFieldGrants                   = big.NewInt(1 << 2)
+	filesystemOperationUpdateAccessByInodeFieldInodeID                  = big.NewInt(1 << 3)
+)
+
+type FilesystemOperationUpdateAccessByInode struct {
+	// Whether the directory stops inheritance from its ancestors.
+	Boundary bool `json:"boundary" url:"boundary"`
+	// The access revision that must still be current.
+	ExpectedAccessRevisionNo *AccessRevisionNo `json:"expected_access_revision_no,omitempty" url:"expected_access_revision_no,omitempty"`
+	// The inode's complete direct grants after this update.
+	Grants AccessGrants `json:"grants" url:"grants"`
+	// Visible file or directory to update.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationUpdateAccessByInode) GetBoundary() bool {
+	if f == nil {
+		return false
+	}
+	return f.Boundary
+}
+
+func (f *FilesystemOperationUpdateAccessByInode) GetExpectedAccessRevisionNo() *AccessRevisionNo {
+	if f == nil {
+		return nil
+	}
+	return f.ExpectedAccessRevisionNo
+}
+
+func (f *FilesystemOperationUpdateAccessByInode) GetGrants() AccessGrants {
+	if f == nil {
+		return nil
+	}
+	return f.Grants
+}
+
+func (f *FilesystemOperationUpdateAccessByInode) GetInodeID() InodeID {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemOperationUpdateAccessByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationUpdateAccessByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetBoundary sets the Boundary field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAccessByInode) SetBoundary(boundary bool) {
+	f.Boundary = boundary
+	f.require(filesystemOperationUpdateAccessByInodeFieldBoundary)
+}
+
+// SetExpectedAccessRevisionNo sets the ExpectedAccessRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAccessByInode) SetExpectedAccessRevisionNo(expectedAccessRevisionNo *AccessRevisionNo) {
+	f.ExpectedAccessRevisionNo = expectedAccessRevisionNo
+	f.require(filesystemOperationUpdateAccessByInodeFieldExpectedAccessRevisionNo)
+}
+
+// SetGrants sets the Grants field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAccessByInode) SetGrants(grants AccessGrants) {
+	f.Grants = grants
+	f.require(filesystemOperationUpdateAccessByInodeFieldGrants)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAccessByInode) SetInodeID(inodeID InodeID) {
+	f.InodeID = inodeID
+	f.require(filesystemOperationUpdateAccessByInodeFieldInodeID)
+}
+
+func (f *FilesystemOperationUpdateAccessByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationUpdateAccessByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationUpdateAccessByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationUpdateAccessByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationUpdateAccessByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationUpdateAccessByInode) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
 // Write and remove attributes on the inode one path resolves to.
 var (
 	filesystemOperationUpdateAttributesFieldExpectedAttributesRevisionNo = big.NewInt(1 << 0)
@@ -3311,6 +4110,144 @@ func (f *FilesystemOperationUpdateAttributes) MarshalJSON() ([]byte, error) {
 }
 
 func (f *FilesystemOperationUpdateAttributes) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Write and remove attributes on a visible inode.
+var (
+	filesystemOperationUpdateAttributesByInodeFieldExpectedAttributesRevisionNo = big.NewInt(1 << 0)
+	filesystemOperationUpdateAttributesByInodeFieldInodeID                      = big.NewInt(1 << 1)
+	filesystemOperationUpdateAttributesByInodeFieldRemove                       = big.NewInt(1 << 2)
+	filesystemOperationUpdateAttributesByInodeFieldSet                          = big.NewInt(1 << 3)
+)
+
+type FilesystemOperationUpdateAttributesByInode struct {
+	// The attribute revision that must still be current.
+	ExpectedAttributesRevisionNo *AttributesRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
+	// Visible file or directory to update.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+	// The attribute keys to remove, including duplicates that validation must reject.
+	Remove []AttributeKey `json:"remove,omitempty" url:"remove,omitempty"`
+	// The attributes to write, replacing values for matching keys and leaving
+	// other keys unchanged.
+	Set map[string]AttributeValue `json:"set,omitempty" url:"set,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationUpdateAttributesByInode) GetExpectedAttributesRevisionNo() *AttributesRevisionNo {
+	if f == nil {
+		return nil
+	}
+	return f.ExpectedAttributesRevisionNo
+}
+
+func (f *FilesystemOperationUpdateAttributesByInode) GetInodeID() InodeID {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemOperationUpdateAttributesByInode) GetRemove() []AttributeKey {
+	if f == nil {
+		return nil
+	}
+	return f.Remove
+}
+
+func (f *FilesystemOperationUpdateAttributesByInode) GetSet() map[string]AttributeValue {
+	if f == nil {
+		return nil
+	}
+	return f.Set
+}
+
+func (f *FilesystemOperationUpdateAttributesByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationUpdateAttributesByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetExpectedAttributesRevisionNo sets the ExpectedAttributesRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAttributesByInode) SetExpectedAttributesRevisionNo(expectedAttributesRevisionNo *AttributesRevisionNo) {
+	f.ExpectedAttributesRevisionNo = expectedAttributesRevisionNo
+	f.require(filesystemOperationUpdateAttributesByInodeFieldExpectedAttributesRevisionNo)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAttributesByInode) SetInodeID(inodeID InodeID) {
+	f.InodeID = inodeID
+	f.require(filesystemOperationUpdateAttributesByInodeFieldInodeID)
+}
+
+// SetRemove sets the Remove field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAttributesByInode) SetRemove(remove []AttributeKey) {
+	f.Remove = remove
+	f.require(filesystemOperationUpdateAttributesByInodeFieldRemove)
+}
+
+// SetSet sets the Set field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationUpdateAttributesByInode) SetSet(set map[string]AttributeValue) {
+	f.Set = set
+	f.require(filesystemOperationUpdateAttributesByInodeFieldSet)
+}
+
+func (f *FilesystemOperationUpdateAttributesByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationUpdateAttributesByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationUpdateAttributesByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationUpdateAttributesByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationUpdateAttributesByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationUpdateAttributesByInode) String() string {
 	if f == nil {
 		return "<nil>"
 	}

@@ -149,10 +149,11 @@ var (
 	grepRequestFieldPattern         = big.NewInt(1 << 1)
 	grepRequestFieldCaseInsensitive = big.NewInt(1 << 2)
 	grepRequestFieldPathPrefix      = big.NewInt(1 << 3)
-	grepRequestFieldAllowScan       = big.NewInt(1 << 4)
-	grepRequestFieldAllowStale      = big.NewInt(1 << 5)
-	grepRequestFieldLimit           = big.NewInt(1 << 6)
-	grepRequestFieldCursor          = big.NewInt(1 << 7)
+	grepRequestFieldInodeID         = big.NewInt(1 << 4)
+	grepRequestFieldAllowScan       = big.NewInt(1 << 5)
+	grepRequestFieldAllowStale      = big.NewInt(1 << 6)
+	grepRequestFieldLimit           = big.NewInt(1 << 7)
+	grepRequestFieldCursor          = big.NewInt(1 << 8)
 )
 
 type GrepRequest struct {
@@ -162,8 +163,10 @@ type GrepRequest struct {
 	Pattern string `json:"-" url:"pattern"`
 	// Match case-insensitively (`true` or `false`). Defaults to `false`.
 	CaseInsensitive *bool `json:"-" url:"case_insensitive,omitempty"`
-	// Complete absolute path used to restrict matches.
+	// Complete absolute path used to restrict matches. Cannot be combined with `inode_id`.
 	PathPrefix *string `json:"-" url:"path_prefix,omitempty"`
+	// Inode whose descendants restrict matches. Cannot be combined with `path_prefix`.
+	InodeID *string `json:"-" url:"inode_id,omitempty"`
 	// Permit a capped exhaustive scan when the pattern has no required grams (`true` or `false`). Defaults to `false`.
 	AllowScan *bool `json:"-" url:"allow_scan,omitempty"`
 	// Return indexed-only results when the unindexed tail exceeds the scan budget (`true` or `false`). Defaults to `false`.
@@ -210,6 +213,13 @@ func (g *GrepRequest) SetCaseInsensitive(caseInsensitive *bool) {
 func (g *GrepRequest) SetPathPrefix(pathPrefix *string) {
 	g.PathPrefix = pathPrefix
 	g.require(grepRequestFieldPathPrefix)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GrepRequest) SetInodeID(inodeID *string) {
+	g.InodeID = inodeID
+	g.require(grepRequestFieldInodeID)
 }
 
 // SetAllowScan sets the AllowScan field and marks it as non-optional;

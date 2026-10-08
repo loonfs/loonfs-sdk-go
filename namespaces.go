@@ -12,6 +12,7 @@ import (
 var (
 	createNamespaceRequestFieldAccess      = big.NewInt(1 << 0)
 	createNamespaceRequestFieldNamespaceID = big.NewInt(1 << 1)
+	createNamespaceRequestFieldNaming      = big.NewInt(1 << 2)
 )
 
 type CreateNamespaceRequest struct {
@@ -20,6 +21,9 @@ type CreateNamespaceRequest struct {
 	Access *NamespaceAccess `json:"access,omitempty" url:"-"`
 	// Durable namespace id to create.
 	NamespaceID NamespaceID `json:"namespace_id" url:"-"`
+	// How sibling names compare, fixed for the namespace's life. Defaults
+	// to `case_insensitive`.
+	Naming *NamespaceNaming `json:"naming,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -44,6 +48,13 @@ func (c *CreateNamespaceRequest) SetAccess(access *NamespaceAccess) {
 func (c *CreateNamespaceRequest) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(createNamespaceRequestFieldNamespaceID)
+}
+
+// SetNaming sets the Naming field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateNamespaceRequest) SetNaming(naming *NamespaceNaming) {
+	c.Naming = naming
+	c.require(createNamespaceRequestFieldNaming)
 }
 
 func (c *CreateNamespaceRequest) UnmarshalJSON(data []byte) error {
@@ -883,7 +894,8 @@ var (
 	namespaceMetadataFieldForkBasis         = big.NewInt(1 << 3)
 	namespaceMetadataFieldHeadSeq           = big.NewInt(1 << 4)
 	namespaceMetadataFieldNamespaceID       = big.NewInt(1 << 5)
-	namespaceMetadataFieldRetentionFloorSeq = big.NewInt(1 << 6)
+	namespaceMetadataFieldNaming            = big.NewInt(1 << 6)
+	namespaceMetadataFieldRetentionFloorSeq = big.NewInt(1 << 7)
 )
 
 type NamespaceMetadata struct {
@@ -899,6 +911,8 @@ type NamespaceMetadata struct {
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// Namespace ID.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// How sibling names compare in the namespace.
+	Naming NamespaceNaming `json:"naming" url:"naming"`
 	// Oldest position a change feed can resume after. The feed returns
 	// changes above it.
 	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
@@ -950,6 +964,13 @@ func (n *NamespaceMetadata) GetNamespaceID() NamespaceID {
 		return ""
 	}
 	return n.NamespaceID
+}
+
+func (n *NamespaceMetadata) GetNaming() NamespaceNaming {
+	if n == nil {
+		return ""
+	}
+	return n.Naming
 }
 
 func (n *NamespaceMetadata) GetRetentionFloorSeq() ChangeSeq {
@@ -1015,6 +1036,13 @@ func (n *NamespaceMetadata) SetNamespaceID(namespaceID NamespaceID) {
 	n.require(namespaceMetadataFieldNamespaceID)
 }
 
+// SetNaming sets the Naming field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetNaming(naming NamespaceNaming) {
+	n.Naming = naming
+	n.require(namespaceMetadataFieldNaming)
+}
+
 // SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NamespaceMetadata) SetRetentionFloorSeq(retentionFloorSeq ChangeSeq) {
@@ -1062,6 +1090,29 @@ func (n *NamespaceMetadata) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", n)
+}
+
+// How a namespace compares sibling names, fixed at creation.
+type NamespaceNaming string
+
+const (
+	NamespaceNamingCaseInsensitive NamespaceNaming = "case_insensitive"
+	NamespaceNamingCaseSensitive   NamespaceNaming = "case_sensitive"
+)
+
+func NewNamespaceNamingFromString(s string) (NamespaceNaming, error) {
+	switch s {
+	case "case_insensitive":
+		return NamespaceNamingCaseInsensitive, nil
+	case "case_sensitive":
+		return NamespaceNamingCaseSensitive, nil
+	}
+	var t NamespaceNaming
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (n NamespaceNaming) Ptr() *NamespaceNaming {
+	return &n
 }
 
 // Opaque identity-domain id containing 1 to 256 visible ASCII characters other than the comma.

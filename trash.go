@@ -236,7 +236,7 @@ type TrashEntry struct {
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
 	// Inode hidden by the deletion.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Whether the deleted root is a file or a directory.
+	// Whether the deleted root is a file or a directory; a newer server may report another kind.
 	InodeKind InodeKind `json:"inode_kind" url:"inode_kind"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
