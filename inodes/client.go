@@ -174,7 +174,7 @@ func (c *Client) Content(
 	return response.Body, nil
 }
 
-// Authorizes a direct read of the current revision of a visible file inode, wherever it is bound, or of the revision a live snapshot captured. The request has no body and the response does not include a path.
+// Authorizes a direct read of the current revision of a visible file inode, wherever it is bound, or of the revision a live snapshot captured. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The request has no body and the response does not include a path.
 //
 // Example:
 //
@@ -310,7 +310,7 @@ func (c *Client) RevisionContent(
 	return response.Body, nil
 }
 
-// Authorizes a direct read of one retained inode revision. The request has no body and the response does not include a path.
+// Authorizes a direct read of one retained inode revision. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The request has no body and the response does not include a path.
 //
 // Example:
 //

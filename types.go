@@ -2056,12 +2056,13 @@ var (
 	deletedObjectCountsFieldManifests             = big.NewInt(1 << 1)
 	deletedObjectCountsFieldMetadataSegments      = big.NewInt(1 << 2)
 	deletedObjectCountsFieldRetiredContentObjects = big.NewInt(1 << 3)
-	deletedObjectCountsFieldUploadSessions        = big.NewInt(1 << 4)
-	deletedObjectCountsFieldWalObjects            = big.NewInt(1 << 5)
+	deletedObjectCountsFieldTemporaryObjects      = big.NewInt(1 << 4)
+	deletedObjectCountsFieldUploadSessions        = big.NewInt(1 << 5)
+	deletedObjectCountsFieldWalObjects            = big.NewInt(1 << 6)
 )
 
 type DeletedObjectCounts struct {
-	// Content reclaimed through completed upload sessions.
+	// Content objects no retained view names, deleted once older than the grace window.
 	ContentObjects int64 `json:"content_objects" url:"content_objects"`
 	// Unreferenced manifests deleted.
 	Manifests int64 `json:"manifests" url:"manifests"`
@@ -2069,6 +2070,8 @@ type DeletedObjectCounts struct {
 	MetadataSegments int64 `json:"metadata_segments" url:"metadata_segments"`
 	// Listed content objects deleted from a retired namespace.
 	RetiredContentObjects int64 `json:"retired_content_objects" url:"retired_content_objects"`
+	// Store temporary objects deleted once older than the grace window.
+	TemporaryObjects int64 `json:"temporary_objects" url:"temporary_objects"`
 	// Upload-session control objects deleted after the reap window.
 	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
 	// Unreferenced WAL objects deleted.
@@ -2107,6 +2110,13 @@ func (d *DeletedObjectCounts) GetRetiredContentObjects() int64 {
 		return 0
 	}
 	return d.RetiredContentObjects
+}
+
+func (d *DeletedObjectCounts) GetTemporaryObjects() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.TemporaryObjects
 }
 
 func (d *DeletedObjectCounts) GetUploadSessions() int64 {
@@ -2163,6 +2173,13 @@ func (d *DeletedObjectCounts) SetMetadataSegments(metadataSegments int64) {
 func (d *DeletedObjectCounts) SetRetiredContentObjects(retiredContentObjects int64) {
 	d.RetiredContentObjects = retiredContentObjects
 	d.require(deletedObjectCountsFieldRetiredContentObjects)
+}
+
+// SetTemporaryObjects sets the TemporaryObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedObjectCounts) SetTemporaryObjects(temporaryObjects int64) {
+	d.TemporaryObjects = temporaryObjects
+	d.require(deletedObjectCountsFieldTemporaryObjects)
 }
 
 // SetUploadSessions sets the UploadSessions field and marks it as non-optional;
