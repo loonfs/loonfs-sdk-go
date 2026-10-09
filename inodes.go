@@ -59,6 +59,7 @@ var (
 	createDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
 	createDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
 	createDownloadByInodeRequestFieldSnapshotID  = big.NewInt(1 << 2)
+	createDownloadByInodeRequestFieldStartOffset = big.NewInt(1 << 3)
 )
 
 type CreateDownloadByInodeRequest struct {
@@ -68,6 +69,8 @@ type CreateDownloadByInodeRequest struct {
 	InodeID string `json:"-" url:"-"`
 	// Use the file revision captured by this snapshot
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// First byte the capability reads. Defaults to 0 and must be below the file's size, except 0 for a file of zero bytes
+	StartOffset *int64 `json:"-" url:"start_offset,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -101,10 +104,18 @@ func (c *CreateDownloadByInodeRequest) SetSnapshotID(snapshotID *PinID) {
 	c.require(createDownloadByInodeRequestFieldSnapshotID)
 }
 
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadByInodeRequest) SetStartOffset(startOffset *int64) {
+	c.StartOffset = startOffset
+	c.require(createDownloadByInodeRequestFieldStartOffset)
+}
+
 var (
 	createRevisionDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
 	createRevisionDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
 	createRevisionDownloadByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	createRevisionDownloadByInodeRequestFieldStartOffset = big.NewInt(1 << 3)
 )
 
 type CreateRevisionDownloadByInodeRequest struct {
@@ -114,6 +125,8 @@ type CreateRevisionDownloadByInodeRequest struct {
 	InodeID string `json:"-" url:"-"`
 	// Revision number
 	RevisionNo RevisionNo `json:"-" url:"-"`
+	// First byte the capability reads. Defaults to 0 and must be below the revision's size, except 0 for a revision of zero bytes
+	StartOffset *int64 `json:"-" url:"start_offset,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -145,6 +158,13 @@ func (c *CreateRevisionDownloadByInodeRequest) SetInodeID(inodeID string) {
 func (c *CreateRevisionDownloadByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
 	c.RevisionNo = revisionNo
 	c.require(createRevisionDownloadByInodeRequestFieldRevisionNo)
+}
+
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateRevisionDownloadByInodeRequest) SetStartOffset(startOffset *int64) {
+	c.StartOffset = startOffset
+	c.require(createRevisionDownloadByInodeRequestFieldStartOffset)
 }
 
 var (
