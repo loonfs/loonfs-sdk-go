@@ -9,7 +9,7 @@
     "packageName": "loonfs",
     "maxRetries": 2
   },
-  "originGitCommit": "c1e8df2373c1c51613c28127ecbd0b0c36a58a7f",
+  "originGitCommit": "acaf66fbb758a78d24f02d8fb8d3630427d49455",
   "originGitCommitIsDirty": false,
   "invokedBy": "manual"
 }

@@ -146,6 +146,65 @@ func (c *Client) ListChildren(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
+// Reads and verifies the current revision of a visible file inode, wherever it is bound, or the revision a live snapshot captured. Unknown or hidden inodes answer `inode_not_found`.
+//
+// Example:
+//
+//	request := &loonfs.GetFileBytesByInodeRequest{
+//	    NamespaceID: "namespace_id",
+//	    InodeID: "inode_id",
+//	}
+//	client.Inodes.Content(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Content(
+	ctx context.Context,
+	request *loonfs.GetFileBytesByInodeRequest,
+	opts ...option.RequestOption,
+) (io.Reader, error) {
+	response, err := c.WithRawResponse.Content(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Authorizes a direct read of the current revision of a visible file inode, wherever it is bound, or of the revision a live snapshot captured. The request has no body and the response does not include a path.
+//
+// Example:
+//
+//	request := &loonfs.CreateDownloadByInodeRequest{
+//	    NamespaceID: "namespace_id",
+//	    InodeID: "ino_123",
+//	    SnapshotID: loonfs.String(
+//	        "pin_00000000000000000001-0000000000000002",
+//	    ),
+//	}
+//	client.Inodes.CreateDownload(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) CreateDownload(
+	ctx context.Context,
+	request *loonfs.CreateDownloadByInodeRequest,
+	opts ...option.RequestOption,
+) (*loonfs.CreateDownloadByInodeResponse, error) {
+	response, err := c.WithRawResponse.CreateDownload(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
 // Returns retained revisions for a file inode without requiring a current path.
 //
 // Example:
@@ -231,16 +290,16 @@ func (c *Client) ListRevisions(
 //	    InodeID: "inode_id",
 //	    RevisionNo: int64(1000000),
 //	}
-//	client.Inodes.Content(
+//	client.Inodes.RevisionContent(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) Content(
+func (c *Client) RevisionContent(
 	ctx context.Context,
 	request *loonfs.GetFileRevisionBytesByInodeRequest,
 	opts ...option.RequestOption,
 ) (io.Reader, error) {
-	response, err := c.WithRawResponse.Content(
+	response, err := c.WithRawResponse.RevisionContent(
 		ctx,
 		request,
 		opts...,
@@ -255,21 +314,21 @@ func (c *Client) Content(
 //
 // Example:
 //
-//	request := &loonfs.CreateDownloadByInodeRequest{
+//	request := &loonfs.CreateRevisionDownloadByInodeRequest{
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
 //	    RevisionNo: int64(1000000),
 //	}
-//	client.Inodes.CreateDownload(
+//	client.Inodes.CreateRevisionDownload(
 //	    context.TODO(),
 //	    request,
 //	)
-func (c *Client) CreateDownload(
+func (c *Client) CreateRevisionDownload(
 	ctx context.Context,
-	request *loonfs.CreateDownloadByInodeRequest,
+	request *loonfs.CreateRevisionDownloadByInodeRequest,
 	opts ...option.RequestOption,
 ) (*loonfs.CreateDownloadByInodeResponse, error) {
-	response, err := c.WithRawResponse.CreateDownload(
+	response, err := c.WithRawResponse.CreateRevisionDownload(
 		ctx,
 		request,
 		opts...,

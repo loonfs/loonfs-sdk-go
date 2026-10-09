@@ -10,24 +10,24 @@ import (
 )
 
 var (
-	getFileRevisionBytesByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
-	getFileRevisionBytesByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
-	getFileRevisionBytesByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	getFileBytesByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
+	getFileBytesByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
+	getFileBytesByInodeRequestFieldSnapshotID  = big.NewInt(1 << 2)
 )
 
-type GetFileRevisionBytesByInodeRequest struct {
+type GetFileBytesByInodeRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// File inode ID
 	InodeID string `json:"-" url:"-"`
-	// Revision number
-	RevisionNo RevisionNo `json:"-" url:"-"`
+	// Use the file revision captured by this snapshot
+	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (g *GetFileRevisionBytesByInodeRequest) require(field *big.Int) {
+func (g *GetFileBytesByInodeRequest) require(field *big.Int) {
 	if g.explicitFields == nil {
 		g.explicitFields = big.NewInt(0)
 	}
@@ -36,29 +36,29 @@ func (g *GetFileRevisionBytesByInodeRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileRevisionBytesByInodeRequest) SetNamespaceID(namespaceID string) {
+func (g *GetFileBytesByInodeRequest) SetNamespaceID(namespaceID string) {
 	g.NamespaceID = namespaceID
-	g.require(getFileRevisionBytesByInodeRequestFieldNamespaceID)
+	g.require(getFileBytesByInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileRevisionBytesByInodeRequest) SetInodeID(inodeID string) {
+func (g *GetFileBytesByInodeRequest) SetInodeID(inodeID string) {
 	g.InodeID = inodeID
-	g.require(getFileRevisionBytesByInodeRequestFieldInodeID)
+	g.require(getFileBytesByInodeRequestFieldInodeID)
 }
 
-// SetRevisionNo sets the RevisionNo field and marks it as non-optional;
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileRevisionBytesByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
-	g.RevisionNo = revisionNo
-	g.require(getFileRevisionBytesByInodeRequestFieldRevisionNo)
+func (g *GetFileBytesByInodeRequest) SetSnapshotID(snapshotID *PinID) {
+	g.SnapshotID = snapshotID
+	g.require(getFileBytesByInodeRequestFieldSnapshotID)
 }
 
 var (
 	createDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
 	createDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
-	createDownloadByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	createDownloadByInodeRequestFieldSnapshotID  = big.NewInt(1 << 2)
 )
 
 type CreateDownloadByInodeRequest struct {
@@ -66,8 +66,8 @@ type CreateDownloadByInodeRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// File inode ID
 	InodeID string `json:"-" url:"-"`
-	// Revision number
-	RevisionNo RevisionNo `json:"-" url:"-"`
+	// Use the file revision captured by this snapshot
+	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -94,11 +94,57 @@ func (c *CreateDownloadByInodeRequest) SetInodeID(inodeID string) {
 	c.require(createDownloadByInodeRequestFieldInodeID)
 }
 
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadByInodeRequest) SetSnapshotID(snapshotID *PinID) {
+	c.SnapshotID = snapshotID
+	c.require(createDownloadByInodeRequestFieldSnapshotID)
+}
+
+var (
+	createRevisionDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
+	createRevisionDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
+	createRevisionDownloadByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
+)
+
+type CreateRevisionDownloadByInodeRequest struct {
+	// Namespace id
+	NamespaceID string `json:"-" url:"-"`
+	// File inode ID
+	InodeID string `json:"-" url:"-"`
+	// Revision number
+	RevisionNo RevisionNo `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (c *CreateRevisionDownloadByInodeRequest) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateRevisionDownloadByInodeRequest) SetNamespaceID(namespaceID string) {
+	c.NamespaceID = namespaceID
+	c.require(createRevisionDownloadByInodeRequestFieldNamespaceID)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateRevisionDownloadByInodeRequest) SetInodeID(inodeID string) {
+	c.InodeID = inodeID
+	c.require(createRevisionDownloadByInodeRequestFieldInodeID)
+}
+
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateDownloadByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
+func (c *CreateRevisionDownloadByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
 	c.RevisionNo = revisionNo
-	c.require(createDownloadByInodeRequestFieldRevisionNo)
+	c.require(createRevisionDownloadByInodeRequestFieldRevisionNo)
 }
 
 var (
@@ -287,6 +333,52 @@ func (g *GetInodeRequest) SetIncludeAttributes(includeAttributes *bool) {
 func (g *GetInodeRequest) SetSnapshotID(snapshotID *PinID) {
 	g.SnapshotID = snapshotID
 	g.require(getInodeRequestFieldSnapshotID)
+}
+
+var (
+	getFileRevisionBytesByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
+	getFileRevisionBytesByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
+	getFileRevisionBytesByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
+)
+
+type GetFileRevisionBytesByInodeRequest struct {
+	// Namespace id
+	NamespaceID string `json:"-" url:"-"`
+	// File inode ID
+	InodeID string `json:"-" url:"-"`
+	// Revision number
+	RevisionNo RevisionNo `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (g *GetFileRevisionBytesByInodeRequest) require(field *big.Int) {
+	if g.explicitFields == nil {
+		g.explicitFields = big.NewInt(0)
+	}
+	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileRevisionBytesByInodeRequest) SetNamespaceID(namespaceID string) {
+	g.NamespaceID = namespaceID
+	g.require(getFileRevisionBytesByInodeRequestFieldNamespaceID)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileRevisionBytesByInodeRequest) SetInodeID(inodeID string) {
+	g.InodeID = inodeID
+	g.require(getFileRevisionBytesByInodeRequestFieldInodeID)
+}
+
+// SetRevisionNo sets the RevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileRevisionBytesByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
+	g.RevisionNo = revisionNo
+	g.require(getFileRevisionBytesByInodeRequestFieldRevisionNo)
 }
 
 // A short-lived capability to read one inode revision.

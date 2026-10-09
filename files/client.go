@@ -283,6 +283,9 @@ func (c *Client) ListRevisions(
 //	request := &loonfs.GrepRequest{
 //	    NamespaceID: "namespace_id",
 //	    Pattern: "pattern",
+//	    InodeID: loonfs.String(
+//	        "ino_123",
+//	    ),
 //	}
 //	client.Files.Grep(
 //	    context.TODO(),

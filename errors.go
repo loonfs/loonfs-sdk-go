@@ -175,7 +175,7 @@ func (n *NotImplementedError) Unwrap() error {
 	return n.APIError
 }
 
-// The server cannot complete the request now. Inspect `code` to determine whether the cause is a deadline, shutdown, load, writer-session admission, required maintenance, or invalid storage credentials. A mutation may still complete after a deadline or lost acknowledgment, so determine its outcome before retrying.
+// The server cannot complete the request now. Inspect `code` to determine whether the cause is a deadline, shutdown, load, writer-session admission, required maintenance, or invalid storage credentials. The reference server returns `server_busy` with `Retry-After: 1` before reading a body when its request cap is full; health and readiness probes are exempt. A mutation may still complete after a deadline or lost acknowledgment, so determine its outcome before retrying.
 type ServiceUnavailableError struct {
 	*core.APIError
 	Body any

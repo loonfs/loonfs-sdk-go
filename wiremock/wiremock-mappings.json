@@ -46,7 +46,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"naming\": \"case_insensitive\",\n  \"retention_floor_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -82,7 +82,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"naming\": \"case_insensitive\",\n  \"retention_floor_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -154,7 +154,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"naming\": \"case_insensitive\",\n  \"retention_floor_seq\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -476,6 +476,9 @@
         "queryParameters": {
           "pattern": {
             "equalTo": "pattern"
+          },
+          "inode_id": {
+            "equalTo": "ino_123"
           }
         }
       },
@@ -623,6 +626,89 @@
       }
     },
     {
+      "id": "539df761-ac36-4d9f-bc11-1d4afeb91e9a",
+      "name": "Read file by inode - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/content",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "inode_id": {
+            "equalTo": "inode_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"code\": \"code\",\n  \"message\": \"message\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "539df761-ac36-4d9f-bc11-1d4afeb91e9a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "df0a4646-df82-436e-abe9-e2e5339876b5",
+      "name": "Begin download by inode - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/downloads",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          },
+          "inode_id": {
+            "equalTo": "ino_123"
+          }
+        },
+        "queryParameters": {
+          "snapshot_id": {
+            "equalTo": "pin_00000000000000000001-0000000000000002"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"access\": {\n    \"expires_at_ms\": 1000000,\n    \"headers\": {\n      \"key\": \"value\"\n    },\n    \"method\": \"method\",\n    \"url\": \"url\",\n    \"kind\": \"presigned_url\"\n  },\n  \"content_ref\": {\n    \"checksum\": {\n      \"algorithm\": \"sha256\",\n      \"value\": \"value\"\n    },\n    \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n    \"kind\": \"blob_v1\",\n    \"owner_namespace_id\": \"demo\",\n    \"size_bytes\": 1000000\n  },\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"revision_no\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "df0a4646-df82-436e-abe9-e2e5339876b5",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "0a8ca058-8bb5-4ea5-942a-aa055e9e701c",
       "name": "List file revisions by inode - default",
       "request": {
@@ -662,7 +748,7 @@
       }
     },
     {
-      "id": "6fd5fdb1-d998-4857-8ab1-5931e200329c",
+      "id": "82ae5926-debc-4b7d-9ddb-33da2b922b86",
       "name": "Read file revision by inode - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/revisions/{revision_no}/content",
@@ -691,7 +777,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "6fd5fdb1-d998-4857-8ab1-5931e200329c",
+      "uuid": "82ae5926-debc-4b7d-9ddb-33da2b922b86",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -704,8 +790,8 @@
       }
     },
     {
-      "id": "ff61abb4-cd80-4544-9bfe-99b5d0a113ec",
-      "name": "Begin download by inode - default",
+      "id": "9dfe8f3b-8eeb-4545-9ee0-a17d5f79bc61",
+      "name": "Begin revision download by inode - default",
       "request": {
         "urlPathTemplate": "/v0/namespaces/{namespace_id}/inodes/{inode_id}/revisions/{revision_no}/downloads",
         "method": "POST",
@@ -733,7 +819,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "ff61abb4-cd80-4544-9bfe-99b5d0a113ec",
+      "uuid": "9dfe8f3b-8eeb-4545-9ee0-a17d5f79bc61",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1411,6 +1497,6 @@
     }
   ],
   "meta": {
-    "total": 37
+    "total": 39
   }
 }

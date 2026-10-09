@@ -89,6 +89,112 @@ func (r *RawClient) Retrieve(
 
 func (r *RawClient) Content(
 	ctx context.Context,
+	request *loonfs.GetFileBytesByInodeRequest,
+	opts ...option.RequestOption,
+) (*core.Response[io.Reader], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/namespaces/%v/inodes/%v/content",
+		request.NamespaceID,
+		request.InodeID,
+	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	response := bytes.NewBuffer(nil)
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[io.Reader]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) CreateDownload(
+	ctx context.Context,
+	request *loonfs.CreateDownloadByInodeRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*loonfs.CreateDownloadByInodeResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/namespaces/%v/inodes/%v/downloads",
+		request.NamespaceID,
+		request.InodeID,
+	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	var response *loonfs.CreateDownloadByInodeResponse
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*loonfs.CreateDownloadByInodeResponse]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) RevisionContent(
+	ctx context.Context,
 	request *loonfs.GetFileRevisionBytesByInodeRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[io.Reader], error) {
@@ -134,9 +240,9 @@ func (r *RawClient) Content(
 	}, nil
 }
 
-func (r *RawClient) CreateDownload(
+func (r *RawClient) CreateRevisionDownload(
 	ctx context.Context,
-	request *loonfs.CreateDownloadByInodeRequest,
+	request *loonfs.CreateRevisionDownloadByInodeRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*loonfs.CreateDownloadByInodeResponse], error) {
 	options := core.NewRequestOptions(opts...)

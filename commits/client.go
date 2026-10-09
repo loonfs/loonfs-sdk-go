@@ -43,9 +43,10 @@ func NewClient(options *core.RequestOptions) *Client {
 //	    CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
 //	    Operations: []*loonfs.FilesystemOperation{
 //	        &loonfs.FilesystemOperation{
-//	            CopyPath: &loonfs.FilesystemOperationCopyPath{
-//	                DestinationPath: "/docs/report.txt",
-//	                SourcePath: "/docs/report.txt",
+//	            CopyByInode: &loonfs.FilesystemOperationCopyByInode{
+//	                DestinationDisplayName: "report.txt",
+//	                DestinationParentInodeID: "ino_123",
+//	                InodeID: "ino_123",
 //	            },
 //	        },
 //	    },
