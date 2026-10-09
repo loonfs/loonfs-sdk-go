@@ -70,6 +70,7 @@ var (
 	createDownloadRequestFieldPath        = big.NewInt(1 << 1)
 	createDownloadRequestFieldRevisionNo  = big.NewInt(1 << 2)
 	createDownloadRequestFieldSnapshotID  = big.NewInt(1 << 3)
+	createDownloadRequestFieldStartOffset = big.NewInt(1 << 4)
 )
 
 type CreateDownloadRequest struct {
@@ -83,6 +84,11 @@ type CreateDownloadRequest struct {
 	// Read the file revision captured by this snapshot.
 	// Cannot be combined with `revision_no`.
 	SnapshotID *PinID `json:"snapshot_id,omitempty" url:"-"`
+	// The first byte the grant reads. It names `[start_offset, size_bytes)`
+	// of the revision; a client that resumes asks for a new grant from the
+	// bytes it holds. Must be below the revision's size, except 0 for a
+	// revision of zero bytes.
+	StartOffset *int64 `json:"start_offset,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -121,6 +127,13 @@ func (c *CreateDownloadRequest) SetRevisionNo(revisionNo *RevisionNo) {
 func (c *CreateDownloadRequest) SetSnapshotID(snapshotID *PinID) {
 	c.SnapshotID = snapshotID
 	c.require(createDownloadRequestFieldSnapshotID)
+}
+
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadRequest) SetStartOffset(startOffset *int64) {
+	c.StartOffset = startOffset
+	c.require(createDownloadRequestFieldStartOffset)
 }
 
 func (c *CreateDownloadRequest) UnmarshalJSON(data []byte) error {
