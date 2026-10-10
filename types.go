@@ -795,15 +795,12 @@ func (c *Checksum) String() string {
 type ChecksumAlgorithm string
 
 const (
-	ChecksumAlgorithmSha256    ChecksumAlgorithm = "sha256"
 	ChecksumAlgorithmCrc64Nvme ChecksumAlgorithm = "crc64nvme"
 	ChecksumAlgorithmCrc32C    ChecksumAlgorithm = "crc32c"
 )
 
 func NewChecksumAlgorithmFromString(s string) (ChecksumAlgorithm, error) {
 	switch s {
-	case "sha256":
-		return ChecksumAlgorithmSha256, nil
 	case "crc64nvme":
 		return ChecksumAlgorithmCrc64Nvme, nil
 	case "crc32c":
@@ -1546,11 +1543,7 @@ func (c *CompactionStepOutcomeUnitPublished) String() string {
 // Random identity of one immutable content object.
 type ContentID = string
 
-// Identifies one piece of immutable file content.
-//
-// The owner namespace and content id name the content object that holds the
-// bytes. A reference is not proof that the object exists: content committed
-// inline has no object until a fold writes it.
+// Identifies a chain prefix by its owner, content id, size, and checksum.
 var (
 	contentRefFieldChecksum         = big.NewInt(1 << 0)
 	contentRefFieldContentID        = big.NewInt(1 << 1)
@@ -1560,7 +1553,7 @@ var (
 )
 
 type ContentRef struct {
-	// Mandatory checksum over the complete object.
+	// Mandatory checksum over the referenced bytes.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
 	// Immutable identity of the content; with the owner, it determines the object key.
 	ContentID ContentID `json:"content_id" url:"content_id"`
@@ -1568,7 +1561,7 @@ type ContentRef struct {
 	Kind ContentRefKind `json:"kind" url:"kind"`
 	// Namespace that originally wrote the bytes.
 	OwnerNamespaceID NamespaceID `json:"owner_namespace_id" url:"owner_namespace_id"`
-	// Complete byte length of the referenced content.
+	// Byte length of the referenced bytes, a prefix of the content object.
 	SizeBytes int64 `json:"size_bytes" url:"size_bytes"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2056,12 +2049,13 @@ var (
 	deletedObjectCountsFieldManifests             = big.NewInt(1 << 1)
 	deletedObjectCountsFieldMetadataSegments      = big.NewInt(1 << 2)
 	deletedObjectCountsFieldRetiredContentObjects = big.NewInt(1 << 3)
-	deletedObjectCountsFieldUploadSessions        = big.NewInt(1 << 4)
-	deletedObjectCountsFieldWalObjects            = big.NewInt(1 << 5)
+	deletedObjectCountsFieldTemporaryObjects      = big.NewInt(1 << 4)
+	deletedObjectCountsFieldUploadSessions        = big.NewInt(1 << 5)
+	deletedObjectCountsFieldWalObjects            = big.NewInt(1 << 6)
 )
 
 type DeletedObjectCounts struct {
-	// Content reclaimed through completed upload sessions.
+	// Content objects no retained view names, deleted once older than the grace window.
 	ContentObjects int64 `json:"content_objects" url:"content_objects"`
 	// Unreferenced manifests deleted.
 	Manifests int64 `json:"manifests" url:"manifests"`
@@ -2069,6 +2063,8 @@ type DeletedObjectCounts struct {
 	MetadataSegments int64 `json:"metadata_segments" url:"metadata_segments"`
 	// Listed content objects deleted from a retired namespace.
 	RetiredContentObjects int64 `json:"retired_content_objects" url:"retired_content_objects"`
+	// Store temporary objects deleted once older than the grace window.
+	TemporaryObjects int64 `json:"temporary_objects" url:"temporary_objects"`
 	// Upload-session control objects deleted after the reap window.
 	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
 	// Unreferenced WAL objects deleted.
@@ -2107,6 +2103,13 @@ func (d *DeletedObjectCounts) GetRetiredContentObjects() int64 {
 		return 0
 	}
 	return d.RetiredContentObjects
+}
+
+func (d *DeletedObjectCounts) GetTemporaryObjects() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.TemporaryObjects
 }
 
 func (d *DeletedObjectCounts) GetUploadSessions() int64 {
@@ -2163,6 +2166,13 @@ func (d *DeletedObjectCounts) SetMetadataSegments(metadataSegments int64) {
 func (d *DeletedObjectCounts) SetRetiredContentObjects(retiredContentObjects int64) {
 	d.RetiredContentObjects = retiredContentObjects
 	d.require(deletedObjectCountsFieldRetiredContentObjects)
+}
+
+// SetTemporaryObjects sets the TemporaryObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedObjectCounts) SetTemporaryObjects(temporaryObjects int64) {
+	d.TemporaryObjects = temporaryObjects
+	d.require(deletedObjectCountsFieldTemporaryObjects)
 }
 
 // SetUploadSessions sets the UploadSessions field and marks it as non-optional;
@@ -2343,6 +2353,126 @@ func (d *DirectoryBinding) String() string {
 
 // User-facing spelling of one path component.
 type DisplayName = string
+
+// One contiguous run of a revision's bytes, read from one object.
+var (
+	downloadRangeFieldAccess      = big.NewInt(1 << 0)
+	downloadRangeFieldLength      = big.NewInt(1 << 1)
+	downloadRangeFieldStartOffset = big.NewInt(1 << 2)
+)
+
+type DownloadRange struct {
+	// Short-lived read capability for exactly those bytes.
+	Access *ObjectTransferAccess `json:"access" url:"access"`
+	// Bytes in the run.
+	Length int64 `json:"length" url:"length"`
+	// Offset of the run's first byte in the revision.
+	StartOffset int64 `json:"start_offset" url:"start_offset"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DownloadRange) GetAccess() *ObjectTransferAccess {
+	if d == nil {
+		return nil
+	}
+	return d.Access
+}
+
+func (d *DownloadRange) GetLength() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.Length
+}
+
+func (d *DownloadRange) GetStartOffset() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.StartOffset
+}
+
+func (d *DownloadRange) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DownloadRange) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetAccess sets the Access field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DownloadRange) SetAccess(access *ObjectTransferAccess) {
+	d.Access = access
+	d.require(downloadRangeFieldAccess)
+}
+
+// SetLength sets the Length field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DownloadRange) SetLength(length int64) {
+	d.Length = length
+	d.require(downloadRangeFieldLength)
+}
+
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DownloadRange) SetStartOffset(startOffset int64) {
+	d.StartOffset = startOffset
+	d.require(downloadRangeFieldStartOffset)
+}
+
+func (d *DownloadRange) UnmarshalJSON(data []byte) error {
+	type unmarshaler DownloadRange
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DownloadRange(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DownloadRange) MarshalJSON() ([]byte, error) {
+	type embed DownloadRange
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DownloadRange) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
 
 // Optional machine-readable identifiers and state for an `ErrorResponse`.
 var (
@@ -6667,7 +6797,7 @@ func (o *ObjectTransferAccess) validate() error {
 	return nil
 }
 
-// Short-lived URL plus required headers for one object-store write.
+// Short-lived URL plus required headers for one object-store read or write.
 var (
 	objectTransferAccessPresignedURLFieldExpiresAtMs = big.NewInt(1 << 0)
 	objectTransferAccessPresignedURLFieldHeaders     = big.NewInt(1 << 1)
