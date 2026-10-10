@@ -451,10 +451,9 @@ request := &loonfs.CommitRequest{
     CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
     Operations: []*loonfs.FilesystemOperation{
         &loonfs.FilesystemOperation{
-            CopyByInode: &loonfs.FilesystemOperationCopyByInode{
-                DestinationDisplayName: "report.txt",
-                DestinationParentInodeID: "ino_123",
-                InodeID: "ino_123",
+            AppendFile: &loonfs.FilesystemOperationAppendFile{
+                InlineContent: "inline_content",
+                Path: "/docs/report.txt",
             },
         },
     },
@@ -627,7 +626,7 @@ client.Files.Content(
 <dl>
 <dd>
 
-Authorizes one direct read of a file's content object and returns a short-lived presigned GET capability, the resolved revision, and the content reference the client checks the arriving bytes against. `Range` is outside the signature, so one grant serves ranged, resumed, and parallel reads. Deployments that cannot presign answer 501 `not_supported`; the proxied `GET /filesystem/content` route stays available and is capped by `download.service_proxied.max_content_bytes`.
+Returns ordered signed object ranges covering exactly `[start_offset, size_bytes)` of the selected revision. Each range carries its signed headers in `access.headers`, which the client sends unchanged. The client checks each range's length and the complete revision's checksum. A client that resumes asks for a new grant from its offset. Deployments that cannot presign answer 501 `not_supported`; the proxied `GET /filesystem/content` route stays available and is capped by `download.service_proxied.max_content_bytes`.
 </dd>
 </dl>
 </dd>
@@ -695,6 +694,19 @@ Cannot be combined with `snapshot_id`.
 
 Read the file revision captured by this snapshot.
 Cannot be combined with `revision_no`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**startOffset:** `*int64` 
+
+The first byte the grant reads. It names `[start_offset, size_bytes)`
+of the revision; a client that resumes asks for a new grant from the
+bytes it holds. Must be below the revision's size, except 0 for a
+revision of zero bytes.
     
 </dd>
 </dl>
@@ -1470,7 +1482,7 @@ client.Inodes.Content(
 <dl>
 <dd>
 
-Authorizes a direct read of the current revision of a visible file inode, wherever it is bound, or of the revision a live snapshot captured. The request has no body and the response does not include a path.
+Authorizes a direct read of the current revision of a visible file inode, wherever it is bound, or of the revision a live snapshot captured. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The request has no body and the response does not include a path.
 </dd>
 </dl>
 </dd>
@@ -1527,6 +1539,14 @@ client.Inodes.CreateDownload(
 <dd>
 
 **snapshotID:** `*loonfs.PinID` — Use the file revision captured by this snapshot
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**startOffset:** `*int64` — First byte the capability reads. Defaults to 0 and must be below the file's size, except 0 for a file of zero bytes
     
 </dd>
 </dl>
@@ -1713,7 +1733,7 @@ client.Inodes.RevisionContent(
 <dl>
 <dd>
 
-Authorizes a direct read of one retained inode revision. The request has no body and the response does not include a path.
+Authorizes a direct read of one retained inode revision. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The request has no body and the response does not include a path.
 </dd>
 </dl>
 </dd>
@@ -1768,6 +1788,14 @@ client.Inodes.CreateRevisionDownload(
 <dd>
 
 **revisionNo:** `loonfs.RevisionNo` — Revision number
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**startOffset:** `*int64` — First byte the capability reads. Defaults to 0 and must be below the revision's size, except 0 for a revision of zero bytes
     
 </dd>
 </dl>
@@ -2325,7 +2353,7 @@ request := &loonfs.CompleteUploadRequest{
         DirectMultipart: &loonfs.CompleteUploadBodyDirectMultipart{
             Content: &loonfs.UploadContentClaim{
                 Checksum: &loonfs.Checksum{
-                    Algorithm: loonfs.ChecksumAlgorithmSha256,
+                    Algorithm: loonfs.ChecksumAlgorithmCrc64Nvme,
                     Value: "value",
                 },
                 SizeBytes: int64(1000000),
@@ -2333,7 +2361,7 @@ request := &loonfs.CompleteUploadRequest{
             Parts: []*loonfs.CompletedUploadPart{
                 &loonfs.CompletedUploadPart{
                     Checksum: &loonfs.Checksum{
-                        Algorithm: loonfs.ChecksumAlgorithmSha256,
+                        Algorithm: loonfs.ChecksumAlgorithmCrc64Nvme,
                         Value: "value",
                     },
                     Etag: "etag",
@@ -2422,7 +2450,7 @@ request := &loonfs.SignUploadPartsRequest{
     Parts: []*loonfs.UploadPartChecksumClaim{
         &loonfs.UploadPartChecksumClaim{
             Checksum: &loonfs.Checksum{
-                Algorithm: loonfs.ChecksumAlgorithmSha256,
+                Algorithm: loonfs.ChecksumAlgorithmCrc64Nvme,
                 Value: "value",
             },
             PartNumber: 1,

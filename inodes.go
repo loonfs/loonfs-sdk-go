@@ -59,6 +59,7 @@ var (
 	createDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
 	createDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
 	createDownloadByInodeRequestFieldSnapshotID  = big.NewInt(1 << 2)
+	createDownloadByInodeRequestFieldStartOffset = big.NewInt(1 << 3)
 )
 
 type CreateDownloadByInodeRequest struct {
@@ -68,6 +69,8 @@ type CreateDownloadByInodeRequest struct {
 	InodeID string `json:"-" url:"-"`
 	// Use the file revision captured by this snapshot
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// First byte the capability reads. Defaults to 0 and must be below the file's size, except 0 for a file of zero bytes
+	StartOffset *int64 `json:"-" url:"start_offset,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -101,10 +104,18 @@ func (c *CreateDownloadByInodeRequest) SetSnapshotID(snapshotID *PinID) {
 	c.require(createDownloadByInodeRequestFieldSnapshotID)
 }
 
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadByInodeRequest) SetStartOffset(startOffset *int64) {
+	c.StartOffset = startOffset
+	c.require(createDownloadByInodeRequestFieldStartOffset)
+}
+
 var (
 	createRevisionDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
 	createRevisionDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
 	createRevisionDownloadByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	createRevisionDownloadByInodeRequestFieldStartOffset = big.NewInt(1 << 3)
 )
 
 type CreateRevisionDownloadByInodeRequest struct {
@@ -114,6 +125,8 @@ type CreateRevisionDownloadByInodeRequest struct {
 	InodeID string `json:"-" url:"-"`
 	// Revision number
 	RevisionNo RevisionNo `json:"-" url:"-"`
+	// First byte the capability reads. Defaults to 0 and must be below the revision's size, except 0 for a revision of zero bytes
+	StartOffset *int64 `json:"-" url:"start_offset,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -145,6 +158,13 @@ func (c *CreateRevisionDownloadByInodeRequest) SetInodeID(inodeID string) {
 func (c *CreateRevisionDownloadByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
 	c.RevisionNo = revisionNo
 	c.require(createRevisionDownloadByInodeRequestFieldRevisionNo)
+}
+
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateRevisionDownloadByInodeRequest) SetStartOffset(startOffset *int64) {
+	c.StartOffset = startOffset
+	c.require(createRevisionDownloadByInodeRequestFieldStartOffset)
 }
 
 var (
@@ -383,22 +403,22 @@ func (g *GetFileRevisionBytesByInodeRequest) SetRevisionNo(revisionNo RevisionNo
 
 // A short-lived capability to read one inode revision.
 var (
-	createDownloadByInodeResponseFieldAccess      = big.NewInt(1 << 0)
-	createDownloadByInodeResponseFieldContentRef  = big.NewInt(1 << 1)
-	createDownloadByInodeResponseFieldInodeID     = big.NewInt(1 << 2)
-	createDownloadByInodeResponseFieldNamespaceID = big.NewInt(1 << 3)
+	createDownloadByInodeResponseFieldContentRef  = big.NewInt(1 << 0)
+	createDownloadByInodeResponseFieldInodeID     = big.NewInt(1 << 1)
+	createDownloadByInodeResponseFieldNamespaceID = big.NewInt(1 << 2)
+	createDownloadByInodeResponseFieldRanges      = big.NewInt(1 << 3)
 	createDownloadByInodeResponseFieldRevisionNo  = big.NewInt(1 << 4)
 )
 
 type CreateDownloadByInodeResponse struct {
-	// Short-lived provider access without the raw object key.
-	Access *ObjectTransferAccess `json:"access" url:"access"`
 	// Content identity, size, and checksum.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// File inode being read.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// Namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// The revision's bytes from the requested offset, in order.
+	Ranges []*DownloadRange `json:"ranges" url:"ranges"`
 	// Revision being read.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
 
@@ -407,13 +427,6 @@ type CreateDownloadByInodeResponse struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateDownloadByInodeResponse) GetAccess() *ObjectTransferAccess {
-	if c == nil {
-		return nil
-	}
-	return c.Access
 }
 
 func (c *CreateDownloadByInodeResponse) GetContentRef() *ContentRef {
@@ -437,6 +450,13 @@ func (c *CreateDownloadByInodeResponse) GetNamespaceID() NamespaceID {
 	return c.NamespaceID
 }
 
+func (c *CreateDownloadByInodeResponse) GetRanges() []*DownloadRange {
+	if c == nil {
+		return nil
+	}
+	return c.Ranges
+}
+
 func (c *CreateDownloadByInodeResponse) GetRevisionNo() RevisionNo {
 	if c == nil {
 		return 0
@@ -458,13 +478,6 @@ func (c *CreateDownloadByInodeResponse) require(field *big.Int) {
 	c.explicitFields.Or(c.explicitFields, field)
 }
 
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateDownloadByInodeResponse) SetAccess(access *ObjectTransferAccess) {
-	c.Access = access
-	c.require(createDownloadByInodeResponseFieldAccess)
-}
-
 // SetContentRef sets the ContentRef field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *CreateDownloadByInodeResponse) SetContentRef(contentRef *ContentRef) {
@@ -484,6 +497,13 @@ func (c *CreateDownloadByInodeResponse) SetInodeID(inodeID InodeID) {
 func (c *CreateDownloadByInodeResponse) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(createDownloadByInodeResponseFieldNamespaceID)
+}
+
+// SetRanges sets the Ranges field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadByInodeResponse) SetRanges(ranges []*DownloadRange) {
+	c.Ranges = ranges
+	c.require(createDownloadByInodeResponseFieldRanges)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;

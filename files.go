@@ -70,6 +70,7 @@ var (
 	createDownloadRequestFieldPath        = big.NewInt(1 << 1)
 	createDownloadRequestFieldRevisionNo  = big.NewInt(1 << 2)
 	createDownloadRequestFieldSnapshotID  = big.NewInt(1 << 3)
+	createDownloadRequestFieldStartOffset = big.NewInt(1 << 4)
 )
 
 type CreateDownloadRequest struct {
@@ -83,6 +84,11 @@ type CreateDownloadRequest struct {
 	// Read the file revision captured by this snapshot.
 	// Cannot be combined with `revision_no`.
 	SnapshotID *PinID `json:"snapshot_id,omitempty" url:"-"`
+	// The first byte the grant reads. It names `[start_offset, size_bytes)`
+	// of the revision; a client that resumes asks for a new grant from the
+	// bytes it holds. Must be below the revision's size, except 0 for a
+	// revision of zero bytes.
+	StartOffset *int64 `json:"start_offset,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -121,6 +127,13 @@ func (c *CreateDownloadRequest) SetRevisionNo(revisionNo *RevisionNo) {
 func (c *CreateDownloadRequest) SetSnapshotID(snapshotID *PinID) {
 	c.SnapshotID = snapshotID
 	c.require(createDownloadRequestFieldSnapshotID)
+}
+
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadRequest) SetStartOffset(startOffset *int64) {
+	c.StartOffset = startOffset
+	c.require(createDownloadRequestFieldStartOffset)
 }
 
 func (c *CreateDownloadRequest) UnmarshalJSON(data []byte) error {
@@ -438,26 +451,24 @@ func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *PinID) {
 	g.require(getPathEntryRequestFieldSnapshotID)
 }
 
-// A presigned URL for one content object.
-//
-// The URL expires at `access.expires_at_ms`; later path changes do not change the object.
+// Signed object ranges for one revision.
 var (
-	createDownloadResponseFieldAccess      = big.NewInt(1 << 0)
-	createDownloadResponseFieldContentRef  = big.NewInt(1 << 1)
-	createDownloadResponseFieldNamespaceID = big.NewInt(1 << 2)
-	createDownloadResponseFieldPath        = big.NewInt(1 << 3)
+	createDownloadResponseFieldContentRef  = big.NewInt(1 << 0)
+	createDownloadResponseFieldNamespaceID = big.NewInt(1 << 1)
+	createDownloadResponseFieldPath        = big.NewInt(1 << 2)
+	createDownloadResponseFieldRanges      = big.NewInt(1 << 3)
 	createDownloadResponseFieldRevisionNo  = big.NewInt(1 << 4)
 )
 
 type CreateDownloadResponse struct {
-	// Short-lived read capability the client uses without learning the raw object key.
-	Access *ObjectTransferAccess `json:"access" url:"access"`
-	// The identity, byte length, and checksum of the object to download.
+	// The identity, byte length, and checksum of the revision's bytes.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// Namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Absolute path as rendered from stored display names.
 	Path AbsolutePath `json:"path" url:"path"`
+	// The revision's bytes from the requested offset, in order.
+	Ranges []*DownloadRange `json:"ranges" url:"ranges"`
 	// Revision the capability reads, resolved from the request.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
 
@@ -466,13 +477,6 @@ type CreateDownloadResponse struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateDownloadResponse) GetAccess() *ObjectTransferAccess {
-	if c == nil {
-		return nil
-	}
-	return c.Access
 }
 
 func (c *CreateDownloadResponse) GetContentRef() *ContentRef {
@@ -496,6 +500,13 @@ func (c *CreateDownloadResponse) GetPath() AbsolutePath {
 	return c.Path
 }
 
+func (c *CreateDownloadResponse) GetRanges() []*DownloadRange {
+	if c == nil {
+		return nil
+	}
+	return c.Ranges
+}
+
 func (c *CreateDownloadResponse) GetRevisionNo() RevisionNo {
 	if c == nil {
 		return 0
@@ -517,13 +528,6 @@ func (c *CreateDownloadResponse) require(field *big.Int) {
 	c.explicitFields.Or(c.explicitFields, field)
 }
 
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateDownloadResponse) SetAccess(access *ObjectTransferAccess) {
-	c.Access = access
-	c.require(createDownloadResponseFieldAccess)
-}
-
 // SetContentRef sets the ContentRef field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *CreateDownloadResponse) SetContentRef(contentRef *ContentRef) {
@@ -543,6 +547,13 @@ func (c *CreateDownloadResponse) SetNamespaceID(namespaceID NamespaceID) {
 func (c *CreateDownloadResponse) SetPath(path AbsolutePath) {
 	c.Path = path
 	c.require(createDownloadResponseFieldPath)
+}
+
+// SetRanges sets the Ranges field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadResponse) SetRanges(ranges []*DownloadRange) {
+	c.Ranges = ranges
+	c.require(createDownloadResponseFieldRanges)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;

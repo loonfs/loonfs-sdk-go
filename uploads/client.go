@@ -132,7 +132,7 @@ func (c *Client) Abort(
 //	        DirectMultipart: &loonfs.CompleteUploadBodyDirectMultipart{
 //	            Content: &loonfs.UploadContentClaim{
 //	                Checksum: &loonfs.Checksum{
-//	                    Algorithm: loonfs.ChecksumAlgorithmSha256,
+//	                    Algorithm: loonfs.ChecksumAlgorithmCrc64Nvme,
 //	                    Value: "value",
 //	                },
 //	                SizeBytes: int64(1000000),
@@ -140,7 +140,7 @@ func (c *Client) Abort(
 //	            Parts: []*loonfs.CompletedUploadPart{
 //	                &loonfs.CompletedUploadPart{
 //	                    Checksum: &loonfs.Checksum{
-//	                        Algorithm: loonfs.ChecksumAlgorithmSha256,
+//	                        Algorithm: loonfs.ChecksumAlgorithmCrc64Nvme,
 //	                        Value: "value",
 //	                    },
 //	                    Etag: "etag",
@@ -203,7 +203,7 @@ func (c *Client) PutContent(
 //	    Parts: []*loonfs.UploadPartChecksumClaim{
 //	        &loonfs.UploadPartChecksumClaim{
 //	            Checksum: &loonfs.Checksum{
-//	                Algorithm: loonfs.ChecksumAlgorithmSha256,
+//	                Algorithm: loonfs.ChecksumAlgorithmCrc64Nvme,
 //	                Value: "value",
 //	            },
 //	            PartNumber: 1,
