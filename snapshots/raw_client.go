@@ -79,6 +79,52 @@ func (r *RawClient) Create(
 	}, nil
 }
 
+func (r *RawClient) Retrieve(
+	ctx context.Context,
+	request *loonfs.GetSnapshotRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*loonfs.Snapshot], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/v0/namespaces/%v/snapshots/%v",
+		request.NamespaceID,
+		request.SnapshotID,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	var response *loonfs.Snapshot
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*loonfs.Snapshot]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
 func (r *RawClient) Delete(
 	ctx context.Context,
 	request *loonfs.DeleteSnapshotRequest,

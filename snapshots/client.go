@@ -138,6 +138,34 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// Returns one live snapshot, as the snapshot listing returns it. A missing id, or the id of a pin that isn't a snapshot, returns snapshot_not_found, and an expired snapshot returns snapshot_gone.
+//
+// Example:
+//
+//	request := &loonfs.GetSnapshotRequest{
+//	    NamespaceID: "namespace_id",
+//	    SnapshotID: "pin_00000000000000000001-0000000000000002",
+//	}
+//	client.Snapshots.Retrieve(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Retrieve(
+	ctx context.Context,
+	request *loonfs.GetSnapshotRequest,
+	opts ...option.RequestOption,
+) (*loonfs.Snapshot, error) {
+	response, err := c.WithRawResponse.Retrieve(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
 // Deletes a snapshot pin. A missing id returns snapshot_not_found.
 //
 // Example:

@@ -138,6 +138,34 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// Returns one existing pin as the checkpoint listing returns it, including an expired pin that collection has not deleted. A missing id returns checkpoint_not_found.
+//
+// Example:
+//
+//	request := &maintenance.GetCheckpointRequest{
+//	    NamespaceID: "namespace_id",
+//	    CheckpointID: "checkpoint_id",
+//	}
+//	client.Maintenance.Checkpoints.Retrieve(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Retrieve(
+	ctx context.Context,
+	request *maintenance.GetCheckpointRequest,
+	opts ...option.RequestOption,
+) (*loonfs.Checkpoint, error) {
+	response, err := c.WithRawResponse.Retrieve(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
 // Deletes a user-owned checkpoint pin. A missing id returns checkpoint_not_found. Garbage collection can reclaim its unreferenced manifest and runs.
 //
 // Example:

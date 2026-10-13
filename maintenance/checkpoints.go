@@ -156,3 +156,39 @@ func (l *ListCheckpointsRequest) SetCursor(cursor *string) {
 	l.Cursor = cursor
 	l.require(listCheckpointsRequestFieldCursor)
 }
+
+var (
+	getCheckpointRequestFieldNamespaceID  = big.NewInt(1 << 0)
+	getCheckpointRequestFieldCheckpointID = big.NewInt(1 << 1)
+)
+
+type GetCheckpointRequest struct {
+	// Namespace id
+	NamespaceID string `json:"-" url:"-"`
+	// Checkpoint id
+	CheckpointID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (g *GetCheckpointRequest) require(field *big.Int) {
+	if g.explicitFields == nil {
+		g.explicitFields = big.NewInt(0)
+	}
+	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetCheckpointRequest) SetNamespaceID(namespaceID string) {
+	g.NamespaceID = namespaceID
+	g.require(getCheckpointRequestFieldNamespaceID)
+}
+
+// SetCheckpointID sets the CheckpointID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetCheckpointRequest) SetCheckpointID(checkpointID string) {
+	g.CheckpointID = checkpointID
+	g.require(getCheckpointRequestFieldCheckpointID)
+}

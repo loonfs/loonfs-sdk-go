@@ -89,7 +89,7 @@ func (r *RawClient) Retrieve(
 
 func (r *RawClient) Content(
 	ctx context.Context,
-	request *loonfs.GetFileBytesByInodeRequest,
+	request *loonfs.GetFileContentByInodeRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[io.Reader], error) {
 	options := core.NewRequestOptions(opts...)
@@ -156,17 +156,11 @@ func (r *RawClient) CreateDownload(
 		request.NamespaceID,
 		request.InodeID,
 	)
-	queryParams, err := internal.QueryValues(request)
-	if err != nil {
-		return nil, err
-	}
-	if len(queryParams) > 0 {
-		endpointURL += "?" + queryParams.Encode()
-	}
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
+	headers.Add("Content-Type", "application/json")
 	var response *loonfs.CreateDownloadByInodeResponse
 	raw, err := r.caller.Call(
 		ctx,
@@ -179,6 +173,7 @@ func (r *RawClient) CreateDownload(
 			BodyProperties:  options.BodyProperties,
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
+			Request:         request,
 			Response:        &response,
 			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
 		},
@@ -195,7 +190,7 @@ func (r *RawClient) CreateDownload(
 
 func (r *RawClient) RevisionContent(
 	ctx context.Context,
-	request *loonfs.GetFileRevisionBytesByInodeRequest,
+	request *loonfs.GetFileRevisionContentByInodeRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[io.Reader], error) {
 	options := core.NewRequestOptions(opts...)
@@ -261,6 +256,7 @@ func (r *RawClient) CreateRevisionDownload(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
+	headers.Add("Content-Type", "application/json")
 	var response *loonfs.CreateDownloadByInodeResponse
 	raw, err := r.caller.Call(
 		ctx,
@@ -273,6 +269,7 @@ func (r *RawClient) CreateRevisionDownload(
 			BodyProperties:  options.BodyProperties,
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
+			Request:         request,
 			Response:        &response,
 			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
 		},

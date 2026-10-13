@@ -1243,6 +1243,8 @@ func (d DestinationBehavior) Ptr() *DestinationBehavior {
 // Unknown fields are rejected, and fieldless variants require empty objects.
 type FilesystemOperation struct {
 	Kind                    string
+	AppendFile              *FilesystemOperationAppendFile
+	AppendFileByInode       *FilesystemOperationAppendFileByInode
 	CopyByInode             *FilesystemOperationCopyByInode
 	CopyPath                *FilesystemOperationCopyPath
 	CreateDirectory         *FilesystemOperationCreateDirectory
@@ -1270,6 +1272,20 @@ func (f *FilesystemOperation) GetKind() string {
 		return ""
 	}
 	return f.Kind
+}
+
+func (f *FilesystemOperation) GetAppendFile() *FilesystemOperationAppendFile {
+	if f == nil {
+		return nil
+	}
+	return f.AppendFile
+}
+
+func (f *FilesystemOperation) GetAppendFileByInode() *FilesystemOperationAppendFileByInode {
+	if f == nil {
+		return nil
+	}
+	return f.AppendFileByInode
 }
 
 func (f *FilesystemOperation) GetCopyByInode() *FilesystemOperationCopyByInode {
@@ -1410,6 +1426,18 @@ func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant kind", f)
 	}
 	switch unmarshaler.Kind {
+	case "append_file":
+		value := new(FilesystemOperationAppendFile)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.AppendFile = value
+	case "append_file_by_inode":
+		value := new(FilesystemOperationAppendFileByInode)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.AppendFileByInode = value
 	case "copy_by_inode":
 		value := new(FilesystemOperationCopyByInode)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -1527,6 +1555,12 @@ func (f FilesystemOperation) MarshalJSON() ([]byte, error) {
 	if err := f.validate(); err != nil {
 		return nil, err
 	}
+	if f.AppendFile != nil {
+		return internal.MarshalJSONWithExtraProperty(f.AppendFile, "kind", "append_file")
+	}
+	if f.AppendFileByInode != nil {
+		return internal.MarshalJSONWithExtraProperty(f.AppendFileByInode, "kind", "append_file_by_inode")
+	}
 	if f.CopyByInode != nil {
 		return internal.MarshalJSONWithExtraProperty(f.CopyByInode, "kind", "copy_by_inode")
 	}
@@ -1588,6 +1622,8 @@ func (f FilesystemOperation) MarshalJSON() ([]byte, error) {
 }
 
 type FilesystemOperationVisitor interface {
+	VisitAppendFile(*FilesystemOperationAppendFile) error
+	VisitAppendFileByInode(*FilesystemOperationAppendFileByInode) error
 	VisitCopyByInode(*FilesystemOperationCopyByInode) error
 	VisitCopyPath(*FilesystemOperationCopyPath) error
 	VisitCreateDirectory(*FilesystemOperationCreateDirectory) error
@@ -1609,6 +1645,12 @@ type FilesystemOperationVisitor interface {
 }
 
 func (f *FilesystemOperation) Accept(visitor FilesystemOperationVisitor) error {
+	if f.AppendFile != nil {
+		return visitor.VisitAppendFile(f.AppendFile)
+	}
+	if f.AppendFileByInode != nil {
+		return visitor.VisitAppendFileByInode(f.AppendFileByInode)
+	}
 	if f.CopyByInode != nil {
 		return visitor.VisitCopyByInode(f.CopyByInode)
 	}
@@ -1671,6 +1713,12 @@ func (f *FilesystemOperation) validate() error {
 		return fmt.Errorf("type %T is nil", f)
 	}
 	var fields []string
+	if f.AppendFile != nil {
+		fields = append(fields, "append_file")
+	}
+	if f.AppendFileByInode != nil {
+		fields = append(fields, "append_file_by_inode")
+	}
 	if f.CopyByInode != nil {
 		fields = append(fields, "copy_by_inode")
 	}
@@ -1749,6 +1797,263 @@ func (f *FilesystemOperation) validate() error {
 		}
 	}
 	return nil
+}
+
+// Add bytes to the end of a file as its next revision.
+var (
+	filesystemOperationAppendFileFieldExpectedInodeID    = big.NewInt(1 << 0)
+	filesystemOperationAppendFileFieldExpectedRevisionNo = big.NewInt(1 << 1)
+	filesystemOperationAppendFileFieldInlineContent      = big.NewInt(1 << 2)
+	filesystemOperationAppendFileFieldPath               = big.NewInt(1 << 3)
+)
+
+type FilesystemOperationAppendFile struct {
+	// The inode that the path must still resolve to.
+	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
+	// With an inode precondition, the content revision that must still be current.
+	ExpectedRevisionNo *RevisionNo `json:"expected_revision_no,omitempty" url:"expected_revision_no,omitempty"`
+	// The bytes to add as base64, from 1 byte to 256 KiB.
+	InlineContent string `json:"inline_content" url:"inline_content"`
+	// Absolute path that must resolve to a visible file.
+	Path AbsolutePath `json:"path" url:"path"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationAppendFile) GetExpectedInodeID() *InodeID {
+	if f == nil {
+		return nil
+	}
+	return f.ExpectedInodeID
+}
+
+func (f *FilesystemOperationAppendFile) GetExpectedRevisionNo() *RevisionNo {
+	if f == nil {
+		return nil
+	}
+	return f.ExpectedRevisionNo
+}
+
+func (f *FilesystemOperationAppendFile) GetInlineContent() string {
+	if f == nil {
+		return ""
+	}
+	return f.InlineContent
+}
+
+func (f *FilesystemOperationAppendFile) GetPath() AbsolutePath {
+	if f == nil {
+		return ""
+	}
+	return f.Path
+}
+
+func (f *FilesystemOperationAppendFile) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationAppendFile) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetExpectedInodeID sets the ExpectedInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationAppendFile) SetExpectedInodeID(expectedInodeID *InodeID) {
+	f.ExpectedInodeID = expectedInodeID
+	f.require(filesystemOperationAppendFileFieldExpectedInodeID)
+}
+
+// SetExpectedRevisionNo sets the ExpectedRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationAppendFile) SetExpectedRevisionNo(expectedRevisionNo *RevisionNo) {
+	f.ExpectedRevisionNo = expectedRevisionNo
+	f.require(filesystemOperationAppendFileFieldExpectedRevisionNo)
+}
+
+// SetInlineContent sets the InlineContent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationAppendFile) SetInlineContent(inlineContent string) {
+	f.InlineContent = inlineContent
+	f.require(filesystemOperationAppendFileFieldInlineContent)
+}
+
+// SetPath sets the Path field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationAppendFile) SetPath(path AbsolutePath) {
+	f.Path = path
+	f.require(filesystemOperationAppendFileFieldPath)
+}
+
+func (f *FilesystemOperationAppendFile) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationAppendFile
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationAppendFile(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationAppendFile) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationAppendFile
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationAppendFile) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Add bytes to the end of a file inode as its next revision.
+var (
+	filesystemOperationAppendFileByInodeFieldExpectedRevisionNo = big.NewInt(1 << 0)
+	filesystemOperationAppendFileByInodeFieldInlineContent      = big.NewInt(1 << 1)
+	filesystemOperationAppendFileByInodeFieldInodeID            = big.NewInt(1 << 2)
+)
+
+type FilesystemOperationAppendFileByInode struct {
+	// The content revision that must still be current.
+	ExpectedRevisionNo *RevisionNo `json:"expected_revision_no,omitempty" url:"expected_revision_no,omitempty"`
+	// The bytes to add as base64, from 1 byte to 256 KiB.
+	InlineContent string `json:"inline_content" url:"inline_content"`
+	// File to append to.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationAppendFileByInode) GetExpectedRevisionNo() *RevisionNo {
+	if f == nil {
+		return nil
+	}
+	return f.ExpectedRevisionNo
+}
+
+func (f *FilesystemOperationAppendFileByInode) GetInlineContent() string {
+	if f == nil {
+		return ""
+	}
+	return f.InlineContent
+}
+
+func (f *FilesystemOperationAppendFileByInode) GetInodeID() InodeID {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemOperationAppendFileByInode) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationAppendFileByInode) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetExpectedRevisionNo sets the ExpectedRevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationAppendFileByInode) SetExpectedRevisionNo(expectedRevisionNo *RevisionNo) {
+	f.ExpectedRevisionNo = expectedRevisionNo
+	f.require(filesystemOperationAppendFileByInodeFieldExpectedRevisionNo)
+}
+
+// SetInlineContent sets the InlineContent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationAppendFileByInode) SetInlineContent(inlineContent string) {
+	f.InlineContent = inlineContent
+	f.require(filesystemOperationAppendFileByInodeFieldInlineContent)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationAppendFileByInode) SetInodeID(inodeID InodeID) {
+	f.InodeID = inodeID
+	f.require(filesystemOperationAppendFileByInodeFieldInodeID)
+}
+
+func (f *FilesystemOperationAppendFileByInode) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationAppendFileByInode
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationAppendFileByInode(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationAppendFileByInode) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationAppendFileByInode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationAppendFileByInode) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
 }
 
 // Copy a file inode to a name under a parent inode.

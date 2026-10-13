@@ -150,7 +150,7 @@ func (c *Client) ListChildren(
 //
 // Example:
 //
-//	request := &loonfs.GetFileBytesByInodeRequest{
+//	request := &loonfs.GetFileContentByInodeRequest{
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "inode_id",
 //	}
@@ -160,7 +160,7 @@ func (c *Client) ListChildren(
 //	)
 func (c *Client) Content(
 	ctx context.Context,
-	request *loonfs.GetFileBytesByInodeRequest,
+	request *loonfs.GetFileContentByInodeRequest,
 	opts ...option.RequestOption,
 ) (io.Reader, error) {
 	response, err := c.WithRawResponse.Content(
@@ -174,16 +174,13 @@ func (c *Client) Content(
 	return response.Body, nil
 }
 
-// Authorizes a direct read of the current revision of a visible file inode, wherever it is bound, or of the revision a live snapshot captured. The request has no body and the response does not include a path.
+// Authorizes a direct read of the current revision of a visible file inode, wherever it is bound, or of the revision a live snapshot captured. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response does not include a path.
 //
 // Example:
 //
 //	request := &loonfs.CreateDownloadByInodeRequest{
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_123",
-//	    SnapshotID: loonfs.String(
-//	        "pin_00000000000000000001-0000000000000002",
-//	    ),
 //	}
 //	client.Inodes.CreateDownload(
 //	    context.TODO(),
@@ -285,7 +282,7 @@ func (c *Client) ListRevisions(
 //
 // Example:
 //
-//	request := &loonfs.GetFileRevisionBytesByInodeRequest{
+//	request := &loonfs.GetFileRevisionContentByInodeRequest{
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "inode_id",
 //	    RevisionNo: int64(1000000),
@@ -296,7 +293,7 @@ func (c *Client) ListRevisions(
 //	)
 func (c *Client) RevisionContent(
 	ctx context.Context,
-	request *loonfs.GetFileRevisionBytesByInodeRequest,
+	request *loonfs.GetFileRevisionContentByInodeRequest,
 	opts ...option.RequestOption,
 ) (io.Reader, error) {
 	response, err := c.WithRawResponse.RevisionContent(
@@ -310,7 +307,7 @@ func (c *Client) RevisionContent(
 	return response.Body, nil
 }
 
-// Authorizes a direct read of one retained inode revision. The request has no body and the response does not include a path.
+// Authorizes a direct read of one retained inode revision. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response does not include a path.
 //
 // Example:
 //

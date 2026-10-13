@@ -69,9 +69,9 @@ func (l *ListChangesRequest) SetSnapshotID(snapshotID *PinID) {
 var (
 	listChangesResponseFieldAfterSeq     = big.NewInt(1 << 0)
 	listChangesResponseFieldChanges      = big.NewInt(1 << 1)
-	listChangesResponseFieldNamespaceID  = big.NewInt(1 << 2)
-	listChangesResponseFieldNextAfterSeq = big.NewInt(1 << 3)
-	listChangesResponseFieldThroughSeq   = big.NewInt(1 << 4)
+	listChangesResponseFieldHeadSeq      = big.NewInt(1 << 2)
+	listChangesResponseFieldNamespaceID  = big.NewInt(1 << 3)
+	listChangesResponseFieldNextAfterSeq = big.NewInt(1 << 4)
 )
 
 type ListChangesResponse struct {
@@ -79,12 +79,13 @@ type ListChangesResponse struct {
 	AfterSeq ChangeSeq `json:"after_seq" url:"after_seq"`
 	// Logical commits after `after_seq`, ordered by ascending namespace sequence.
 	Changes []*Commit `json:"changes" url:"changes"`
+	// Namespace head sequence this page was read at.
+	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// Namespace whose ordered commit stream was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Cursor to request when another page remains, absent at `through_seq`.
+	// Cursor to request when another page remains, absent on the page that
+	// reaches `head_seq`.
 	NextAfterSeq *ChangeSeq `json:"next_after_seq,omitempty" url:"next_after_seq,omitempty"`
-	// Namespace head through which this page was evaluated.
-	ThroughSeq ChangeSeq `json:"through_seq" url:"through_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -107,6 +108,13 @@ func (l *ListChangesResponse) GetChanges() []*Commit {
 	return l.Changes
 }
 
+func (l *ListChangesResponse) GetHeadSeq() ChangeSeq {
+	if l == nil {
+		return 0
+	}
+	return l.HeadSeq
+}
+
 func (l *ListChangesResponse) GetNamespaceID() NamespaceID {
 	if l == nil {
 		return ""
@@ -119,13 +127,6 @@ func (l *ListChangesResponse) GetNextAfterSeq() *ChangeSeq {
 		return nil
 	}
 	return l.NextAfterSeq
-}
-
-func (l *ListChangesResponse) GetThroughSeq() ChangeSeq {
-	if l == nil {
-		return 0
-	}
-	return l.ThroughSeq
 }
 
 func (l *ListChangesResponse) GetExtraProperties() map[string]interface{} {
@@ -156,6 +157,13 @@ func (l *ListChangesResponse) SetChanges(changes []*Commit) {
 	l.require(listChangesResponseFieldChanges)
 }
 
+// SetHeadSeq sets the HeadSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesResponse) SetHeadSeq(headSeq ChangeSeq) {
+	l.HeadSeq = headSeq
+	l.require(listChangesResponseFieldHeadSeq)
+}
+
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (l *ListChangesResponse) SetNamespaceID(namespaceID NamespaceID) {
@@ -168,13 +176,6 @@ func (l *ListChangesResponse) SetNamespaceID(namespaceID NamespaceID) {
 func (l *ListChangesResponse) SetNextAfterSeq(nextAfterSeq *ChangeSeq) {
 	l.NextAfterSeq = nextAfterSeq
 	l.require(listChangesResponseFieldNextAfterSeq)
-}
-
-// SetThroughSeq sets the ThroughSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListChangesResponse) SetThroughSeq(throughSeq ChangeSeq) {
-	l.ThroughSeq = throughSeq
-	l.require(listChangesResponseFieldThroughSeq)
 }
 
 func (l *ListChangesResponse) UnmarshalJSON(data []byte) error {
