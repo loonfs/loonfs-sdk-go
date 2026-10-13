@@ -36,7 +36,7 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 
 func (r *RawClient) Content(
 	ctx context.Context,
-	request *loonfs.GetFileBytesRequest,
+	request *loonfs.GetFileContentRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[io.Reader], error) {
 	options := core.NewRequestOptions(opts...)

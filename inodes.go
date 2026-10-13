@@ -10,12 +10,12 @@ import (
 )
 
 var (
-	getFileBytesByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
-	getFileBytesByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
-	getFileBytesByInodeRequestFieldSnapshotID  = big.NewInt(1 << 2)
+	getFileContentByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
+	getFileContentByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
+	getFileContentByInodeRequestFieldSnapshotID  = big.NewInt(1 << 2)
 )
 
-type GetFileBytesByInodeRequest struct {
+type GetFileContentByInodeRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// File inode ID
@@ -27,7 +27,7 @@ type GetFileBytesByInodeRequest struct {
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (g *GetFileBytesByInodeRequest) require(field *big.Int) {
+func (g *GetFileContentByInodeRequest) require(field *big.Int) {
 	if g.explicitFields == nil {
 		g.explicitFields = big.NewInt(0)
 	}
@@ -36,29 +36,30 @@ func (g *GetFileBytesByInodeRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileBytesByInodeRequest) SetNamespaceID(namespaceID string) {
+func (g *GetFileContentByInodeRequest) SetNamespaceID(namespaceID string) {
 	g.NamespaceID = namespaceID
-	g.require(getFileBytesByInodeRequestFieldNamespaceID)
+	g.require(getFileContentByInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileBytesByInodeRequest) SetInodeID(inodeID string) {
+func (g *GetFileContentByInodeRequest) SetInodeID(inodeID string) {
 	g.InodeID = inodeID
-	g.require(getFileBytesByInodeRequestFieldInodeID)
+	g.require(getFileContentByInodeRequestFieldInodeID)
 }
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileBytesByInodeRequest) SetSnapshotID(snapshotID *PinID) {
+func (g *GetFileContentByInodeRequest) SetSnapshotID(snapshotID *PinID) {
 	g.SnapshotID = snapshotID
-	g.require(getFileBytesByInodeRequestFieldSnapshotID)
+	g.require(getFileContentByInodeRequestFieldSnapshotID)
 }
 
 var (
 	createDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
 	createDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
 	createDownloadByInodeRequestFieldSnapshotID  = big.NewInt(1 << 2)
+	createDownloadByInodeRequestFieldStartOffset = big.NewInt(1 << 3)
 )
 
 type CreateDownloadByInodeRequest struct {
@@ -66,8 +67,11 @@ type CreateDownloadByInodeRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// File inode ID
 	InodeID string `json:"-" url:"-"`
-	// Use the file revision captured by this snapshot
-	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// Read the file revision captured by this snapshot.
+	SnapshotID *PinID `json:"snapshot_id,omitempty" url:"-"`
+	// The first byte the grant reads. Defaults to 0 and must be below the
+	// file's size, except 0 for a file of zero bytes.
+	StartOffset *int64 `json:"start_offset,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -101,10 +105,39 @@ func (c *CreateDownloadByInodeRequest) SetSnapshotID(snapshotID *PinID) {
 	c.require(createDownloadByInodeRequestFieldSnapshotID)
 }
 
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadByInodeRequest) SetStartOffset(startOffset *int64) {
+	c.StartOffset = startOffset
+	c.require(createDownloadByInodeRequestFieldStartOffset)
+}
+
+func (c *CreateDownloadByInodeRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateDownloadByInodeRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*c = CreateDownloadByInodeRequest(body)
+	return nil
+}
+
+func (c *CreateDownloadByInodeRequest) MarshalJSON() ([]byte, error) {
+	type embed CreateDownloadByInodeRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
 var (
 	createRevisionDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
 	createRevisionDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
 	createRevisionDownloadByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	createRevisionDownloadByInodeRequestFieldStartOffset = big.NewInt(1 << 3)
 )
 
 type CreateRevisionDownloadByInodeRequest struct {
@@ -114,6 +147,9 @@ type CreateRevisionDownloadByInodeRequest struct {
 	InodeID string `json:"-" url:"-"`
 	// Revision number
 	RevisionNo RevisionNo `json:"-" url:"-"`
+	// The first byte the grant reads. Defaults to 0 and must be below the
+	// revision's size, except 0 for a revision of zero bytes.
+	StartOffset *int64 `json:"start_offset,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -145,6 +181,34 @@ func (c *CreateRevisionDownloadByInodeRequest) SetInodeID(inodeID string) {
 func (c *CreateRevisionDownloadByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
 	c.RevisionNo = revisionNo
 	c.require(createRevisionDownloadByInodeRequestFieldRevisionNo)
+}
+
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateRevisionDownloadByInodeRequest) SetStartOffset(startOffset *int64) {
+	c.StartOffset = startOffset
+	c.require(createRevisionDownloadByInodeRequestFieldStartOffset)
+}
+
+func (c *CreateRevisionDownloadByInodeRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateRevisionDownloadByInodeRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*c = CreateRevisionDownloadByInodeRequest(body)
+	return nil
+}
+
+func (c *CreateRevisionDownloadByInodeRequest) MarshalJSON() ([]byte, error) {
+	type embed CreateRevisionDownloadByInodeRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }
 
 var (
@@ -336,12 +400,12 @@ func (g *GetInodeRequest) SetSnapshotID(snapshotID *PinID) {
 }
 
 var (
-	getFileRevisionBytesByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
-	getFileRevisionBytesByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
-	getFileRevisionBytesByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	getFileRevisionContentByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
+	getFileRevisionContentByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
+	getFileRevisionContentByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
 )
 
-type GetFileRevisionBytesByInodeRequest struct {
+type GetFileRevisionContentByInodeRequest struct {
 	// Namespace id
 	NamespaceID string `json:"-" url:"-"`
 	// File inode ID
@@ -353,7 +417,7 @@ type GetFileRevisionBytesByInodeRequest struct {
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (g *GetFileRevisionBytesByInodeRequest) require(field *big.Int) {
+func (g *GetFileRevisionContentByInodeRequest) require(field *big.Int) {
 	if g.explicitFields == nil {
 		g.explicitFields = big.NewInt(0)
 	}
@@ -362,43 +426,43 @@ func (g *GetFileRevisionBytesByInodeRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileRevisionBytesByInodeRequest) SetNamespaceID(namespaceID string) {
+func (g *GetFileRevisionContentByInodeRequest) SetNamespaceID(namespaceID string) {
 	g.NamespaceID = namespaceID
-	g.require(getFileRevisionBytesByInodeRequestFieldNamespaceID)
+	g.require(getFileRevisionContentByInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileRevisionBytesByInodeRequest) SetInodeID(inodeID string) {
+func (g *GetFileRevisionContentByInodeRequest) SetInodeID(inodeID string) {
 	g.InodeID = inodeID
-	g.require(getFileRevisionBytesByInodeRequestFieldInodeID)
+	g.require(getFileRevisionContentByInodeRequestFieldInodeID)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileRevisionBytesByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
+func (g *GetFileRevisionContentByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
 	g.RevisionNo = revisionNo
-	g.require(getFileRevisionBytesByInodeRequestFieldRevisionNo)
+	g.require(getFileRevisionContentByInodeRequestFieldRevisionNo)
 }
 
 // A short-lived capability to read one inode revision.
 var (
-	createDownloadByInodeResponseFieldAccess      = big.NewInt(1 << 0)
-	createDownloadByInodeResponseFieldContentRef  = big.NewInt(1 << 1)
-	createDownloadByInodeResponseFieldInodeID     = big.NewInt(1 << 2)
-	createDownloadByInodeResponseFieldNamespaceID = big.NewInt(1 << 3)
+	createDownloadByInodeResponseFieldContentRef  = big.NewInt(1 << 0)
+	createDownloadByInodeResponseFieldInodeID     = big.NewInt(1 << 1)
+	createDownloadByInodeResponseFieldNamespaceID = big.NewInt(1 << 2)
+	createDownloadByInodeResponseFieldRanges      = big.NewInt(1 << 3)
 	createDownloadByInodeResponseFieldRevisionNo  = big.NewInt(1 << 4)
 )
 
 type CreateDownloadByInodeResponse struct {
-	// Short-lived provider access without the raw object key.
-	Access *ObjectTransferAccess `json:"access" url:"access"`
 	// Content identity, size, and checksum.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// File inode being read.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// Namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// The revision's bytes from the requested offset, in order.
+	Ranges []*DownloadRange `json:"ranges" url:"ranges"`
 	// Revision being read.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
 
@@ -407,13 +471,6 @@ type CreateDownloadByInodeResponse struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateDownloadByInodeResponse) GetAccess() *ObjectTransferAccess {
-	if c == nil {
-		return nil
-	}
-	return c.Access
 }
 
 func (c *CreateDownloadByInodeResponse) GetContentRef() *ContentRef {
@@ -437,6 +494,13 @@ func (c *CreateDownloadByInodeResponse) GetNamespaceID() NamespaceID {
 	return c.NamespaceID
 }
 
+func (c *CreateDownloadByInodeResponse) GetRanges() []*DownloadRange {
+	if c == nil {
+		return nil
+	}
+	return c.Ranges
+}
+
 func (c *CreateDownloadByInodeResponse) GetRevisionNo() RevisionNo {
 	if c == nil {
 		return 0
@@ -458,13 +522,6 @@ func (c *CreateDownloadByInodeResponse) require(field *big.Int) {
 	c.explicitFields.Or(c.explicitFields, field)
 }
 
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateDownloadByInodeResponse) SetAccess(access *ObjectTransferAccess) {
-	c.Access = access
-	c.require(createDownloadByInodeResponseFieldAccess)
-}
-
 // SetContentRef sets the ContentRef field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *CreateDownloadByInodeResponse) SetContentRef(contentRef *ContentRef) {
@@ -484,6 +541,13 @@ func (c *CreateDownloadByInodeResponse) SetInodeID(inodeID InodeID) {
 func (c *CreateDownloadByInodeResponse) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(createDownloadByInodeResponseFieldNamespaceID)
+}
+
+// SetRanges sets the Ranges field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadByInodeResponse) SetRanges(ranges []*DownloadRange) {
+	c.Ranges = ranges
+	c.require(createDownloadByInodeResponseFieldRanges)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;

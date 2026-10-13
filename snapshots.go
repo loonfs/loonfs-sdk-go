@@ -225,6 +225,42 @@ func (l *ListSnapshotsRequest) SetCursor(cursor *string) {
 	l.require(listSnapshotsRequestFieldCursor)
 }
 
+var (
+	getSnapshotRequestFieldNamespaceID = big.NewInt(1 << 0)
+	getSnapshotRequestFieldSnapshotID  = big.NewInt(1 << 1)
+)
+
+type GetSnapshotRequest struct {
+	// Namespace id
+	NamespaceID string `json:"-" url:"-"`
+	// Snapshot id
+	SnapshotID PinID `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (g *GetSnapshotRequest) require(field *big.Int) {
+	if g.explicitFields == nil {
+		g.explicitFields = big.NewInt(0)
+	}
+	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetSnapshotRequest) SetNamespaceID(namespaceID string) {
+	g.NamespaceID = namespaceID
+	g.require(getSnapshotRequestFieldNamespaceID)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetSnapshotRequest) SetSnapshotID(snapshotID PinID) {
+	g.SnapshotID = snapshotID
+	g.require(getSnapshotRequestFieldSnapshotID)
+}
+
 // Identifies the snapshot record that was deleted.
 var (
 	deleteSnapshotResponseFieldNamespaceID = big.NewInt(1 << 0)

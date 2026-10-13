@@ -2085,8 +2085,8 @@ var (
 type UploadSessionStatusOpen struct {
 	// Present for `direct_put` sessions; minted fresh on every read.
 	Access *ObjectTransferAccess `json:"access,omitempty" url:"access,omitempty"`
-	// Present for `direct_put` and `direct_multipart` sessions.
-	ChecksumAlgorithm *ChecksumAlgorithm `json:"checksum_algorithm,omitempty" url:"checksum_algorithm,omitempty"`
+	// The store's content checksum algorithm.
+	ChecksumAlgorithm ChecksumAlgorithm `json:"checksum_algorithm" url:"checksum_algorithm"`
 	// Present after content is staged in a `service_proxied` session.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The Unix-millisecond time after which cleanup may abort the session.
@@ -2114,9 +2114,9 @@ func (u *UploadSessionStatusOpen) GetAccess() *ObjectTransferAccess {
 	return u.Access
 }
 
-func (u *UploadSessionStatusOpen) GetChecksumAlgorithm() *ChecksumAlgorithm {
+func (u *UploadSessionStatusOpen) GetChecksumAlgorithm() ChecksumAlgorithm {
 	if u == nil {
-		return nil
+		return ""
 	}
 	return u.ChecksumAlgorithm
 }
@@ -2186,7 +2186,7 @@ func (u *UploadSessionStatusOpen) SetAccess(access *ObjectTransferAccess) {
 
 // SetChecksumAlgorithm sets the ChecksumAlgorithm field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UploadSessionStatusOpen) SetChecksumAlgorithm(checksumAlgorithm *ChecksumAlgorithm) {
+func (u *UploadSessionStatusOpen) SetChecksumAlgorithm(checksumAlgorithm ChecksumAlgorithm) {
 	u.ChecksumAlgorithm = checksumAlgorithm
 	u.require(uploadSessionStatusOpenFieldChecksumAlgorithm)
 }

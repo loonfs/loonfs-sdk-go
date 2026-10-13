@@ -795,15 +795,12 @@ func (c *Checksum) String() string {
 type ChecksumAlgorithm string
 
 const (
-	ChecksumAlgorithmSha256    ChecksumAlgorithm = "sha256"
 	ChecksumAlgorithmCrc64Nvme ChecksumAlgorithm = "crc64nvme"
 	ChecksumAlgorithmCrc32C    ChecksumAlgorithm = "crc32c"
 )
 
 func NewChecksumAlgorithmFromString(s string) (ChecksumAlgorithm, error) {
 	switch s {
-	case "sha256":
-		return ChecksumAlgorithmSha256, nil
 	case "crc64nvme":
 		return ChecksumAlgorithmCrc64Nvme, nil
 	case "crc32c":
@@ -1016,11 +1013,11 @@ type CommitID = string
 // What the bounded compaction part of a maintenance pass did.
 type CompactionStepOutcome struct {
 	Outcome                    string
+	BoundedMergePublished      *CompactionStepOutcomeBoundedMergePublished
 	Fenced                     *CompactionStepOutcomeFenced
 	ManifestAdvanced           *CompactionStepOutcomeManifestAdvanced
 	MetadataCompactionRequired *CompactionStepOutcomeMetadataCompactionRequired
 	NotNeeded                  *CompactionStepOutcomeNotNeeded
-	UnitPublished              *CompactionStepOutcomeUnitPublished
 
 	rawJSON json.RawMessage
 }
@@ -1030,6 +1027,13 @@ func (c *CompactionStepOutcome) GetOutcome() string {
 		return ""
 	}
 	return c.Outcome
+}
+
+func (c *CompactionStepOutcome) GetBoundedMergePublished() *CompactionStepOutcomeBoundedMergePublished {
+	if c == nil {
+		return nil
+	}
+	return c.BoundedMergePublished
 }
 
 func (c *CompactionStepOutcome) GetFenced() *CompactionStepOutcomeFenced {
@@ -1060,13 +1064,6 @@ func (c *CompactionStepOutcome) GetNotNeeded() *CompactionStepOutcomeNotNeeded {
 	return c.NotNeeded
 }
 
-func (c *CompactionStepOutcome) GetUnitPublished() *CompactionStepOutcomeUnitPublished {
-	if c == nil {
-		return nil
-	}
-	return c.UnitPublished
-}
-
 func (c *CompactionStepOutcome) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Outcome string `json:"outcome"`
@@ -1079,6 +1076,12 @@ func (c *CompactionStepOutcome) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant outcome", c)
 	}
 	switch unmarshaler.Outcome {
+	case "bounded_merge_published":
+		value := new(CompactionStepOutcomeBoundedMergePublished)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.BoundedMergePublished = value
 	case "fenced":
 		value := new(CompactionStepOutcomeFenced)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -1103,12 +1106,6 @@ func (c *CompactionStepOutcome) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		c.NotNeeded = value
-	case "unit_published":
-		value := new(CompactionStepOutcomeUnitPublished)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.UnitPublished = value
 	}
 	c.rawJSON = json.RawMessage(data)
 	return nil
@@ -1117,6 +1114,9 @@ func (c *CompactionStepOutcome) UnmarshalJSON(data []byte) error {
 func (c CompactionStepOutcome) MarshalJSON() ([]byte, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
+	}
+	if c.BoundedMergePublished != nil {
+		return internal.MarshalJSONWithExtraProperty(c.BoundedMergePublished, "outcome", "bounded_merge_published")
 	}
 	if c.Fenced != nil {
 		return internal.MarshalJSONWithExtraProperty(c.Fenced, "outcome", "fenced")
@@ -1130,9 +1130,6 @@ func (c CompactionStepOutcome) MarshalJSON() ([]byte, error) {
 	if c.NotNeeded != nil {
 		return internal.MarshalJSONWithExtraProperty(c.NotNeeded, "outcome", "not_needed")
 	}
-	if c.UnitPublished != nil {
-		return internal.MarshalJSONWithExtraProperty(c.UnitPublished, "outcome", "unit_published")
-	}
 	if len(c.rawJSON) > 0 {
 		return c.rawJSON, nil
 	}
@@ -1140,14 +1137,17 @@ func (c CompactionStepOutcome) MarshalJSON() ([]byte, error) {
 }
 
 type CompactionStepOutcomeVisitor interface {
+	VisitBoundedMergePublished(*CompactionStepOutcomeBoundedMergePublished) error
 	VisitFenced(*CompactionStepOutcomeFenced) error
 	VisitManifestAdvanced(*CompactionStepOutcomeManifestAdvanced) error
 	VisitMetadataCompactionRequired(*CompactionStepOutcomeMetadataCompactionRequired) error
 	VisitNotNeeded(*CompactionStepOutcomeNotNeeded) error
-	VisitUnitPublished(*CompactionStepOutcomeUnitPublished) error
 }
 
 func (c *CompactionStepOutcome) Accept(visitor CompactionStepOutcomeVisitor) error {
+	if c.BoundedMergePublished != nil {
+		return visitor.VisitBoundedMergePublished(c.BoundedMergePublished)
+	}
 	if c.Fenced != nil {
 		return visitor.VisitFenced(c.Fenced)
 	}
@@ -1160,9 +1160,6 @@ func (c *CompactionStepOutcome) Accept(visitor CompactionStepOutcomeVisitor) err
 	if c.NotNeeded != nil {
 		return visitor.VisitNotNeeded(c.NotNeeded)
 	}
-	if c.UnitPublished != nil {
-		return visitor.VisitUnitPublished(c.UnitPublished)
-	}
 	return fmt.Errorf("type %T does not define a non-empty union type", c)
 }
 
@@ -1171,6 +1168,9 @@ func (c *CompactionStepOutcome) validate() error {
 		return fmt.Errorf("type %T is nil", c)
 	}
 	var fields []string
+	if c.BoundedMergePublished != nil {
+		fields = append(fields, "bounded_merge_published")
+	}
 	if c.Fenced != nil {
 		fields = append(fields, "fenced")
 	}
@@ -1182,9 +1182,6 @@ func (c *CompactionStepOutcome) validate() error {
 	}
 	if c.NotNeeded != nil {
 		fields = append(fields, "not_needed")
-	}
-	if c.UnitPublished != nil {
-		fields = append(fields, "unit_published")
 	}
 	if len(fields) == 0 {
 		if c.Outcome != "" {
@@ -1210,6 +1207,72 @@ func (c *CompactionStepOutcome) validate() error {
 		}
 	}
 	return nil
+}
+
+// One family group was merged and a manifest published.
+type CompactionStepOutcomeBoundedMergePublished struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CompactionStepOutcomeBoundedMergePublished) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CompactionStepOutcomeBoundedMergePublished) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+func (c *CompactionStepOutcomeBoundedMergePublished) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompactionStepOutcomeBoundedMergePublished
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CompactionStepOutcomeBoundedMergePublished(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CompactionStepOutcomeBoundedMergePublished) MarshalJSON() ([]byte, error) {
+	type embed CompactionStepOutcomeBoundedMergePublished
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CompactionStepOutcomeBoundedMergePublished) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
 }
 
 // A newer runtime holds the compactor epoch.
@@ -1477,80 +1540,10 @@ func (c *CompactionStepOutcomeNotNeeded) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// One family group was merged and a manifest published.
-type CompactionStepOutcomeUnitPublished struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CompactionStepOutcomeUnitPublished) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CompactionStepOutcomeUnitPublished) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-func (c *CompactionStepOutcomeUnitPublished) UnmarshalJSON(data []byte) error {
-	type unmarshaler CompactionStepOutcomeUnitPublished
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CompactionStepOutcomeUnitPublished(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CompactionStepOutcomeUnitPublished) MarshalJSON() ([]byte, error) {
-	type embed CompactionStepOutcomeUnitPublished
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CompactionStepOutcomeUnitPublished) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
 // Random identity of one immutable content object.
 type ContentID = string
 
-// Identifies one piece of immutable file content.
-//
-// The owner namespace and content id name the content object that holds the
-// bytes. A reference is not proof that the object exists: content committed
-// inline has no object until a fold writes it.
+// Identifies a chain prefix by its owner, content id, size, and checksum.
 var (
 	contentRefFieldChecksum         = big.NewInt(1 << 0)
 	contentRefFieldContentID        = big.NewInt(1 << 1)
@@ -1560,7 +1553,7 @@ var (
 )
 
 type ContentRef struct {
-	// Mandatory checksum over the complete object.
+	// Mandatory checksum over the referenced bytes.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
 	// Immutable identity of the content; with the owner, it determines the object key.
 	ContentID ContentID `json:"content_id" url:"content_id"`
@@ -1568,7 +1561,7 @@ type ContentRef struct {
 	Kind ContentRefKind `json:"kind" url:"kind"`
 	// Namespace that originally wrote the bytes.
 	OwnerNamespaceID NamespaceID `json:"owner_namespace_id" url:"owner_namespace_id"`
-	// Complete byte length of the referenced content.
+	// Byte length of the referenced bytes, a prefix of the content object.
 	SizeBytes int64 `json:"size_bytes" url:"size_bytes"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2056,12 +2049,13 @@ var (
 	deletedObjectCountsFieldManifests             = big.NewInt(1 << 1)
 	deletedObjectCountsFieldMetadataSegments      = big.NewInt(1 << 2)
 	deletedObjectCountsFieldRetiredContentObjects = big.NewInt(1 << 3)
-	deletedObjectCountsFieldUploadSessions        = big.NewInt(1 << 4)
-	deletedObjectCountsFieldWalObjects            = big.NewInt(1 << 5)
+	deletedObjectCountsFieldTemporaryObjects      = big.NewInt(1 << 4)
+	deletedObjectCountsFieldUploadSessions        = big.NewInt(1 << 5)
+	deletedObjectCountsFieldWalObjects            = big.NewInt(1 << 6)
 )
 
 type DeletedObjectCounts struct {
-	// Content reclaimed through completed upload sessions.
+	// Content objects no retained view names, deleted once older than the grace window.
 	ContentObjects int64 `json:"content_objects" url:"content_objects"`
 	// Unreferenced manifests deleted.
 	Manifests int64 `json:"manifests" url:"manifests"`
@@ -2069,6 +2063,8 @@ type DeletedObjectCounts struct {
 	MetadataSegments int64 `json:"metadata_segments" url:"metadata_segments"`
 	// Listed content objects deleted from a retired namespace.
 	RetiredContentObjects int64 `json:"retired_content_objects" url:"retired_content_objects"`
+	// Store temporary objects deleted once older than the grace window.
+	TemporaryObjects int64 `json:"temporary_objects" url:"temporary_objects"`
 	// Upload-session control objects deleted after the reap window.
 	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
 	// Unreferenced WAL objects deleted.
@@ -2107,6 +2103,13 @@ func (d *DeletedObjectCounts) GetRetiredContentObjects() int64 {
 		return 0
 	}
 	return d.RetiredContentObjects
+}
+
+func (d *DeletedObjectCounts) GetTemporaryObjects() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.TemporaryObjects
 }
 
 func (d *DeletedObjectCounts) GetUploadSessions() int64 {
@@ -2163,6 +2166,13 @@ func (d *DeletedObjectCounts) SetMetadataSegments(metadataSegments int64) {
 func (d *DeletedObjectCounts) SetRetiredContentObjects(retiredContentObjects int64) {
 	d.RetiredContentObjects = retiredContentObjects
 	d.require(deletedObjectCountsFieldRetiredContentObjects)
+}
+
+// SetTemporaryObjects sets the TemporaryObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedObjectCounts) SetTemporaryObjects(temporaryObjects int64) {
+	d.TemporaryObjects = temporaryObjects
+	d.require(deletedObjectCountsFieldTemporaryObjects)
 }
 
 // SetUploadSessions sets the UploadSessions field and marks it as non-optional;
@@ -2343,6 +2353,126 @@ func (d *DirectoryBinding) String() string {
 
 // User-facing spelling of one path component.
 type DisplayName = string
+
+// One contiguous run of a revision's bytes, read from one object.
+var (
+	downloadRangeFieldAccess      = big.NewInt(1 << 0)
+	downloadRangeFieldLength      = big.NewInt(1 << 1)
+	downloadRangeFieldStartOffset = big.NewInt(1 << 2)
+)
+
+type DownloadRange struct {
+	// Short-lived read capability for exactly those bytes.
+	Access *ObjectTransferAccess `json:"access" url:"access"`
+	// Bytes in the run.
+	Length int64 `json:"length" url:"length"`
+	// Offset of the run's first byte in the revision.
+	StartOffset int64 `json:"start_offset" url:"start_offset"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DownloadRange) GetAccess() *ObjectTransferAccess {
+	if d == nil {
+		return nil
+	}
+	return d.Access
+}
+
+func (d *DownloadRange) GetLength() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.Length
+}
+
+func (d *DownloadRange) GetStartOffset() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.StartOffset
+}
+
+func (d *DownloadRange) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DownloadRange) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetAccess sets the Access field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DownloadRange) SetAccess(access *ObjectTransferAccess) {
+	d.Access = access
+	d.require(downloadRangeFieldAccess)
+}
+
+// SetLength sets the Length field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DownloadRange) SetLength(length int64) {
+	d.Length = length
+	d.require(downloadRangeFieldLength)
+}
+
+// SetStartOffset sets the StartOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DownloadRange) SetStartOffset(startOffset int64) {
+	d.StartOffset = startOffset
+	d.require(downloadRangeFieldStartOffset)
+}
+
+func (d *DownloadRange) UnmarshalJSON(data []byte) error {
+	type unmarshaler DownloadRange
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DownloadRange(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DownloadRange) MarshalJSON() ([]byte, error) {
+	type embed DownloadRange
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DownloadRange) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
 
 // Optional machine-readable identifiers and state for an `ErrorResponse`.
 var (
@@ -4608,9 +4738,9 @@ func (f *FilesystemChangeUndeleted) String() string {
 // The maintenance status of a namespace's grep index.
 type GrepIndex struct {
 	Status      string
-	Active      *GrepIndexLifecycleActive
-	Backfilling *GrepIndexLifecycleBackfilling
-	Disabled    *GrepIndexLifecycleDisabled
+	Active      *GrepIndexStatusActive
+	Backfilling *GrepIndexStatusBackfilling
+	Disabled    *GrepIndexStatusDisabled
 
 	rawJSON json.RawMessage
 }
@@ -4622,21 +4752,21 @@ func (g *GrepIndex) GetStatus() string {
 	return g.Status
 }
 
-func (g *GrepIndex) GetActive() *GrepIndexLifecycleActive {
+func (g *GrepIndex) GetActive() *GrepIndexStatusActive {
 	if g == nil {
 		return nil
 	}
 	return g.Active
 }
 
-func (g *GrepIndex) GetBackfilling() *GrepIndexLifecycleBackfilling {
+func (g *GrepIndex) GetBackfilling() *GrepIndexStatusBackfilling {
 	if g == nil {
 		return nil
 	}
 	return g.Backfilling
 }
 
-func (g *GrepIndex) GetDisabled() *GrepIndexLifecycleDisabled {
+func (g *GrepIndex) GetDisabled() *GrepIndexStatusDisabled {
 	if g == nil {
 		return nil
 	}
@@ -4656,19 +4786,19 @@ func (g *GrepIndex) UnmarshalJSON(data []byte) error {
 	}
 	switch unmarshaler.Status {
 	case "active":
-		value := new(GrepIndexLifecycleActive)
+		value := new(GrepIndexStatusActive)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		g.Active = value
 	case "backfilling":
-		value := new(GrepIndexLifecycleBackfilling)
+		value := new(GrepIndexStatusBackfilling)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		g.Backfilling = value
 	case "disabled":
-		value := new(GrepIndexLifecycleDisabled)
+		value := new(GrepIndexStatusDisabled)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
@@ -4698,9 +4828,9 @@ func (g GrepIndex) MarshalJSON() ([]byte, error) {
 }
 
 type GrepIndexVisitor interface {
-	VisitActive(*GrepIndexLifecycleActive) error
-	VisitBackfilling(*GrepIndexLifecycleBackfilling) error
-	VisitDisabled(*GrepIndexLifecycleDisabled) error
+	VisitActive(*GrepIndexStatusActive) error
+	VisitBackfilling(*GrepIndexStatusBackfilling) error
+	VisitDisabled(*GrepIndexStatusDisabled) error
 }
 
 func (g *GrepIndex) Accept(visitor GrepIndexVisitor) error {
@@ -4758,21 +4888,21 @@ func (g *GrepIndex) validate() error {
 
 // An index following the change feed through its searchable watermark.
 var (
-	grepIndexLifecycleActiveFieldBuiltThroughSeq   = big.NewInt(1 << 0)
-	grepIndexLifecycleActiveFieldNamespaceID       = big.NewInt(1 << 1)
-	grepIndexLifecycleActiveFieldNextEventIndex    = big.NewInt(1 << 2)
-	grepIndexLifecycleActiveFieldNextRunNo         = big.NewInt(1 << 3)
-	grepIndexLifecycleActiveFieldReorganizePending = big.NewInt(1 << 4)
+	grepIndexStatusActiveFieldBuiltThroughSeq   = big.NewInt(1 << 0)
+	grepIndexStatusActiveFieldNamespaceID       = big.NewInt(1 << 1)
+	grepIndexStatusActiveFieldNextEventIndex    = big.NewInt(1 << 2)
+	grepIndexStatusActiveFieldNextRunNo         = big.NewInt(1 << 3)
+	grepIndexStatusActiveFieldReorganizePending = big.NewInt(1 << 4)
 )
 
-type GrepIndexLifecycleActive struct {
+type GrepIndexStatusActive struct {
 	// Sequence of the commit at the index cursor.
 	BuiltThroughSeq ChangeSeq `json:"built_through_seq" url:"built_through_seq"`
 	// Namespace the status describes.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// The next change-event offset within `built_through_seq`, or zero when the
 	// whole commit is indexed.
-	NextEventIndex *int `json:"next_event_index,omitempty" url:"next_event_index,omitempty"`
+	NextEventIndex int `json:"next_event_index" url:"next_event_index"`
 	// Run number the index allocates next.
 	NextRunNo RunNo `json:"next_run_no" url:"next_run_no"`
 	// True while a partitioned segment reorganization is in progress.
@@ -4785,49 +4915,49 @@ type GrepIndexLifecycleActive struct {
 	rawJSON         json.RawMessage
 }
 
-func (g *GrepIndexLifecycleActive) GetBuiltThroughSeq() ChangeSeq {
+func (g *GrepIndexStatusActive) GetBuiltThroughSeq() ChangeSeq {
 	if g == nil {
 		return 0
 	}
 	return g.BuiltThroughSeq
 }
 
-func (g *GrepIndexLifecycleActive) GetNamespaceID() NamespaceID {
+func (g *GrepIndexStatusActive) GetNamespaceID() NamespaceID {
 	if g == nil {
 		return ""
 	}
 	return g.NamespaceID
 }
 
-func (g *GrepIndexLifecycleActive) GetNextEventIndex() *int {
+func (g *GrepIndexStatusActive) GetNextEventIndex() int {
 	if g == nil {
-		return nil
+		return 0
 	}
 	return g.NextEventIndex
 }
 
-func (g *GrepIndexLifecycleActive) GetNextRunNo() RunNo {
+func (g *GrepIndexStatusActive) GetNextRunNo() RunNo {
 	if g == nil {
 		return 0
 	}
 	return g.NextRunNo
 }
 
-func (g *GrepIndexLifecycleActive) GetReorganizePending() bool {
+func (g *GrepIndexStatusActive) GetReorganizePending() bool {
 	if g == nil {
 		return false
 	}
 	return g.ReorganizePending
 }
 
-func (g *GrepIndexLifecycleActive) GetExtraProperties() map[string]interface{} {
+func (g *GrepIndexStatusActive) GetExtraProperties() map[string]interface{} {
 	if g == nil {
 		return nil
 	}
 	return g.extraProperties
 }
 
-func (g *GrepIndexLifecycleActive) require(field *big.Int) {
+func (g *GrepIndexStatusActive) require(field *big.Int) {
 	if g.explicitFields == nil {
 		g.explicitFields = big.NewInt(0)
 	}
@@ -4836,46 +4966,46 @@ func (g *GrepIndexLifecycleActive) require(field *big.Int) {
 
 // SetBuiltThroughSeq sets the BuiltThroughSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleActive) SetBuiltThroughSeq(builtThroughSeq ChangeSeq) {
+func (g *GrepIndexStatusActive) SetBuiltThroughSeq(builtThroughSeq ChangeSeq) {
 	g.BuiltThroughSeq = builtThroughSeq
-	g.require(grepIndexLifecycleActiveFieldBuiltThroughSeq)
+	g.require(grepIndexStatusActiveFieldBuiltThroughSeq)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleActive) SetNamespaceID(namespaceID NamespaceID) {
+func (g *GrepIndexStatusActive) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
-	g.require(grepIndexLifecycleActiveFieldNamespaceID)
+	g.require(grepIndexStatusActiveFieldNamespaceID)
 }
 
 // SetNextEventIndex sets the NextEventIndex field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleActive) SetNextEventIndex(nextEventIndex *int) {
+func (g *GrepIndexStatusActive) SetNextEventIndex(nextEventIndex int) {
 	g.NextEventIndex = nextEventIndex
-	g.require(grepIndexLifecycleActiveFieldNextEventIndex)
+	g.require(grepIndexStatusActiveFieldNextEventIndex)
 }
 
 // SetNextRunNo sets the NextRunNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleActive) SetNextRunNo(nextRunNo RunNo) {
+func (g *GrepIndexStatusActive) SetNextRunNo(nextRunNo RunNo) {
 	g.NextRunNo = nextRunNo
-	g.require(grepIndexLifecycleActiveFieldNextRunNo)
+	g.require(grepIndexStatusActiveFieldNextRunNo)
 }
 
 // SetReorganizePending sets the ReorganizePending field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleActive) SetReorganizePending(reorganizePending bool) {
+func (g *GrepIndexStatusActive) SetReorganizePending(reorganizePending bool) {
 	g.ReorganizePending = reorganizePending
-	g.require(grepIndexLifecycleActiveFieldReorganizePending)
+	g.require(grepIndexStatusActiveFieldReorganizePending)
 }
 
-func (g *GrepIndexLifecycleActive) UnmarshalJSON(data []byte) error {
-	type unmarshaler GrepIndexLifecycleActive
+func (g *GrepIndexStatusActive) UnmarshalJSON(data []byte) error {
+	type unmarshaler GrepIndexStatusActive
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*g = GrepIndexLifecycleActive(value)
+	*g = GrepIndexStatusActive(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *g)
 	if err != nil {
 		return err
@@ -4885,8 +5015,8 @@ func (g *GrepIndexLifecycleActive) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (g *GrepIndexLifecycleActive) MarshalJSON() ([]byte, error) {
-	type embed GrepIndexLifecycleActive
+func (g *GrepIndexStatusActive) MarshalJSON() ([]byte, error) {
+	type embed GrepIndexStatusActive
 	var marshaler = struct {
 		embed
 	}{
@@ -4896,7 +5026,7 @@ func (g *GrepIndexLifecycleActive) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (g *GrepIndexLifecycleActive) String() string {
+func (g *GrepIndexStatusActive) String() string {
 	if g == nil {
 		return "<nil>"
 	}
@@ -4913,15 +5043,15 @@ func (g *GrepIndexLifecycleActive) String() string {
 
 // An initial scan of a pinned checkpoint that is not yet searchable.
 var (
-	grepIndexLifecycleBackfillingFieldCapturedSeq       = big.NewInt(1 << 0)
-	grepIndexLifecycleBackfillingFieldCheckpointID      = big.NewInt(1 << 1)
-	grepIndexLifecycleBackfillingFieldCursorInodeID     = big.NewInt(1 << 2)
-	grepIndexLifecycleBackfillingFieldNamespaceID       = big.NewInt(1 << 3)
-	grepIndexLifecycleBackfillingFieldNextRunNo         = big.NewInt(1 << 4)
-	grepIndexLifecycleBackfillingFieldReorganizePending = big.NewInt(1 << 5)
+	grepIndexStatusBackfillingFieldCapturedSeq       = big.NewInt(1 << 0)
+	grepIndexStatusBackfillingFieldCheckpointID      = big.NewInt(1 << 1)
+	grepIndexStatusBackfillingFieldCursorInodeID     = big.NewInt(1 << 2)
+	grepIndexStatusBackfillingFieldNamespaceID       = big.NewInt(1 << 3)
+	grepIndexStatusBackfillingFieldNextRunNo         = big.NewInt(1 << 4)
+	grepIndexStatusBackfillingFieldReorganizePending = big.NewInt(1 << 5)
 )
 
-type GrepIndexLifecycleBackfilling struct {
+type GrepIndexStatusBackfilling struct {
 	// The namespace sequence that completes the backfill when reached.
 	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
 	// Checkpoint pinning the state being walked.
@@ -4942,56 +5072,56 @@ type GrepIndexLifecycleBackfilling struct {
 	rawJSON         json.RawMessage
 }
 
-func (g *GrepIndexLifecycleBackfilling) GetCapturedSeq() ChangeSeq {
+func (g *GrepIndexStatusBackfilling) GetCapturedSeq() ChangeSeq {
 	if g == nil {
 		return 0
 	}
 	return g.CapturedSeq
 }
 
-func (g *GrepIndexLifecycleBackfilling) GetCheckpointID() PinID {
+func (g *GrepIndexStatusBackfilling) GetCheckpointID() PinID {
 	if g == nil {
 		return ""
 	}
 	return g.CheckpointID
 }
 
-func (g *GrepIndexLifecycleBackfilling) GetCursorInodeID() *InodeID {
+func (g *GrepIndexStatusBackfilling) GetCursorInodeID() *InodeID {
 	if g == nil {
 		return nil
 	}
 	return g.CursorInodeID
 }
 
-func (g *GrepIndexLifecycleBackfilling) GetNamespaceID() NamespaceID {
+func (g *GrepIndexStatusBackfilling) GetNamespaceID() NamespaceID {
 	if g == nil {
 		return ""
 	}
 	return g.NamespaceID
 }
 
-func (g *GrepIndexLifecycleBackfilling) GetNextRunNo() RunNo {
+func (g *GrepIndexStatusBackfilling) GetNextRunNo() RunNo {
 	if g == nil {
 		return 0
 	}
 	return g.NextRunNo
 }
 
-func (g *GrepIndexLifecycleBackfilling) GetReorganizePending() bool {
+func (g *GrepIndexStatusBackfilling) GetReorganizePending() bool {
 	if g == nil {
 		return false
 	}
 	return g.ReorganizePending
 }
 
-func (g *GrepIndexLifecycleBackfilling) GetExtraProperties() map[string]interface{} {
+func (g *GrepIndexStatusBackfilling) GetExtraProperties() map[string]interface{} {
 	if g == nil {
 		return nil
 	}
 	return g.extraProperties
 }
 
-func (g *GrepIndexLifecycleBackfilling) require(field *big.Int) {
+func (g *GrepIndexStatusBackfilling) require(field *big.Int) {
 	if g.explicitFields == nil {
 		g.explicitFields = big.NewInt(0)
 	}
@@ -5000,53 +5130,53 @@ func (g *GrepIndexLifecycleBackfilling) require(field *big.Int) {
 
 // SetCapturedSeq sets the CapturedSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleBackfilling) SetCapturedSeq(capturedSeq ChangeSeq) {
+func (g *GrepIndexStatusBackfilling) SetCapturedSeq(capturedSeq ChangeSeq) {
 	g.CapturedSeq = capturedSeq
-	g.require(grepIndexLifecycleBackfillingFieldCapturedSeq)
+	g.require(grepIndexStatusBackfillingFieldCapturedSeq)
 }
 
 // SetCheckpointID sets the CheckpointID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleBackfilling) SetCheckpointID(checkpointID PinID) {
+func (g *GrepIndexStatusBackfilling) SetCheckpointID(checkpointID PinID) {
 	g.CheckpointID = checkpointID
-	g.require(grepIndexLifecycleBackfillingFieldCheckpointID)
+	g.require(grepIndexStatusBackfillingFieldCheckpointID)
 }
 
 // SetCursorInodeID sets the CursorInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleBackfilling) SetCursorInodeID(cursorInodeID *InodeID) {
+func (g *GrepIndexStatusBackfilling) SetCursorInodeID(cursorInodeID *InodeID) {
 	g.CursorInodeID = cursorInodeID
-	g.require(grepIndexLifecycleBackfillingFieldCursorInodeID)
+	g.require(grepIndexStatusBackfillingFieldCursorInodeID)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleBackfilling) SetNamespaceID(namespaceID NamespaceID) {
+func (g *GrepIndexStatusBackfilling) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
-	g.require(grepIndexLifecycleBackfillingFieldNamespaceID)
+	g.require(grepIndexStatusBackfillingFieldNamespaceID)
 }
 
 // SetNextRunNo sets the NextRunNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleBackfilling) SetNextRunNo(nextRunNo RunNo) {
+func (g *GrepIndexStatusBackfilling) SetNextRunNo(nextRunNo RunNo) {
 	g.NextRunNo = nextRunNo
-	g.require(grepIndexLifecycleBackfillingFieldNextRunNo)
+	g.require(grepIndexStatusBackfillingFieldNextRunNo)
 }
 
 // SetReorganizePending sets the ReorganizePending field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleBackfilling) SetReorganizePending(reorganizePending bool) {
+func (g *GrepIndexStatusBackfilling) SetReorganizePending(reorganizePending bool) {
 	g.ReorganizePending = reorganizePending
-	g.require(grepIndexLifecycleBackfillingFieldReorganizePending)
+	g.require(grepIndexStatusBackfillingFieldReorganizePending)
 }
 
-func (g *GrepIndexLifecycleBackfilling) UnmarshalJSON(data []byte) error {
-	type unmarshaler GrepIndexLifecycleBackfilling
+func (g *GrepIndexStatusBackfilling) UnmarshalJSON(data []byte) error {
+	type unmarshaler GrepIndexStatusBackfilling
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*g = GrepIndexLifecycleBackfilling(value)
+	*g = GrepIndexStatusBackfilling(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *g)
 	if err != nil {
 		return err
@@ -5056,8 +5186,8 @@ func (g *GrepIndexLifecycleBackfilling) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (g *GrepIndexLifecycleBackfilling) MarshalJSON() ([]byte, error) {
-	type embed GrepIndexLifecycleBackfilling
+func (g *GrepIndexStatusBackfilling) MarshalJSON() ([]byte, error) {
+	type embed GrepIndexStatusBackfilling
 	var marshaler = struct {
 		embed
 	}{
@@ -5067,7 +5197,7 @@ func (g *GrepIndexLifecycleBackfilling) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (g *GrepIndexLifecycleBackfilling) String() string {
+func (g *GrepIndexStatusBackfilling) String() string {
 	if g == nil {
 		return "<nil>"
 	}
@@ -5084,12 +5214,12 @@ func (g *GrepIndexLifecycleBackfilling) String() string {
 
 // No index is maintained for this namespace.
 var (
-	grepIndexLifecycleDisabledFieldNamespaceID       = big.NewInt(1 << 0)
-	grepIndexLifecycleDisabledFieldNextRunNo         = big.NewInt(1 << 1)
-	grepIndexLifecycleDisabledFieldReorganizePending = big.NewInt(1 << 2)
+	grepIndexStatusDisabledFieldNamespaceID       = big.NewInt(1 << 0)
+	grepIndexStatusDisabledFieldNextRunNo         = big.NewInt(1 << 1)
+	grepIndexStatusDisabledFieldReorganizePending = big.NewInt(1 << 2)
 )
 
-type GrepIndexLifecycleDisabled struct {
+type GrepIndexStatusDisabled struct {
 	// Namespace the status describes.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// Run number the index allocates next.
@@ -5104,35 +5234,35 @@ type GrepIndexLifecycleDisabled struct {
 	rawJSON         json.RawMessage
 }
 
-func (g *GrepIndexLifecycleDisabled) GetNamespaceID() NamespaceID {
+func (g *GrepIndexStatusDisabled) GetNamespaceID() NamespaceID {
 	if g == nil {
 		return ""
 	}
 	return g.NamespaceID
 }
 
-func (g *GrepIndexLifecycleDisabled) GetNextRunNo() RunNo {
+func (g *GrepIndexStatusDisabled) GetNextRunNo() RunNo {
 	if g == nil {
 		return 0
 	}
 	return g.NextRunNo
 }
 
-func (g *GrepIndexLifecycleDisabled) GetReorganizePending() bool {
+func (g *GrepIndexStatusDisabled) GetReorganizePending() bool {
 	if g == nil {
 		return false
 	}
 	return g.ReorganizePending
 }
 
-func (g *GrepIndexLifecycleDisabled) GetExtraProperties() map[string]interface{} {
+func (g *GrepIndexStatusDisabled) GetExtraProperties() map[string]interface{} {
 	if g == nil {
 		return nil
 	}
 	return g.extraProperties
 }
 
-func (g *GrepIndexLifecycleDisabled) require(field *big.Int) {
+func (g *GrepIndexStatusDisabled) require(field *big.Int) {
 	if g.explicitFields == nil {
 		g.explicitFields = big.NewInt(0)
 	}
@@ -5141,32 +5271,32 @@ func (g *GrepIndexLifecycleDisabled) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleDisabled) SetNamespaceID(namespaceID NamespaceID) {
+func (g *GrepIndexStatusDisabled) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
-	g.require(grepIndexLifecycleDisabledFieldNamespaceID)
+	g.require(grepIndexStatusDisabledFieldNamespaceID)
 }
 
 // SetNextRunNo sets the NextRunNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleDisabled) SetNextRunNo(nextRunNo RunNo) {
+func (g *GrepIndexStatusDisabled) SetNextRunNo(nextRunNo RunNo) {
 	g.NextRunNo = nextRunNo
-	g.require(grepIndexLifecycleDisabledFieldNextRunNo)
+	g.require(grepIndexStatusDisabledFieldNextRunNo)
 }
 
 // SetReorganizePending sets the ReorganizePending field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexLifecycleDisabled) SetReorganizePending(reorganizePending bool) {
+func (g *GrepIndexStatusDisabled) SetReorganizePending(reorganizePending bool) {
 	g.ReorganizePending = reorganizePending
-	g.require(grepIndexLifecycleDisabledFieldReorganizePending)
+	g.require(grepIndexStatusDisabledFieldReorganizePending)
 }
 
-func (g *GrepIndexLifecycleDisabled) UnmarshalJSON(data []byte) error {
-	type unmarshaler GrepIndexLifecycleDisabled
+func (g *GrepIndexStatusDisabled) UnmarshalJSON(data []byte) error {
+	type unmarshaler GrepIndexStatusDisabled
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*g = GrepIndexLifecycleDisabled(value)
+	*g = GrepIndexStatusDisabled(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *g)
 	if err != nil {
 		return err
@@ -5176,8 +5306,8 @@ func (g *GrepIndexLifecycleDisabled) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (g *GrepIndexLifecycleDisabled) MarshalJSON() ([]byte, error) {
-	type embed GrepIndexLifecycleDisabled
+func (g *GrepIndexStatusDisabled) MarshalJSON() ([]byte, error) {
+	type embed GrepIndexStatusDisabled
 	var marshaler = struct {
 		embed
 	}{
@@ -5187,7 +5317,7 @@ func (g *GrepIndexLifecycleDisabled) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (g *GrepIndexLifecycleDisabled) String() string {
+func (g *GrepIndexStatusDisabled) String() string {
 	if g == nil {
 		return "<nil>"
 	}
@@ -6667,7 +6797,7 @@ func (o *ObjectTransferAccess) validate() error {
 	return nil
 }
 
-// Short-lived URL plus required headers for one object-store write.
+// Short-lived URL plus required headers for one object-store read or write.
 var (
 	objectTransferAccessPresignedURLFieldExpiresAtMs = big.NewInt(1 << 0)
 	objectTransferAccessPresignedURLFieldHeaders     = big.NewInt(1 << 1)
@@ -6679,7 +6809,7 @@ type ObjectTransferAccessPresignedURL struct {
 	// Expiration timestamp in Unix milliseconds.
 	ExpiresAtMs int64 `json:"expires_at_ms" url:"expires_at_ms"`
 	// Headers that are covered by the signature and must be sent.
-	Headers map[string]string `json:"headers,omitempty" url:"headers,omitempty"`
+	Headers map[string]string `json:"headers" url:"headers"`
 	// HTTP method the client must use.
 	Method string `json:"method" url:"method"`
 	// Full presigned URL.
@@ -7611,6 +7741,9 @@ type PinID = string
 
 // Stable opaque principal id containing 1 to 256 visible ASCII characters other than the comma.
 type PrincipalID = string
+
+// Identifies one store probe run and the objects it writes.
+type ProbeRunID = string
 
 // The candidates inspected but not deleted by one garbage-collection pass.
 var (
@@ -9871,7 +10004,7 @@ type StoreProbeResponse struct {
 	// The check results in execution order.
 	Checks []*StoreProbeCheckResult `json:"checks" url:"checks"`
 	// The server-generated label for this probe run and its objects.
-	RunID string `json:"run_id" url:"run_id"`
+	RunID ProbeRunID `json:"run_id" url:"run_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -9887,7 +10020,7 @@ func (s *StoreProbeResponse) GetChecks() []*StoreProbeCheckResult {
 	return s.Checks
 }
 
-func (s *StoreProbeResponse) GetRunID() string {
+func (s *StoreProbeResponse) GetRunID() ProbeRunID {
 	if s == nil {
 		return ""
 	}
@@ -9917,7 +10050,7 @@ func (s *StoreProbeResponse) SetChecks(checks []*StoreProbeCheckResult) {
 
 // SetRunID sets the RunID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StoreProbeResponse) SetRunID(runID string) {
+func (s *StoreProbeResponse) SetRunID(runID ProbeRunID) {
 	s.RunID = runID
 	s.require(storeProbeResponseFieldRunID)
 }
