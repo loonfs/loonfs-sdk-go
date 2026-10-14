@@ -16,11 +16,11 @@ var (
 )
 
 type GetFileContentByInodeRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// File inode ID
+	// The file's inode ID.
 	InodeID string `json:"-" url:"-"`
-	// Use the file revision captured by this snapshot
+	// The snapshot whose captured file revision to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -63,14 +63,15 @@ var (
 )
 
 type CreateDownloadByInodeRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// File inode ID
+	// The file's inode ID.
 	InodeID string `json:"-" url:"-"`
-	// Read the file revision captured by this snapshot.
+	// A snapshot to read the file from. The download reads the revision that the snapshot
+	// captured.
 	SnapshotID *PinID `json:"snapshot_id,omitempty" url:"-"`
-	// The first byte the grant reads. Defaults to 0 and must be below the
-	// file's size, except 0 for a file of zero bytes.
+	// The first byte that the grant reads. It defaults to 0 and must be less than the file's size.
+	// For a file of zero bytes, it must be 0.
 	StartOffset *int64 `json:"start_offset,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -141,14 +142,14 @@ var (
 )
 
 type CreateRevisionDownloadByInodeRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// File inode ID
+	// The file's inode ID.
 	InodeID string `json:"-" url:"-"`
-	// Revision number
+	// The revision number.
 	RevisionNo RevisionNo `json:"-" url:"-"`
-	// The first byte the grant reads. Defaults to 0 and must be below the
-	// revision's size, except 0 for a revision of zero bytes.
+	// The first byte that the grant reads. It defaults to 0 and must be less than the revision's
+	// size. For a revision of zero bytes, it must be 0.
 	StartOffset *int64 `json:"start_offset,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -221,17 +222,17 @@ var (
 )
 
 type ListInodeChildrenRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Directory inode ID
+	// The directory's inode ID.
 	InodeID string `json:"-" url:"-"`
-	// Maximum page size
+	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
-	// Opaque directory page cursor
+	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
-	// Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
+	// Whether the response includes each entry's attribute map and attribute revision. The default is `false`, because a page can have many entries and each map can be up to 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
-	// Use the directory state captured by this snapshot
+	// The snapshot whose captured directory state to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -295,13 +296,13 @@ var (
 )
 
 type ListFileRevisionsByInodeRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// File inode ID
+	// The file's inode ID.
 	InodeID string `json:"-" url:"-"`
-	// Maximum page size
+	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
-	// Opaque file-revisions page cursor
+	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -351,13 +352,13 @@ var (
 )
 
 type GetInodeRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Inode ID
+	// The inode ID.
 	InodeID string `json:"-" url:"-"`
-	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
+	// Whether the response includes the inode's attribute map and attribute revision. The default is `true`, because a stat reads one path and a map is at most 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
-	// Use the path state captured by this snapshot
+	// The snapshot whose captured path state to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -406,11 +407,11 @@ var (
 )
 
 type GetFileRevisionContentByInodeRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// File inode ID
+	// The file's inode ID.
 	InodeID string `json:"-" url:"-"`
-	// Revision number
+	// The revision number.
 	RevisionNo RevisionNo `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -445,7 +446,7 @@ func (g *GetFileRevisionContentByInodeRequest) SetRevisionNo(revisionNo Revision
 	g.require(getFileRevisionContentByInodeRequestFieldRevisionNo)
 }
 
-// A short-lived capability to read one inode revision.
+// A short-lived capability to read one revision of an inode.
 var (
 	createDownloadByInodeResponseFieldContentRef  = big.NewInt(1 << 0)
 	createDownloadByInodeResponseFieldInodeID     = big.NewInt(1 << 1)
@@ -455,15 +456,15 @@ var (
 )
 
 type CreateDownloadByInodeResponse struct {
-	// Content identity, size, and checksum.
+	// The content's identity, size, and checksum.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// File inode being read.
+	// The file inode being read.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Namespace that was read.
+	// The namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The revision's bytes from the requested offset, in order.
+	// The ranges that cover the revision's bytes from the requested offset, in order.
 	Ranges []*DownloadRange `json:"ranges" url:"ranges"`
-	// Revision being read.
+	// The revision being read.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -599,7 +600,8 @@ func (c *CreateDownloadByInodeResponse) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// One directory listing addressed by parent inode and the namespace head used to read it.
+// One page of a directory's children, addressed by the parent inode, with the namespace head that
+// the read used.
 var (
 	listInodeChildrenResponseFieldEntries       = big.NewInt(1 << 0)
 	listInodeChildrenResponseFieldHeadSeq       = big.NewInt(1 << 1)
@@ -609,15 +611,15 @@ var (
 )
 
 type ListInodeChildrenResponse struct {
-	// The directory entries in canonical name-key order.
+	// The directory entries, in canonical name key order.
 	Entries []*PathEntry `json:"entries" url:"entries"`
-	// Namespace head sequence this listing was read from.
+	// The namespace head sequence that this listing was read at.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Namespace that was read.
+	// The namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Cursor for the next page, if more entries remain.
+	// The cursor for the next page, if more entries remain.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
-	// Directory inode whose children were returned.
+	// The directory inode whose children were returned.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

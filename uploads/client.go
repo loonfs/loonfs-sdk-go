@@ -35,7 +35,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Starts an upload session for content that may later be attached to a file. Service-proxied uploads send bytes through the server; direct-put uploads return object-store presigned credentials.
+// Starts an upload session for content that a later commit can reference. A service-proxied upload sends the bytes through the server, and a direct PUT upload returns a presigned upload capability.
 //
 // Example:
 //
@@ -65,7 +65,7 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
-// Returns an upload session. An open direct_put session includes freshly signed access. A completed session includes a new content token so the client can retry the commit without uploading the content again.
+// Returns an upload session. An open `direct_put` session includes a newly signed upload capability. A completed session includes a new content token, so the client can retry the commit without uploading the content again.
 //
 // Example:
 //
@@ -93,7 +93,7 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Ends an upload session without selecting content and deletes the object it was writing. Repeating it succeeds; a session that already completed cannot be aborted.
+// Aborts an open upload session and deletes the object that the session was writing. Repeating the request succeeds, but a completed session can't be aborted.
 //
 // Example:
 //
@@ -121,7 +121,7 @@ func (c *Client) Abort(
 	return response.Body, nil
 }
 
-// Completes an upload. The request mode must match the mode used to start the session. Direct uploads include a content claim; multipart also includes completed parts.
+// Completes an upload. The request mode must match the mode that started the session. A direct upload includes a content claim, and a multipart upload also includes the completed parts.
 //
 // Example:
 //
@@ -173,9 +173,9 @@ func (c *Client) Complete(
 // Uploads bytes into a service-proxied upload session and returns the open session with the staged content reference.
 func (c *Client) PutContent(
 	ctx context.Context,
-	// Namespace id
+	// The namespace ID.
 	namespaceID string,
-	// Upload session id
+	// The upload session ID.
 	uploadID string,
 	request io.Reader,
 	opts ...option.RequestOption,
@@ -193,7 +193,7 @@ func (c *Client) PutContent(
 	return response.Body, nil
 }
 
-// Returns one short-lived, checksum-bound upload capability per requested part of an open direct_multipart session. Asking again for a part is how a client retries it.
+// Returns one short-lived upload capability for each requested part of an open `direct_multipart` session. Each capability is bound to the part's checksum. To retry a part, a client asks for its capability again.
 //
 // Example:
 //

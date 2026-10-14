@@ -88,7 +88,7 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Marks a namespace as deleted. The id can never be created or forked into again.
+// Marks a namespace as deleted. The namespace ID can never be used again to create or fork a namespace.
 //
 // Example:
 //
@@ -115,7 +115,7 @@ func (c *Client) Delete(
 	return response.Body, nil
 }
 
-// Creates a new namespace from the source current head or a live snapshot.
+// Creates a new namespace from the source namespace's current head or from a live snapshot.
 //
 // Example:
 //

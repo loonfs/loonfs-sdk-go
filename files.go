@@ -17,13 +17,13 @@ var (
 )
 
 type GetFileContentRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Absolute file path
+	// The absolute path of the file to read.
 	Path string `json:"-" url:"path"`
-	// Optional prior revision number; cannot be combined with snapshot_id
+	// An earlier revision to read. It can't be combined with `snapshot_id`.
 	RevisionNo *RevisionNo `json:"-" url:"revision_no,omitempty"`
-	// Use the file revision captured by this snapshot
+	// The snapshot whose captured file revision to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -74,20 +74,20 @@ var (
 )
 
 type CreateDownloadRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Absolute path of the file to read.
+	// The absolute path of the file to read.
 	Path AbsolutePath `json:"path" url:"-"`
-	// Revision to read. Omit it for the path's current revision.
-	// Cannot be combined with `snapshot_id`.
+	// The revision to read. Omit it to read the path's current revision. It can't be combined with
+	// `snapshot_id`.
 	RevisionNo *RevisionNo `json:"revision_no,omitempty" url:"-"`
-	// Read the file revision captured by this snapshot.
-	// Cannot be combined with `revision_no`.
+	// A snapshot to read the file from. The download reads the revision that the snapshot
+	// captured. It can't be combined with `revision_no`.
 	SnapshotID *PinID `json:"snapshot_id,omitempty" url:"-"`
-	// The first byte the grant reads. It names `[start_offset, size_bytes)`
-	// of the revision; a client that resumes asks for a new grant from the
-	// bytes it holds. Must be below the revision's size, except 0 for a
-	// revision of zero bytes.
+	// The first byte that the grant reads. The grant covers the revision's bytes from
+	// `start_offset` up to `size_bytes`, so a client that resumes a download asks for a new grant
+	// that starts after the bytes it already has. The offset must be less than the revision's
+	// size. For a revision of zero bytes, it must be 0.
 	StartOffset *int64 `json:"start_offset,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -170,23 +170,23 @@ var (
 )
 
 type GrepRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Pattern in the Rust `regex` crate's dialect. Its UTF-8 encoding must be at most 1024 bytes.
+	// The search pattern, in the Rust `regex` crate's syntax. Its UTF-8 encoding must be at most 1024 bytes.
 	Pattern string `json:"-" url:"pattern"`
-	// Match case-insensitively (`true` or `false`). Defaults to `false`.
+	// Whether matching ignores case. The default is `false`.
 	CaseInsensitive *bool `json:"-" url:"case_insensitive,omitempty"`
-	// Complete absolute path used to restrict matches. Cannot be combined with `inode_id`.
+	// A complete absolute path that limits matches to its descendants. It can't be combined with `inode_id`.
 	PathPrefix *string `json:"-" url:"path_prefix,omitempty"`
-	// Inode whose descendants restrict matches. Cannot be combined with `path_prefix`.
+	// An inode that limits matches to its descendants. It can't be combined with `path_prefix`.
 	InodeID *string `json:"-" url:"inode_id,omitempty"`
-	// Permit a capped exhaustive scan when the pattern has no required grams (`true` or `false`). Defaults to `false`.
+	// Whether a pattern with no required literal bytes can use a capped exhaustive scan. The default is `false`.
 	AllowScan *bool `json:"-" url:"allow_scan,omitempty"`
-	// Return indexed-only results when the unindexed tail exceeds the scan budget (`true` or `false`). Defaults to `false`.
+	// Whether the server returns results from the index alone when the unindexed tail exceeds the scan budget. The default is `false`.
 	AllowStale *bool `json:"-" url:"allow_stale,omitempty"`
-	// Maximum matches per page
+	// The maximum number of matches per page.
 	Limit *int `json:"-" url:"limit,omitempty"`
-	// Opaque grep page cursor
+	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -273,17 +273,17 @@ var (
 )
 
 type ListPathEntriesRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Absolute filesystem path
+	// The absolute path of the directory to list.
 	Path string `json:"-" url:"path"`
-	// Maximum page size
+	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
-	// Opaque directory-list page cursor
+	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
-	// Project each entry's attribute map and revision (`true` or `false`). Defaults to `false`: a page holds many entries and each map may be 64 KiB, so a listing does not carry them unless asked.
+	// Whether the response includes each entry's attribute map and attribute revision. The default is `false`, because a page can have many entries and each map can be up to 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
-	// Use the directory state captured by this snapshot
+	// The snapshot whose captured directory state to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -347,13 +347,13 @@ var (
 )
 
 type ListFileRevisionsRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Absolute file path
+	// The absolute path of the file.
 	Path string `json:"-" url:"path"`
-	// Maximum page size
+	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
-	// Opaque file-revisions page cursor
+	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -403,13 +403,13 @@ var (
 )
 
 type GetPathEntryRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Absolute filesystem path
+	// The absolute path to read.
 	Path string `json:"-" url:"path"`
-	// Project the inode's attribute map and revision (`true` or `false`). Defaults to `true`: a stat answers for one path and a map is capped at 64 KiB.
+	// Whether the response includes the inode's attribute map and attribute revision. The default is `true`, because a stat reads one path and a map is at most 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
-	// Use the path state captured by this snapshot
+	// The snapshot whose captured path state to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -451,7 +451,7 @@ func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *PinID) {
 	g.require(getPathEntryRequestFieldSnapshotID)
 }
 
-// Signed object ranges for one revision.
+// The signed object ranges for one revision.
 var (
 	createDownloadResponseFieldContentRef  = big.NewInt(1 << 0)
 	createDownloadResponseFieldNamespaceID = big.NewInt(1 << 1)
@@ -463,13 +463,13 @@ var (
 type CreateDownloadResponse struct {
 	// The identity, byte length, and checksum of the revision's bytes.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// Namespace that was read.
+	// The namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Absolute path as rendered from stored display names.
+	// The absolute path, built from the stored display names.
 	Path AbsolutePath `json:"path" url:"path"`
-	// The revision's bytes from the requested offset, in order.
+	// The ranges that cover the revision's bytes from the requested offset, in order.
 	Ranges []*DownloadRange `json:"ranges" url:"ranges"`
-	// Revision the capability reads, resolved from the request.
+	// The revision that the capability reads, as resolved from the request.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -605,7 +605,7 @@ func (c *CreateDownloadResponse) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// One line-oriented match.
+// One match and the line that contains it.
 var (
 	grepMatchFieldByteOffset    = big.NewInt(1 << 0)
 	grepMatchFieldInodeID       = big.NewInt(1 << 1)
@@ -617,19 +617,19 @@ var (
 )
 
 type GrepMatch struct {
-	// Byte offset of the match within the file.
+	// The match's byte offset within the file.
 	ByteOffset int64 `json:"byte_offset" url:"byte_offset"`
-	// Durable identity of the matched file.
+	// The matched file's durable inode ID.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// The matching line, truncated to the server's line cap.
+	// The matching line, truncated to the server's maximum line length.
 	Line string `json:"line" url:"line"`
-	// One-based line number of the match.
+	// The match's line number, counting from 1.
 	LineNumber int64 `json:"line_number" url:"line_number"`
-	// True when `line` was truncated.
+	// Whether the server truncated `line`.
 	LineTruncated bool `json:"line_truncated" url:"line_truncated"`
-	// The file's absolute path, derived at the snapshot.
+	// The file's absolute path in the view that the search read.
 	Path AbsolutePath `json:"path" url:"path"`
-	// The matched revision (the newest visible one at the snapshot).
+	// The matched revision, which is the file's newest revision visible to the search.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -793,7 +793,7 @@ func (g *GrepMatch) String() string {
 	return fmt.Sprintf("%#v", g)
 }
 
-// One content-search page.
+// One page of content search results.
 var (
 	grepResponseFieldBuiltThroughSeq = big.NewInt(1 << 0)
 	grepResponseFieldHeadSeq         = big.NewInt(1 << 1)
@@ -804,17 +804,18 @@ var (
 )
 
 type GrepResponse struct {
-	// Commits at or below this sequence were answered from the index.
+	// The last sequence that the index covers. The server searched the commits at or below this
+	// sequence through the index.
 	BuiltThroughSeq ChangeSeq `json:"built_through_seq" url:"built_through_seq"`
-	// The namespace head sequence used to evaluate this page.
+	// The namespace head sequence that the server used to evaluate this page.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// The matches in ascending `(inode_id, byte_offset)` order.
+	// The matches, in ascending `(inode_id, byte_offset)` order.
 	Matches []*GrepMatch `json:"matches" url:"matches"`
-	// Namespace searched.
+	// The namespace that was searched.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Present when another page follows.
+	// The cursor for the next page. It's present when another page follows.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
-	// Whether revisions after `built_through_seq` were scanned exhaustively.
+	// Whether the server scanned every revision after `built_through_seq`.
 	TailScanned bool `json:"tail_scanned" url:"tail_scanned"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -964,7 +965,7 @@ func (g *GrepResponse) String() string {
 	return fmt.Sprintf("%#v", g)
 }
 
-// One directory listing and the namespace head used to read it.
+// One page of a directory's entries, with the namespace head that the read used.
 var (
 	listPathEntriesResponseFieldEntries     = big.NewInt(1 << 0)
 	listPathEntriesResponseFieldHeadSeq     = big.NewInt(1 << 1)
@@ -974,15 +975,15 @@ var (
 )
 
 type ListPathEntriesResponse struct {
-	// The directory entries in canonical name-key order.
+	// The directory entries, in canonical name key order.
 	Entries []*PathEntry `json:"entries" url:"entries"`
-	// Namespace head sequence this listing was read from.
+	// The namespace head sequence that this listing was read at.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Namespace that was read.
+	// The namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Cursor for the next page, if more entries remain.
+	// The cursor for the next page, if more entries remain.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
-	// Absolute path of the listed directory.
+	// The absolute path of the listed directory.
 	Path AbsolutePath `json:"path" url:"path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

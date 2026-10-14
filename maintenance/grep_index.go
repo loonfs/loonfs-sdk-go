@@ -11,7 +11,7 @@ var (
 )
 
 type DisableGrepIndexRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -37,7 +37,7 @@ var (
 )
 
 type EnableGrepIndexRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -63,7 +63,7 @@ var (
 )
 
 type GetGrepIndexRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

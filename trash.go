@@ -16,11 +16,11 @@ var (
 )
 
 type ListTrashRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Maximum page size
+	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
-	// Opaque trash page cursor
+	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -55,7 +55,7 @@ func (l *ListTrashRequest) SetCursor(cursor *string) {
 	l.require(listTrashRequestFieldCursor)
 }
 
-// Filesystem item kind.
+// The kind of a filesystem item, which is a file or a directory.
 type InodeKind string
 
 const (
@@ -78,7 +78,7 @@ func (i InodeKind) Ptr() *InodeKind {
 	return &i
 }
 
-// One trash listing page: the namespace's recoverable deletions.
+// One page of the namespace's recoverable deletions.
 var (
 	listTrashResponseFieldEntries     = big.NewInt(1 << 0)
 	listTrashResponseFieldHeadSeq     = big.NewInt(1 << 1)
@@ -87,13 +87,13 @@ var (
 )
 
 type ListTrashResponse struct {
-	// Recoverable deletions, oldest deletion first.
+	// The recoverable deletions, oldest first.
 	Entries []*TrashEntry `json:"entries" url:"entries"`
-	// Head sequence this page was evaluated at.
+	// The head sequence that this page was evaluated at.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Namespace that was read.
+	// The namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Present when another page follows.
+	// The cursor for the next page. It's present when another page follows.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -215,7 +215,7 @@ func (l *ListTrashResponse) String() string {
 	return fmt.Sprintf("%#v", l)
 }
 
-// One recoverable deletion and its removed directory binding.
+// One recoverable deletion and the directory binding that it removed.
 var (
 	trashEntryFieldDeletedAtMs    = big.NewInt(1 << 0)
 	trashEntryFieldDeletedBinding = big.NewInt(1 << 1)
@@ -226,17 +226,17 @@ var (
 )
 
 type TrashEntry struct {
-	// Time of the deletion, in Unix milliseconds.
+	// The time of the deletion, in Unix milliseconds.
 	DeletedAtMs int64 `json:"deleted_at_ms" url:"deleted_at_ms"`
-	// Directory binding removed by the deletion.
+	// The directory binding that the deletion removed.
 	DeletedBinding *DirectoryBinding `json:"deleted_binding" url:"deleted_binding"`
-	// Actor responsible for the deletion.
+	// The actor responsible for the deletion.
 	DeletedBy ActorID `json:"deleted_by" url:"deleted_by"`
-	// Commit sequence that identifies this deletion.
+	// The commit sequence that identifies this deletion.
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
-	// Inode hidden by the deletion.
+	// The inode that the deletion hides.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Whether the deleted root is a file or a directory; a newer server may report another kind.
+	// Whether the deleted root is a file or a directory. A newer server can return another kind.
 	InodeKind InodeKind `json:"inode_kind" url:"inode_kind"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
