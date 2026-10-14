@@ -9,7 +9,7 @@ import (
 	big "math/big"
 )
 
-// The API groups, features, and limits advertised by a deployment.
+// The API groups, features, and limits that a deployment advertises.
 var (
 	capabilityDocumentFieldAPIGroups       = big.NewInt(1 << 0)
 	capabilityDocumentFieldFeatures        = big.NewInt(1 << 1)
@@ -18,11 +18,13 @@ var (
 )
 
 type CapabilityDocument struct {
-	// The advertised `group/version` API groups, each with every required operation implemented.
+	// The advertised API groups, as `group/version`. The deployment implements every required
+	// operation in each group.
 	APIGroups []string `json:"api_groups" url:"api_groups"`
-	// The named features supported by this deployment, with absent keys treated as unsupported.
+	// Feature keys, and whether this deployment supports each one. An absent key means the feature
+	// isn't supported.
 	Features map[string]bool `json:"features,omitempty" url:"features,omitempty"`
-	// Advisory numeric limits clients may use to pre-validate requests.
+	// Advisory numeric limits that clients can use to check requests before sending them.
 	Limits map[string]int64 `json:"limits,omitempty" url:"limits,omitempty"`
 	// The protocol version, `v0`.
 	ProtocolVersion string `json:"protocol_version" url:"protocol_version"`

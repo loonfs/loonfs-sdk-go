@@ -19,17 +19,17 @@ var (
 )
 
 type CommitRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Caller-supplied idempotency key for the whole request.
+	// The caller's idempotency key for the whole request.
 	CommitID CommitID `json:"commit_id" url:"-"`
-	// The proofs for new external content references in this request.
+	// One content token for each uploaded `content_ref` that the request uses.
 	ContentTokens []*ContentToken `json:"content_tokens,omitempty" url:"-"`
-	// The caller annotation that forms part of the commit identity.
+	// An annotation from the caller. The message is part of the commit's identity.
 	Message *string `json:"message,omitempty" url:"-"`
-	// The non-empty ordered operations to commit atomically.
+	// The operations to commit atomically, in order. The list can't be empty.
 	Operations []*FilesystemOperation `json:"operations" url:"-"`
-	// Ordered admission conditions evaluated before any operations.
+	// The conditions that the server checks, in order, before it runs any operation.
 	Preconditions []*CommitPrecondition `json:"preconditions,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -106,15 +106,18 @@ func (c *CommitRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-// A validated inode attribute name from 1 to 128 UTF-8 bytes without control characters.
+// The validated name of an inode attribute, from 1 to 128 UTF-8 bytes without control
+// characters.
 //
-// Names are byte-exact; writes reject the reserved `loonfs.` prefix even though
+// Keys are compared byte for byte. Writes reject the reserved `loonfs.` prefix, even though
 // the type accepts it.
 type AttributeKey = string
 
-// Admission conditions checked against the candidate's pre-state before its operations.
-// The pre-state head sequence is the last admitted commit's sequence in the batch,
-// or the batch's base head sequence when no earlier candidate was admitted.
+// A condition that a commit must meet before its operations run.
+//
+// The server checks each condition against the state before the commit. When several commits are
+// applied as one batch, that state's head sequence is the sequence of the last commit admitted
+// earlier in the batch, or the batch's starting head sequence if no earlier commit was admitted.
 type CommitPrecondition struct {
 	Kind               string
 	AccessRevision     *CommitPreconditionAccessRevision
@@ -385,16 +388,16 @@ func (c *CommitPrecondition) validate() error {
 	return nil
 }
 
-// Requires a visible inode with the access revision the caller read.
+// A requirement that the inode is visible and has the access revision that the caller read.
 var (
 	commitPreconditionAccessRevisionFieldExpectedAccessRevisionNo = big.NewInt(1 << 0)
 	commitPreconditionAccessRevisionFieldInodeID                  = big.NewInt(1 << 1)
 )
 
 type CommitPreconditionAccessRevision struct {
-	// Access revision observed by the caller.
+	// The access revision that the caller observed.
 	ExpectedAccessRevisionNo AccessRevisionNo `json:"expected_access_revision_no" url:"expected_access_revision_no"`
-	// Inode whose state the caller read.
+	// The inode whose state the caller read.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -488,16 +491,16 @@ func (c *CommitPreconditionAccessRevision) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Requires a visible inode with the attribute revision the caller read.
+// A requirement that the inode is visible and has the attribute revision that the caller read.
 var (
 	commitPreconditionAttributesRevisionFieldExpectedAttributesRevisionNo = big.NewInt(1 << 0)
 	commitPreconditionAttributesRevisionFieldInodeID                      = big.NewInt(1 << 1)
 )
 
 type CommitPreconditionAttributesRevision struct {
-	// Attribute revision observed by the caller.
+	// The attribute revision that the caller observed.
 	ExpectedAttributesRevisionNo AttributesRevisionNo `json:"expected_attributes_revision_no" url:"expected_attributes_revision_no"`
-	// Inode whose state the caller read.
+	// The inode whose state the caller read.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -591,16 +594,16 @@ func (c *CommitPreconditionAttributesRevision) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Requires a visible inode with the content revision the caller read.
+// A requirement that the inode is visible and has the content revision that the caller read.
 var (
 	commitPreconditionFileRevisionFieldExpectedRevisionNo = big.NewInt(1 << 0)
 	commitPreconditionFileRevisionFieldInodeID            = big.NewInt(1 << 1)
 )
 
 type CommitPreconditionFileRevision struct {
-	// Content revision observed by the caller.
+	// The content revision that the caller observed.
 	ExpectedRevisionNo RevisionNo `json:"expected_revision_no" url:"expected_revision_no"`
-	// Inode whose state the caller read.
+	// The inode whose state the caller read.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -694,16 +697,16 @@ func (c *CommitPreconditionFileRevision) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Requires a visible inode to retain the binding the caller read.
+// A requirement that a visible inode still has the binding that the caller read.
 var (
 	commitPreconditionInodeBindingFieldExpectedBindingVersion = big.NewInt(1 << 0)
 	commitPreconditionInodeBindingFieldInodeID                = big.NewInt(1 << 1)
 )
 
 type CommitPreconditionInodeBinding struct {
-	// Binding version observed by the caller.
+	// The binding version that the caller observed.
 	ExpectedBindingVersion BindingVersion `json:"expected_binding_version" url:"expected_binding_version"`
-	// Inode whose binding the caller read.
+	// The inode whose binding the caller read.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -797,16 +800,16 @@ func (c *CommitPreconditionInodeBinding) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Requires no visible entry with the name under the parent inode.
+// A requirement that no visible entry with this name exists under the parent inode.
 var (
 	commitPreconditionNameAbsenceFieldDisplayName   = big.NewInt(1 << 0)
 	commitPreconditionNameAbsenceFieldParentInodeID = big.NewInt(1 << 1)
 )
 
 type CommitPreconditionNameAbsence struct {
-	// Name to check.
+	// The name to check.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// Directory to check.
+	// The directory to check.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -900,13 +903,13 @@ func (c *CommitPreconditionNameAbsence) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Requires the pre-state head sequence to equal `expected_head_seq`.
+// A requirement that the head sequence before the commit equals `expected_head_seq`.
 var (
 	commitPreconditionNamespaceHeadFieldExpectedHeadSeq = big.NewInt(1 << 0)
 )
 
 type CommitPreconditionNamespaceHead struct {
-	// Sequence observed when the caller read its inputs.
+	// The head sequence that the caller observed when it read its inputs.
 	ExpectedHeadSeq ChangeSeq `json:"expected_head_seq" url:"expected_head_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -986,13 +989,13 @@ func (c *CommitPreconditionNamespaceHead) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Requires no visible entry at the full path.
+// A requirement that no visible entry exists at the full path.
 var (
 	commitPreconditionPathAbsenceFieldPath = big.NewInt(1 << 0)
 )
 
 type CommitPreconditionPathAbsence struct {
-	// Absolute path to check, including the root.
+	// The absolute path to check, which can be the root.
 	Path AbsolutePath `json:"path" url:"path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1072,7 +1075,7 @@ func (c *CommitPreconditionPathAbsence) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Requires the path to retain the binding the caller read.
+// A requirement that the path still has the binding that the caller read.
 var (
 	commitPreconditionPathBindingFieldExpectedBindingVersion = big.NewInt(1 << 0)
 	commitPreconditionPathBindingFieldExpectedInodeID        = big.NewInt(1 << 1)
@@ -1080,11 +1083,12 @@ var (
 )
 
 type CommitPreconditionPathBinding struct {
-	// Detects moves away and back.
+	// The binding version that the path must also have, if set. This check detects an inode
+	// that was moved away from the path and then back.
 	ExpectedBindingVersion *BindingVersion `json:"expected_binding_version,omitempty" url:"expected_binding_version,omitempty"`
-	// Inode required at the path.
+	// The inode that the path must be bound to.
 	ExpectedInodeID InodeID `json:"expected_inode_id" url:"expected_inode_id"`
-	// Absolute path to check, including the root.
+	// The absolute path to check, which can be the root.
 	Path AbsolutePath `json:"path" url:"path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1192,7 +1196,7 @@ func (c *CommitPreconditionPathBinding) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Directory delete behavior for path-oriented deletes.
+// Whether a delete can remove a non-empty directory.
 type DeleteDirectoryBehavior string
 
 const (
@@ -1215,7 +1219,7 @@ func (d DeleteDirectoryBehavior) Ptr() *DeleteDirectoryBehavior {
 	return &d
 }
 
-// Destination-conflict behavior for path-oriented puts, moves, and copies.
+// What a path put, move, or copy does when the destination already exists.
 type DestinationBehavior string
 
 const (
@@ -1240,7 +1244,7 @@ func (d DestinationBehavior) Ptr() *DestinationBehavior {
 
 // One filesystem operation.
 //
-// Unknown fields are rejected, and fieldless variants require empty objects.
+// The server rejects unknown fields, and a variant without fields requires an empty object.
 type FilesystemOperation struct {
 	Kind                    string
 	AppendFile              *FilesystemOperationAppendFile
@@ -1799,7 +1803,7 @@ func (f *FilesystemOperation) validate() error {
 	return nil
 }
 
-// Add bytes to the end of a file as its next revision.
+// An operation that adds bytes to the end of a file as its next revision.
 var (
 	filesystemOperationAppendFileFieldExpectedInodeID    = big.NewInt(1 << 0)
 	filesystemOperationAppendFileFieldExpectedRevisionNo = big.NewInt(1 << 1)
@@ -1810,11 +1814,11 @@ var (
 type FilesystemOperationAppendFile struct {
 	// The inode that the path must still resolve to.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
-	// With an inode precondition, the content revision that must still be current.
+	// The content revision that must still be current. It requires `expected_inode_id`.
 	ExpectedRevisionNo *RevisionNo `json:"expected_revision_no,omitempty" url:"expected_revision_no,omitempty"`
-	// The bytes to add as base64, from 1 byte to 256 KiB.
+	// The bytes to add, as base64, from 1 byte to 256 KiB.
 	InlineContent string `json:"inline_content" url:"inline_content"`
-	// Absolute path that must resolve to a visible file.
+	// The absolute path, which must resolve to a visible file.
 	Path AbsolutePath `json:"path" url:"path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1936,7 +1940,7 @@ func (f *FilesystemOperationAppendFile) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Add bytes to the end of a file inode as its next revision.
+// An operation that adds bytes to the end of a file inode as its next revision.
 var (
 	filesystemOperationAppendFileByInodeFieldExpectedRevisionNo = big.NewInt(1 << 0)
 	filesystemOperationAppendFileByInodeFieldInlineContent      = big.NewInt(1 << 1)
@@ -1946,9 +1950,9 @@ var (
 type FilesystemOperationAppendFileByInode struct {
 	// The content revision that must still be current.
 	ExpectedRevisionNo *RevisionNo `json:"expected_revision_no,omitempty" url:"expected_revision_no,omitempty"`
-	// The bytes to add as base64, from 1 byte to 256 KiB.
+	// The bytes to add, as base64, from 1 byte to 256 KiB.
 	InlineContent string `json:"inline_content" url:"inline_content"`
-	// File to append to.
+	// The file to append to.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2056,7 +2060,7 @@ func (f *FilesystemOperationAppendFileByInode) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Copy a file inode to a name under a parent inode.
+// An operation that copies a file inode to a new name under a parent inode.
 var (
 	filesystemOperationCopyByInodeFieldBehavior                      = big.NewInt(1 << 0)
 	filesystemOperationCopyByInodeFieldDestinationDisplayName        = big.NewInt(1 << 1)
@@ -2067,17 +2071,18 @@ var (
 )
 
 type FilesystemOperationCopyByInode struct {
-	// Whether an existing destination file may be replaced.
+	// Whether the operation can replace an existing destination file.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// Name of the copy.
+	// The name of the copy.
 	DestinationDisplayName DisplayName `json:"destination_display_name" url:"destination_display_name"`
-	// Destination directory.
+	// The destination directory.
 	DestinationParentInodeID InodeID `json:"destination_parent_inode_id" url:"destination_parent_inode_id"`
-	// With `replace` behavior, the destination inode required by the request.
+	// The inode that the destination path must contain. It applies only with `replace` behavior.
 	ExpectedDestinationInodeID *InodeID `json:"expected_destination_inode_id,omitempty" url:"expected_destination_inode_id,omitempty"`
-	// With `replace` behavior and an inode precondition, the required content revision.
+	// The content revision that must be the destination file's current revision. It applies only
+	// with `replace` behavior and requires `expected_destination_inode_id`.
 	ExpectedDestinationRevisionNo *RevisionNo `json:"expected_destination_revision_no,omitempty" url:"expected_destination_revision_no,omitempty"`
-	// File to copy.
+	// The file to copy.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2227,7 +2232,7 @@ func (f *FilesystemOperationCopyByInode) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Copy one file path to another path.
+// An operation that copies a file from one path to another.
 var (
 	filesystemOperationCopyPathFieldBehavior                      = big.NewInt(1 << 0)
 	filesystemOperationCopyPathFieldDestinationPath               = big.NewInt(1 << 1)
@@ -2237,15 +2242,16 @@ var (
 )
 
 type FilesystemOperationCopyPath struct {
-	// Whether an existing destination file may be replaced.
+	// Whether the operation can replace an existing destination file.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// Absolute destination whose parent must be visible and writable.
+	// The absolute destination path. The destination's parent must be visible and writable.
 	DestinationPath AbsolutePath `json:"destination_path" url:"destination_path"`
-	// With `replace` behavior, the destination inode required by the request.
+	// The inode that the destination path must contain. It applies only with `replace` behavior.
 	ExpectedDestinationInodeID *InodeID `json:"expected_destination_inode_id,omitempty" url:"expected_destination_inode_id,omitempty"`
-	// With `replace` behavior and an inode precondition, the required content revision.
+	// The content revision that must be the destination file's current revision. It applies only
+	// with `replace` behavior and requires `expected_destination_inode_id`.
 	ExpectedDestinationRevisionNo *RevisionNo `json:"expected_destination_revision_no,omitempty" url:"expected_destination_revision_no,omitempty"`
-	// Absolute source path that must resolve to a visible file.
+	// The absolute source path, which must resolve to a visible file.
 	SourcePath AbsolutePath `json:"source_path" url:"source_path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2381,17 +2387,18 @@ func (f *FilesystemOperationCopyPath) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Create one directory.
+// An operation that creates one directory.
 var (
 	filesystemOperationCreateDirectoryFieldParents = big.NewInt(1 << 0)
 	filesystemOperationCreateDirectoryFieldPath    = big.NewInt(1 << 1)
 )
 
 type FilesystemOperationCreateDirectory struct {
-	// Whether to create missing ancestor directories while requiring the final
-	// component to be new.
+	// Whether the operation creates any missing ancestor directories. The final path component
+	// must still be new.
 	Parents *bool `json:"parents,omitempty" url:"parents,omitempty"`
-	// Absolute destination path, rejected when invalid or already bound.
+	// The absolute path of the new directory. The operation fails if the path is invalid or
+	// already bound.
 	Path AbsolutePath `json:"path" url:"path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2485,16 +2492,16 @@ func (f *FilesystemOperationCreateDirectory) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Create a directory under an existing parent inode.
+// An operation that creates a directory under an existing parent inode.
 var (
 	filesystemOperationCreateDirectoryByInodeFieldDisplayName   = big.NewInt(1 << 0)
 	filesystemOperationCreateDirectoryByInodeFieldParentInodeID = big.NewInt(1 << 1)
 )
 
 type FilesystemOperationCreateDirectoryByInode struct {
-	// New directory name.
+	// The name of the new directory.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// Parent directory.
+	// The parent directory.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2588,8 +2595,9 @@ func (f *FilesystemOperationCreateDirectoryByInode) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Create a file with an unused name under an existing parent inode.
-// Requires exactly one of `content_ref` and `inline_content`.
+// An operation that creates a file with an unused name under an existing parent inode.
+//
+// The operation requires exactly one of `content_ref` and `inline_content`.
 var (
 	filesystemOperationCreateFileByInodeFieldContentRef    = big.NewInt(1 << 0)
 	filesystemOperationCreateFileByInodeFieldDisplayName   = big.NewInt(1 << 1)
@@ -2598,13 +2606,14 @@ var (
 )
 
 type FilesystemOperationCreateFileByInode struct {
-	// Uploaded content covered by a token; mutually exclusive with `inline_content`.
+	// The uploaded content, which a content token must cover. Set this field or
+	// `inline_content`, but not both.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
-	// New file name.
+	// The name of the new file.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// Complete file bytes as base64; mutually exclusive with `content_ref`.
+	// The complete file bytes as base64. Set this field or `content_ref`, but not both.
 	InlineContent *string `json:"inline_content,omitempty" url:"inline_content,omitempty"`
-	// Parent directory.
+	// The parent directory.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2726,7 +2735,8 @@ func (f *FilesystemOperationCreateFileByInode) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Delete an inode if its current binding matches.
+// An operation that deletes an inode if its current binding version is
+// `expected_binding_version`.
 var (
 	filesystemOperationDeleteByInodeFieldBehavior               = big.NewInt(1 << 0)
 	filesystemOperationDeleteByInodeFieldExpectedBindingVersion = big.NewInt(1 << 1)
@@ -2734,11 +2744,11 @@ var (
 )
 
 type FilesystemOperationDeleteByInode struct {
-	// Whether a non-empty directory may be tombstoned recursively.
+	// Whether the operation can recursively delete a non-empty directory.
 	Behavior *DeleteDirectoryBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// Binding version required for the delete.
+	// The binding version that the inode must currently have for the delete to succeed.
 	ExpectedBindingVersion BindingVersion `json:"expected_binding_version" url:"expected_binding_version"`
-	// Inode to delete.
+	// The inode to delete.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2846,7 +2856,7 @@ func (f *FilesystemOperationDeleteByInode) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Delete one path.
+// An operation that deletes the file or directory at one path.
 var (
 	filesystemOperationDeletePathFieldBehavior        = big.NewInt(1 << 0)
 	filesystemOperationDeletePathFieldExpectedInodeID = big.NewInt(1 << 1)
@@ -2854,11 +2864,11 @@ var (
 )
 
 type FilesystemOperationDeletePath struct {
-	// Whether a non-empty directory may be tombstoned recursively.
+	// Whether the operation can recursively delete a non-empty directory.
 	Behavior *DeleteDirectoryBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// The inode that the path must still resolve to before deletion.
+	// The inode that the path must still resolve to before the delete.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
-	// Absolute path that must resolve to a visible inode.
+	// The absolute path, which must resolve to a visible inode.
 	Path AbsolutePath `json:"path" url:"path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2966,7 +2976,8 @@ func (f *FilesystemOperationDeletePath) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Move an inode if its current binding matches.
+// An operation that moves an inode if its current binding version is
+// `expected_binding_version`.
 var (
 	filesystemOperationMoveByInodeFieldBehavior                      = big.NewInt(1 << 0)
 	filesystemOperationMoveByInodeFieldDestinationDisplayName        = big.NewInt(1 << 1)
@@ -2978,19 +2989,20 @@ var (
 )
 
 type FilesystemOperationMoveByInode struct {
-	// Whether an existing destination file may be replaced.
+	// Whether the operation can replace an existing destination file.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// New name.
+	// The inode's new name.
 	DestinationDisplayName DisplayName `json:"destination_display_name" url:"destination_display_name"`
-	// Destination directory.
+	// The destination directory.
 	DestinationParentInodeID InodeID `json:"destination_parent_inode_id" url:"destination_parent_inode_id"`
-	// Binding version required for the move.
+	// The binding version that the inode must currently have for the move to succeed.
 	ExpectedBindingVersion BindingVersion `json:"expected_binding_version" url:"expected_binding_version"`
-	// With `replace` behavior, the destination inode required by the request.
+	// The inode that the destination path must contain. It applies only with `replace` behavior.
 	ExpectedDestinationInodeID *InodeID `json:"expected_destination_inode_id,omitempty" url:"expected_destination_inode_id,omitempty"`
-	// With `replace` behavior and an inode precondition, the required content revision.
+	// The content revision that must be the destination file's current revision. It applies only
+	// with `replace` behavior and requires `expected_destination_inode_id`.
 	ExpectedDestinationRevisionNo *RevisionNo `json:"expected_destination_revision_no,omitempty" url:"expected_destination_revision_no,omitempty"`
-	// Inode to move.
+	// The inode to move.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3154,7 +3166,7 @@ func (f *FilesystemOperationMoveByInode) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Move one path to another path.
+// An operation that moves a file or directory from one path to another.
 var (
 	filesystemOperationMovePathFieldBehavior                      = big.NewInt(1 << 0)
 	filesystemOperationMovePathFieldDestinationPath               = big.NewInt(1 << 1)
@@ -3164,15 +3176,16 @@ var (
 )
 
 type FilesystemOperationMovePath struct {
-	// Whether an existing destination file may be replaced.
+	// Whether the operation can replace an existing destination file.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// Absolute destination whose parent must be visible and writable.
+	// The absolute destination path. The destination's parent must be visible and writable.
 	DestinationPath AbsolutePath `json:"destination_path" url:"destination_path"`
-	// With `replace` behavior, the destination inode required by the request.
+	// The inode that the destination path must contain. It applies only with `replace` behavior.
 	ExpectedDestinationInodeID *InodeID `json:"expected_destination_inode_id,omitempty" url:"expected_destination_inode_id,omitempty"`
-	// With `replace` behavior and an inode precondition, the required content revision.
+	// The content revision that must be the destination file's current revision. It applies only
+	// with `replace` behavior and requires `expected_destination_inode_id`.
 	ExpectedDestinationRevisionNo *RevisionNo `json:"expected_destination_revision_no,omitempty" url:"expected_destination_revision_no,omitempty"`
-	// Absolute source path that must resolve to a visible inode.
+	// The absolute source path, which must resolve to a visible inode.
 	SourcePath AbsolutePath `json:"source_path" url:"source_path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3308,8 +3321,9 @@ func (f *FilesystemOperationMovePath) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Create or replace one file from uploaded or inline content.
-// Requires exactly one of `content_ref` and `inline_content`.
+// An operation that creates or replaces one file from uploaded or inline content.
+//
+// The operation requires exactly one of `content_ref` and `inline_content`.
 var (
 	filesystemOperationPutFileFieldBehavior           = big.NewInt(1 << 0)
 	filesystemOperationPutFileFieldContentRef         = big.NewInt(1 << 1)
@@ -3320,17 +3334,19 @@ var (
 )
 
 type FilesystemOperationPutFile struct {
-	// Whether an existing file may receive a new revision instead of causing a conflict.
+	// Whether the operation adds a new revision to an existing file or fails with a conflict.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// Uploaded content covered by a token; mutually exclusive with `inline_content`.
+	// The uploaded content, which a content token must cover. Set this field or
+	// `inline_content`, but not both.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
-	// With `replace` behavior, the request requires the path to contain this inode.
+	// The inode that the path must contain. It applies only with `replace` behavior.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
-	// With `replace` behavior and an inode precondition, the request requires this content revision.
+	// The content revision that must be the file's current revision. It applies only with
+	// `replace` behavior and requires `expected_inode_id`.
 	ExpectedRevisionNo *RevisionNo `json:"expected_revision_no,omitempty" url:"expected_revision_no,omitempty"`
-	// Complete file bytes as base64; mutually exclusive with `content_ref`.
+	// The complete file bytes as base64. Set this field or `content_ref`, but not both.
 	InlineContent *string `json:"inline_content,omitempty" url:"inline_content,omitempty"`
-	// Absolute destination path; missing ancestors are created automatically.
+	// The absolute destination path. The operation creates any missing ancestor directories.
 	Path AbsolutePath `json:"path" url:"path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3480,8 +3496,10 @@ func (f *FilesystemOperationPutFile) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Append a revision to a file inode if its current revision matches.
-// Requires exactly one of `content_ref` and `inline_content`.
+// An operation that adds a revision to a file inode if the inode's current revision is
+// `expected_revision_no`.
+//
+// The operation requires exactly one of `content_ref` and `inline_content`.
 var (
 	filesystemOperationPutFileRevisionByInodeFieldContentRef         = big.NewInt(1 << 0)
 	filesystemOperationPutFileRevisionByInodeFieldExpectedRevisionNo = big.NewInt(1 << 1)
@@ -3490,13 +3508,14 @@ var (
 )
 
 type FilesystemOperationPutFileRevisionByInode struct {
-	// Uploaded content covered by a token; mutually exclusive with `inline_content`.
+	// The uploaded content, which a content token must cover. Set this field or
+	// `inline_content`, but not both.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
-	// Current revision required for the write.
+	// The revision that must be the file's current revision for the write to succeed.
 	ExpectedRevisionNo RevisionNo `json:"expected_revision_no" url:"expected_revision_no"`
-	// Complete file bytes as base64; mutually exclusive with `content_ref`.
+	// The complete file bytes as base64. Set this field or `content_ref`, but not both.
 	InlineContent *string `json:"inline_content,omitempty" url:"inline_content,omitempty"`
-	// File to update.
+	// The file to update.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3618,16 +3637,17 @@ func (f *FilesystemOperationPutFileRevisionByInode) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Restore an older revision as the current revision for a path.
+// An operation that restores an older revision as the current revision of the file at a path.
 var (
 	filesystemOperationRestoreRevisionFieldPath             = big.NewInt(1 << 0)
 	filesystemOperationRestoreRevisionFieldSourceRevisionNo = big.NewInt(1 << 1)
 )
 
 type FilesystemOperationRestoreRevision struct {
-	// Absolute path that must resolve to a visible file.
+	// The absolute path, which must resolve to a visible file.
 	Path AbsolutePath `json:"path" url:"path"`
-	// Existing historical revision whose content will be copied into a new current revision.
+	// An existing older revision. The operation copies its content into a new current
+	// revision.
 	SourceRevisionNo RevisionNo `json:"source_revision_no" url:"source_revision_no"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3721,16 +3741,17 @@ func (f *FilesystemOperationRestoreRevision) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Restore an older revision as the current revision of a file inode.
+// An operation that restores an older revision as the current revision of a file inode.
 var (
 	filesystemOperationRestoreRevisionByInodeFieldInodeID          = big.NewInt(1 << 0)
 	filesystemOperationRestoreRevisionByInodeFieldSourceRevisionNo = big.NewInt(1 << 1)
 )
 
 type FilesystemOperationRestoreRevisionByInode struct {
-	// Visible file to restore.
+	// The visible file to restore.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Existing historical revision whose content will be copied into a new current revision.
+	// An existing older revision. The operation copies its content into a new current
+	// revision.
 	SourceRevisionNo RevisionNo `json:"source_revision_no" url:"source_revision_no"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3824,10 +3845,11 @@ func (f *FilesystemOperationRestoreRevisionByInode) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Restore the deletion identified by `inode_id` and `deletion_seq`.
-// Name the destination with `destination_path`, or with
-// `destination_parent_inode_id` and `destination_display_name`; omit
-// both to use the recorded binding.
+// An operation that restores the deletion that `inode_id` and `deletion_seq` identify.
+//
+// To choose the destination, set `destination_path`, or set `destination_parent_inode_id` and
+// `destination_display_name`. If you set neither, the undelete uses the parent and name
+// recorded with the deletion.
 var (
 	filesystemOperationUndeleteFieldDeletionSeq              = big.NewInt(1 << 0)
 	filesystemOperationUndeleteFieldDestinationDisplayName   = big.NewInt(1 << 1)
@@ -3837,15 +3859,17 @@ var (
 )
 
 type FilesystemOperationUndelete struct {
-	// Observed deletion sequence, which prevents cancelling a newer tombstone sequence.
+	// The deletion sequence that the caller observed. It prevents the undelete from cancelling
+	// a newer deletion of the inode.
 	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
-	// Name to restore under `destination_parent_inode_id`.
+	// The inode's name in `destination_parent_inode_id`.
 	DestinationDisplayName *DisplayName `json:"destination_display_name,omitempty" url:"destination_display_name,omitempty"`
-	// Directory to restore into; requires `destination_display_name`.
+	// The directory to restore the inode into. It requires `destination_display_name`.
 	DestinationParentInodeID *InodeID `json:"destination_parent_inode_id,omitempty" url:"destination_parent_inode_id,omitempty"`
-	// Absolute restore destination; cannot be combined with a parent inode destination.
+	// The absolute path to restore the inode to. It can't be combined with
+	// `destination_parent_inode_id`.
 	DestinationPath *AbsolutePath `json:"destination_path,omitempty" url:"destination_path,omitempty"`
-	// Deleted inode to make reachable again.
+	// The deleted inode to make reachable again.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3981,8 +4005,9 @@ func (f *FilesystemOperationUndelete) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Replace the access row of the inode one path resolves to. The root
-// path is a valid target.
+// An operation that replaces the access row of the inode that a path resolves to.
+//
+// The root path is a valid target.
 var (
 	filesystemOperationUpdateAccessFieldBoundary                 = big.NewInt(1 << 0)
 	filesystemOperationUpdateAccessFieldExpectedAccessRevisionNo = big.NewInt(1 << 1)
@@ -3992,15 +4017,15 @@ var (
 )
 
 type FilesystemOperationUpdateAccess struct {
-	// Whether the directory stops inheritance from its ancestors.
+	// Whether the directory stops inheriting grants from its ancestors.
 	Boundary bool `json:"boundary" url:"boundary"`
-	// With an inode precondition, the access revision that must still be current.
+	// The access revision that must still be current. It requires `expected_inode_id`.
 	ExpectedAccessRevisionNo *AccessRevisionNo `json:"expected_access_revision_no,omitempty" url:"expected_access_revision_no,omitempty"`
 	// The inode that the path must still resolve to before the update.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
-	// The inode's complete direct grants after this update.
+	// Every direct grant that the inode has after this update.
 	Grants AccessGrants `json:"grants" url:"grants"`
-	// Absolute path that must resolve to a visible file or directory.
+	// The absolute path, which must resolve to a visible file or directory.
 	Path AbsolutePath `json:"path" url:"path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4136,8 +4161,9 @@ func (f *FilesystemOperationUpdateAccess) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Replace the access row of a visible inode. The root inode is a valid
-// target.
+// An operation that replaces the access row of a visible inode.
+//
+// The root inode is a valid target.
 var (
 	filesystemOperationUpdateAccessByInodeFieldBoundary                 = big.NewInt(1 << 0)
 	filesystemOperationUpdateAccessByInodeFieldExpectedAccessRevisionNo = big.NewInt(1 << 1)
@@ -4146,13 +4172,13 @@ var (
 )
 
 type FilesystemOperationUpdateAccessByInode struct {
-	// Whether the directory stops inheritance from its ancestors.
+	// Whether the directory stops inheriting grants from its ancestors.
 	Boundary bool `json:"boundary" url:"boundary"`
 	// The access revision that must still be current.
 	ExpectedAccessRevisionNo *AccessRevisionNo `json:"expected_access_revision_no,omitempty" url:"expected_access_revision_no,omitempty"`
-	// The inode's complete direct grants after this update.
+	// Every direct grant that the inode has after this update.
 	Grants AccessGrants `json:"grants" url:"grants"`
-	// Visible file or directory to update.
+	// The visible file or directory to update.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4274,7 +4300,7 @@ func (f *FilesystemOperationUpdateAccessByInode) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Write and remove attributes on the inode one path resolves to.
+// An operation that writes and removes attributes on the inode that a path resolves to.
 var (
 	filesystemOperationUpdateAttributesFieldExpectedAttributesRevisionNo = big.NewInt(1 << 0)
 	filesystemOperationUpdateAttributesFieldExpectedInodeID              = big.NewInt(1 << 1)
@@ -4284,16 +4310,16 @@ var (
 )
 
 type FilesystemOperationUpdateAttributes struct {
-	// With an inode precondition, the attribute revision that must still be current.
+	// The attribute revision that must still be current. It requires `expected_inode_id`.
 	ExpectedAttributesRevisionNo *AttributesRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
 	// The inode that the path must still resolve to before the update.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
-	// Absolute path that must resolve to a visible file or directory.
+	// The absolute path, which must resolve to a visible file or directory.
 	Path AbsolutePath `json:"path" url:"path"`
-	// The attribute keys to remove, including duplicates that validation must reject.
+	// The attribute keys to remove. The server rejects a list that repeats a key.
 	Remove []AttributeKey `json:"remove,omitempty" url:"remove,omitempty"`
-	// The attributes to write, replacing values for matching keys and leaving
-	// other keys unchanged.
+	// The attributes to write. A new value replaces the current value of the same key, and
+	// other keys don't change.
 	Set map[string]AttributeValue `json:"set,omitempty" url:"set,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4429,7 +4455,7 @@ func (f *FilesystemOperationUpdateAttributes) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// Write and remove attributes on a visible inode.
+// An operation that writes and removes attributes on a visible inode.
 var (
 	filesystemOperationUpdateAttributesByInodeFieldExpectedAttributesRevisionNo = big.NewInt(1 << 0)
 	filesystemOperationUpdateAttributesByInodeFieldInodeID                      = big.NewInt(1 << 1)
@@ -4440,12 +4466,12 @@ var (
 type FilesystemOperationUpdateAttributesByInode struct {
 	// The attribute revision that must still be current.
 	ExpectedAttributesRevisionNo *AttributesRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
-	// Visible file or directory to update.
+	// The visible file or directory to update.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// The attribute keys to remove, including duplicates that validation must reject.
+	// The attribute keys to remove. The server rejects a list that repeats a key.
 	Remove []AttributeKey `json:"remove,omitempty" url:"remove,omitempty"`
-	// The attributes to write, replacing values for matching keys and leaving
-	// other keys unchanged.
+	// The attributes to write. A new value replaces the current value of the same key, and
+	// other keys don't change.
 	Set map[string]AttributeValue `json:"set,omitempty" url:"set,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

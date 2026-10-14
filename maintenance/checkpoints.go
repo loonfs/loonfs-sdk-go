@@ -15,11 +15,12 @@ var (
 )
 
 type CreateCheckpointRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// The non-unique label recorded on the checkpoint.
+	// A label to record on the checkpoint. Labels don't need to be unique.
 	Name string `json:"name" url:"-"`
-	// The checkpoint lifetime in milliseconds. Omit it to keep the checkpoint until it is deleted.
+	// The checkpoint's lifetime in milliseconds. Omit it to keep the checkpoint until it's
+	// deleted.
 	TTLMs *int64 `json:"ttl_ms,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -81,9 +82,9 @@ var (
 )
 
 type DeleteCheckpointRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Checkpoint id
+	// The checkpoint ID.
 	CheckpointID string `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -118,11 +119,11 @@ var (
 )
 
 type ListCheckpointsRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Maximum page size
+	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
-	// Opaque checkpoint-list page cursor
+	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -163,9 +164,9 @@ var (
 )
 
 type GetCheckpointRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Checkpoint id
+	// The checkpoint ID.
 	CheckpointID string `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

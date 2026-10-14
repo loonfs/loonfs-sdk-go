@@ -15,9 +15,9 @@ var (
 )
 
 type AbortUploadRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Upload session id
+	// The upload session ID.
 	UploadID string `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -51,9 +51,9 @@ var (
 )
 
 type CompleteUploadRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Upload session id
+	// The upload session ID.
 	UploadID string              `json:"-" url:"-"`
 	Body     *CompleteUploadBody `json:"-" url:"-"`
 
@@ -100,7 +100,7 @@ var (
 )
 
 type CreateUploadRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string            `json:"-" url:"-"`
 	Body        *CreateUploadBody `json:"-" url:"-"`
 
@@ -141,9 +141,9 @@ var (
 )
 
 type GetUploadRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Upload session id
+	// The upload session ID.
 	UploadID string `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -178,11 +178,11 @@ var (
 )
 
 type SignUploadPartsRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Upload session id
+	// The upload session ID.
 	UploadID string `json:"-" url:"-"`
-	// The parts to authorize; repeated part numbers replace their previous uploads.
+	// The parts to authorize. A repeated part number replaces the earlier upload of that part.
 	Parts []*UploadPartChecksumClaim `json:"parts" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -238,7 +238,7 @@ func (s *SignUploadPartsRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-// Completes an upload using the mode that started it.
+// A request to complete an upload, in the mode that started it.
 type CompleteUploadBody struct {
 	Mode            string
 	DirectMultipart *CompleteUploadBodyDirectMultipart
@@ -389,16 +389,16 @@ func (c *CompleteUploadBody) validate() error {
 	return nil
 }
 
-// Complete a direct multipart upload.
+// The completion of a direct multipart upload.
 var (
 	completeUploadBodyDirectMultipartFieldContent = big.NewInt(1 << 0)
 	completeUploadBodyDirectMultipartFieldParts   = big.NewInt(1 << 1)
 )
 
 type CompleteUploadBodyDirectMultipart struct {
-	// Expected length and checksum of the assembled object.
+	// The expected length and checksum of the assembled object.
 	Content *UploadContentClaim `json:"content" url:"content"`
-	// Uploaded parts in ascending part order.
+	// The uploaded parts, in ascending part order.
 	Parts []*CompletedUploadPart `json:"parts" url:"parts"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -492,13 +492,13 @@ func (c *CompleteUploadBodyDirectMultipart) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Complete a direct-PUT upload.
+// The completion of a direct PUT upload.
 var (
 	completeUploadBodyDirectPutFieldContent = big.NewInt(1 << 0)
 )
 
 type CompleteUploadBodyDirectPut struct {
-	// Expected length and checksum of the stored object.
+	// The expected length and checksum of the stored object.
 	Content *UploadContentClaim `json:"content" url:"content"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -578,7 +578,7 @@ func (c *CompleteUploadBodyDirectPut) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Complete a service-proxied upload.
+// The completion of a service-proxied upload.
 type CompleteUploadBodyServiceProxied struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -644,7 +644,7 @@ func (c *CompleteUploadBodyServiceProxied) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// One uploaded part accepted by the object-store provider.
+// One uploaded part that the object store provider accepted.
 var (
 	completedUploadPartFieldChecksum   = big.NewInt(1 << 0)
 	completedUploadPartFieldEtag       = big.NewInt(1 << 1)
@@ -652,11 +652,11 @@ var (
 )
 
 type CompletedUploadPart struct {
-	// Checksum the part was signed and accepted with.
+	// The checksum that the part was signed and accepted with.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
-	// Entity tag the provider returned for the accepted part.
+	// The entity tag that the provider returned for the accepted part.
 	Etag string `json:"etag" url:"etag"`
-	// One-based part number.
+	// The part number, counting from 1.
 	PartNumber int `json:"part_number" url:"part_number"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -764,7 +764,7 @@ func (c *CompletedUploadPart) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Selects the transport for a new upload session.
+// The transport for a new upload session.
 type CreateUploadBody struct {
 	Mode            string
 	DirectMultipart *CreateUploadBodyDirectMultipart
@@ -915,13 +915,13 @@ func (c *CreateUploadBody) validate() error {
 	return nil
 }
 
-// Write the object in parts through presigned part uploads.
+// A transport in which the client writes the object in parts through presigned part uploads.
 var (
 	createUploadBodyDirectMultipartFieldPartSizeBytes = big.NewInt(1 << 0)
 )
 
 type CreateUploadBodyDirectMultipart struct {
-	// The byte length of every part except the last. Omit it for the server default.
+	// The byte length of every part except the last. Omit it to use the server default.
 	PartSizeBytes *int64 `json:"part_size_bytes,omitempty" url:"part_size_bytes,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1001,13 +1001,13 @@ func (c *CreateUploadBodyDirectMultipart) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Write the whole object through one presigned request.
+// A transport in which the client writes the whole object through one presigned request.
 var (
 	createUploadBodyDirectPutFieldSizeBytes = big.NewInt(1 << 0)
 )
 
 type CreateUploadBodyDirectPut struct {
-	// Advisory byte length for an early provider-limit check.
+	// An advisory byte length, which the server uses to check the provider's size limit early.
 	SizeBytes *int64 `json:"size_bytes,omitempty" url:"size_bytes,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1087,7 +1087,8 @@ func (c *CreateUploadBodyDirectPut) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Send the bytes to the service, which writes the content object.
+// A transport in which the client sends the bytes to the service, which writes the content
+// object.
 type CreateUploadBodyServiceProxied struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1153,7 +1154,7 @@ func (c *CreateUploadBodyServiceProxied) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Response carrying one capability per requested part.
+// One capability for each requested part.
 var (
 	signUploadPartsResponseFieldNamespaceID = big.NewInt(1 << 0)
 	signUploadPartsResponseFieldParts       = big.NewInt(1 << 1)
@@ -1161,11 +1162,11 @@ var (
 )
 
 type SignUploadPartsResponse struct {
-	// Namespace that owns the upload session.
+	// The namespace that the upload session belongs to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Capabilities in the order the request asked for them.
+	// The capabilities, in the order that the request asked for them.
 	Parts []*SignedUploadPart `json:"parts" url:"parts"`
-	// Session the parts belong to.
+	// The session that the parts belong to.
 	UploadID UploadID `json:"upload_id" url:"upload_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1280,9 +1281,9 @@ var (
 )
 
 type SignedUploadPart struct {
-	// Short-lived write capability for that part.
+	// A short-lived write capability for this part.
 	Access *ObjectTransferAccess `json:"access" url:"access"`
-	// Part number this capability writes.
+	// The part number that this capability writes.
 	PartNumber int `json:"part_number" url:"part_number"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1376,16 +1377,16 @@ func (s *SignedUploadPart) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// The size and checksum reported for a complete direct-upload payload.
+// The size and checksum of a complete direct upload payload.
 var (
 	uploadContentClaimFieldChecksum  = big.NewInt(1 << 0)
 	uploadContentClaimFieldSizeBytes = big.NewInt(1 << 1)
 )
 
 type UploadContentClaim struct {
-	// Whole-payload checksum in the algorithm required by this operation.
+	// The checksum of the whole payload, in the algorithm that this operation requires.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
-	// Complete payload size in bytes.
+	// The size of the complete payload in bytes.
 	SizeBytes int64 `json:"size_bytes" url:"size_bytes"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1479,10 +1480,10 @@ func (u *UploadContentClaim) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
-// Durable id for one upload session.
+// The durable ID of one upload session.
 type UploadID = string
 
-// Upload transport mode.
+// The transport that an upload uses.
 type UploadMode string
 
 const (
@@ -1515,9 +1516,10 @@ var (
 )
 
 type UploadPartChecksumClaim struct {
-	// Checksum over this part's bytes.
+	// The checksum of this part's bytes.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
-	// One-based part number, at most the provider's 10,000-part limit.
+	// The part number, counting from 1. The number can't exceed the provider's limit of 10,000
+	// parts.
 	PartNumber int `json:"part_number" url:"part_number"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1611,7 +1613,7 @@ func (u *UploadPartChecksumClaim) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
-// Current view of one upload session.
+// The current state of one upload session.
 type UploadSession struct {
 	Status    string
 	Aborted   *UploadSessionStatusAborted
@@ -1762,7 +1764,7 @@ func (u *UploadSession) validate() error {
 	return nil
 }
 
-// Final: the session selected no content and its object is gone.
+// A session that was aborted before it completed. Its object no longer exists.
 var (
 	uploadSessionStatusAbortedFieldAbortedAtMs = big.NewInt(1 << 0)
 	uploadSessionStatusAbortedFieldMode        = big.NewInt(1 << 1)
@@ -1771,13 +1773,13 @@ var (
 )
 
 type UploadSessionStatusAborted struct {
-	// Unix-millisecond stamp of the abort.
+	// The time the session was aborted, in Unix milliseconds.
 	AbortedAtMs int64 `json:"aborted_at_ms" url:"aborted_at_ms"`
-	// Transport selected when the session began.
+	// The transport that was selected when the session began.
 	Mode UploadMode `json:"mode" url:"mode"`
-	// Namespace that owns the session.
+	// The namespace that the session belongs to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Session represented by this view.
+	// The upload session ID.
 	UploadID UploadID `json:"upload_id" url:"upload_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1899,7 +1901,7 @@ func (u *UploadSessionStatusAborted) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
-// Final: the content is durable and verified.
+// A session that ended with durable, verified content.
 var (
 	uploadSessionStatusCompletedFieldCompletedAtMs = big.NewInt(1 << 0)
 	uploadSessionStatusCompletedFieldContentRef    = big.NewInt(1 << 1)
@@ -1910,17 +1912,18 @@ var (
 )
 
 type UploadSessionStatusCompleted struct {
-	// Unix-millisecond stamp of the completion.
+	// The time the session completed, in Unix milliseconds.
 	CompletedAtMs int64 `json:"completed_at_ms" url:"completed_at_ms"`
-	// Verified content selected by this session.
+	// The verified content that the session completed with.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// Fresh proof for a later commit, absent after the token minting window closes.
+	// A new content token, which a later commit can use to reference the content. It's absent
+	// after the window for issuing tokens closes.
 	ContentToken *ContentToken `json:"content_token,omitempty" url:"content_token,omitempty"`
-	// Transport selected when the session began.
+	// The transport that was selected when the session began.
 	Mode UploadMode `json:"mode" url:"mode"`
-	// Namespace that owns the session.
+	// The namespace that the session belongs to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Session represented by this view.
+	// The upload session ID.
 	UploadID UploadID `json:"upload_id" url:"upload_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2070,7 +2073,7 @@ func (u *UploadSessionStatusCompleted) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
-// Accepting content until its lease passes.
+// A session that accepts content until its lease ends.
 var (
 	uploadSessionStatusOpenFieldAccess            = big.NewInt(1 << 0)
 	uploadSessionStatusOpenFieldChecksumAlgorithm = big.NewInt(1 << 1)
@@ -2083,21 +2086,23 @@ var (
 )
 
 type UploadSessionStatusOpen struct {
-	// Present for `direct_put` sessions; minted fresh on every read.
+	// The capability for the direct PUT. It's present for `direct_put` sessions, and the
+	// server creates a new one on every read.
 	Access *ObjectTransferAccess `json:"access,omitempty" url:"access,omitempty"`
-	// The store's content checksum algorithm.
+	// The checksum algorithm that the store uses for content.
 	ChecksumAlgorithm ChecksumAlgorithm `json:"checksum_algorithm" url:"checksum_algorithm"`
-	// Present after content is staged in a `service_proxied` session.
+	// The staged content. It's present after content is staged in a `service_proxied` session.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
-	// The Unix-millisecond time after which cleanup may abort the session.
+	// The time after which cleanup can abort the session, in Unix milliseconds.
 	ExpiresAtMs int64 `json:"expires_at_ms" url:"expires_at_ms"`
-	// Transport selected when the session began.
+	// The transport that was selected when the session began.
 	Mode UploadMode `json:"mode" url:"mode"`
-	// Namespace that owns the session.
+	// The namespace that the session belongs to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Present for `direct_multipart` sessions.
+	// The size of every part except the last, in bytes. It's present for `direct_multipart`
+	// sessions.
 	PartSizeBytes *int64 `json:"part_size_bytes,omitempty" url:"part_size_bytes,omitempty"`
-	// Session represented by this view.
+	// The upload session ID.
 	UploadID UploadID `json:"upload_id" url:"upload_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

@@ -222,9 +222,9 @@ func (r *RawClient) Complete(
 
 func (r *RawClient) PutContent(
 	ctx context.Context,
-	// Namespace id
+	// The namespace ID.
 	namespaceID string,
-	// Upload session id
+	// The upload session ID.
 	uploadID string,
 	request io.Reader,
 	opts ...option.RequestOption,
