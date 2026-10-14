@@ -11,7 +11,7 @@ var (
 )
 
 type GetNamespaceDiagnosticsRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

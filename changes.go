@@ -17,13 +17,13 @@ var (
 )
 
 type ListChangesRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Return committed changes after this sequence
+	// The sequence after which to return committed changes.
 	AfterSeq ChangeSeq `json:"-" url:"after_seq"`
-	// Maximum page size
+	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
-	// End the feed at this snapshot's captured sequence
+	// A snapshot to read the feed from. The feed ends at the sequence that the snapshot captured.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -65,7 +65,7 @@ func (l *ListChangesRequest) SetSnapshotID(snapshotID *PinID) {
 	l.require(listChangesRequestFieldSnapshotID)
 }
 
-// Change-feed response after a cursor.
+// The commits after a change feed cursor.
 var (
 	listChangesResponseFieldAfterSeq     = big.NewInt(1 << 0)
 	listChangesResponseFieldChanges      = big.NewInt(1 << 1)
@@ -75,15 +75,16 @@ var (
 )
 
 type ListChangesResponse struct {
-	// Exclusive cursor supplied by the caller, or the endpoint's initial position.
+	// The exclusive cursor that this page starts after. It's the cursor that the caller supplied,
+	// or the endpoint's initial position.
 	AfterSeq ChangeSeq `json:"after_seq" url:"after_seq"`
-	// Logical commits after `after_seq`, ordered by ascending namespace sequence.
+	// The logical commits after `after_seq`, in ascending namespace sequence order.
 	Changes []*Commit `json:"changes" url:"changes"`
-	// Namespace head sequence this page was read at.
+	// The namespace head sequence that this page was read at.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Namespace whose ordered commit stream was read.
+	// The namespace whose change feed was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Cursor to request when another page remains, absent on the page that
+	// The cursor for the next page, when another page remains. It's absent on the page that
 	// reaches `head_seq`.
 	NextAfterSeq *ChangeSeq `json:"next_after_seq,omitempty" url:"next_after_seq,omitempty"`
 

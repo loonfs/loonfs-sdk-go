@@ -16,13 +16,13 @@ var (
 )
 
 type CreateNamespaceRequest struct {
-	// The access mode, fixed for the namespace's life. Defaults to
-	// unrestricted.
+	// The namespace's access mode, which can't be changed after the namespace is created. The
+	// default is unrestricted.
 	Access *NamespaceAccess `json:"access,omitempty" url:"-"`
-	// Durable namespace id to create.
+	// The durable ID of the new namespace.
 	NamespaceID NamespaceID `json:"namespace_id" url:"-"`
-	// How sibling names compare, fixed for the namespace's life. Defaults
-	// to `case_insensitive`.
+	// How the namespace compares sibling names. The mode can't be changed after the namespace is
+	// created, and it defaults to `case_insensitive`.
 	Naming *NamespaceNaming `json:"naming,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -84,9 +84,9 @@ var (
 )
 
 type DeleteNamespaceRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Delete only if the namespace head is still at this sequence
+	// The head sequence that the namespace must still have for the delete to succeed.
 	ExpectedHeadSeq *ChangeSeq `json:"-" url:"expected_head_seq,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -121,11 +121,11 @@ var (
 )
 
 type ForkNamespaceRequest struct {
-	// Source namespace id
+	// The source namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Durable namespace id for the fork target.
+	// The durable ID of the new namespace that the fork creates.
 	NewNamespaceID NamespaceID `json:"new_namespace_id" url:"-"`
-	// Fork from this live snapshot instead of the current head.
+	// A live snapshot to fork from. Without it, the fork starts from the current head.
 	SnapshotID *PinID `json:"snapshot_id,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -186,7 +186,7 @@ var (
 )
 
 type GetNamespaceRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -207,16 +207,16 @@ func (g *GetNamespaceRequest) SetNamespaceID(namespaceID string) {
 	g.require(getNamespaceRequestFieldNamespaceID)
 }
 
-// Result of deleting a namespace.
+// The result of deleting a namespace.
 var (
 	deleteNamespaceResponseFieldHeadSeq     = big.NewInt(1 << 0)
 	deleteNamespaceResponseFieldNamespaceID = big.NewInt(1 << 1)
 )
 
 type DeleteNamespaceResponse struct {
-	// The final committed sequence before the namespace was deleted.
+	// The last committed sequence before the namespace was deleted.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Namespace whose history ended.
+	// The deleted namespace.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -310,7 +310,7 @@ func (d *DeleteNamespaceResponse) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// A namespace's access mode, fixed at creation.
+// A namespace's access mode, which can't be changed after the namespace is created.
 type NamespaceAccess struct {
 	Kind         string
 	ACL          *NamespaceAccessACL
@@ -437,17 +437,17 @@ func (n *NamespaceAccess) validate() error {
 	return nil
 }
 
-// Access rows govern every operation.
+// Access rows control every operation.
 var (
 	namespaceAccessACLFieldPrincipalScope = big.NewInt(1 << 0)
 	namespaceAccessACLFieldRootGrants     = big.NewInt(1 << 1)
 )
 
 type NamespaceAccessACL struct {
-	// Identity domain the namespace's principal ids belong to.
+	// The identity domain that the namespace's principal IDs belong to.
 	PrincipalScope PrincipalScope `json:"principal_scope" url:"principal_scope"`
-	// The root inode's grants at genesis, normally `admin` for each
-	// initial administrator.
+	// The root inode's grants when the namespace is created. Usually each initial
+	// administrator has `admin`.
 	RootGrants AccessGrants `json:"root_grants" url:"root_grants"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -541,7 +541,7 @@ func (n *NamespaceAccessACL) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
-// A namespace's access mode as reported, without its genesis grants.
+// A namespace's access mode, without the grants that the namespace was created with.
 type NamespaceAccessMode struct {
 	Kind         string
 	ACL          *NamespaceAccessModeACL
@@ -668,13 +668,13 @@ func (n *NamespaceAccessMode) validate() error {
 	return nil
 }
 
-// Access rows govern operations in this identity domain.
+// Access rows control the operations that principals in this identity domain can perform.
 var (
 	namespaceAccessModeACLFieldPrincipalScope = big.NewInt(1 << 0)
 )
 
 type NamespaceAccessModeACL struct {
-	// Identity domain the namespace's principal ids belong to.
+	// The identity domain that the namespace's principal IDs belong to.
 	PrincipalScope PrincipalScope `json:"principal_scope" url:"principal_scope"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -754,7 +754,7 @@ func (n *NamespaceAccessModeACL) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
-// Every caller holding the deployment credential may do everything.
+// Every caller with the deployment credential can perform every operation.
 type NamespaceAccessModeUnrestricted struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -820,7 +820,7 @@ func (n *NamespaceAccessModeUnrestricted) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
-// Every caller holding the deployment credential may do everything.
+// Every caller with the deployment credential can perform every operation.
 type NamespaceAccessUnrestricted struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -886,7 +886,7 @@ func (n *NamespaceAccessUnrestricted) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
-// Current state for one namespace.
+// The current state of one namespace.
 var (
 	namespaceMetadataFieldAccess            = big.NewInt(1 << 0)
 	namespaceMetadataFieldCreatedAtMs       = big.NewInt(1 << 1)
@@ -901,20 +901,21 @@ var (
 type NamespaceMetadata struct {
 	// The namespace's access mode.
 	Access *NamespaceAccessMode `json:"access" url:"access"`
-	// Time the namespace was created, in Unix milliseconds.
+	// The time the namespace was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// Actor that created the namespace, as supplied by the application.
+	// The actor that created the namespace, as the application supplied it.
 	CreatedBy ActorID `json:"created_by" url:"created_by"`
-	// Present only for a fork: the source it was forked from.
+	// The namespace and sequence this namespace was forked from. Only a forked namespace has this
+	// field.
 	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
-	// Current visible namespace sequence.
+	// The sequence of the namespace's newest visible commit.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Namespace ID.
+	// The namespace ID.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// How sibling names compare in the namespace.
+	// How the namespace compares sibling names.
 	Naming NamespaceNaming `json:"naming" url:"naming"`
-	// Oldest position a change feed can resume after. The feed returns
-	// changes above it.
+	// The namespace's retention floor. A change feed request can set `after_seq` to this sequence
+	// or any later one, and the feed returns the changes committed after it.
 	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1092,7 +1093,10 @@ func (n *NamespaceMetadata) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
-// How a namespace compares sibling names, fixed at creation.
+// How a namespace compares sibling names, for example whether Report.txt and report.txt are the
+// same name.
+//
+// The mode is set when the namespace is created and can't be changed.
 type NamespaceNaming string
 
 const (
@@ -1115,5 +1119,5 @@ func (n NamespaceNaming) Ptr() *NamespaceNaming {
 	return &n
 }
 
-// Opaque identity-domain id containing 1 to 256 visible ASCII characters other than the comma.
+// An opaque identity domain ID of 1 to 256 visible ASCII characters other than the comma.
 type PrincipalScope = string

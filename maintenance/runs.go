@@ -13,7 +13,7 @@ var (
 )
 
 type CreateRunsRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string                             `json:"-" url:"-"`
 	Body        *loonfssdkgo.RunMaintenanceRequest `json:"-" url:"-"`
 

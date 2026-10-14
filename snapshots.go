@@ -16,11 +16,11 @@ var (
 )
 
 type CreateSnapshotRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// A label that does not need to be unique.
+	// The snapshot's label, which doesn't need to be unique.
 	Name string `json:"name" url:"-"`
-	// Snapshot lifetime from the current server time, in milliseconds.
+	// The snapshot's lifetime in milliseconds, counted from the server's current time.
 	TTLMs int64 `json:"ttl_ms" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -82,9 +82,9 @@ var (
 )
 
 type DeleteSnapshotRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Snapshot id
+	// The snapshot ID.
 	SnapshotID PinID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -119,11 +119,11 @@ var (
 )
 
 type ExtendSnapshotRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Snapshot id
+	// The snapshot ID.
 	SnapshotID PinID `json:"-" url:"-"`
-	// Requested lifetime from the server's current time, in milliseconds.
+	// The new lifetime in milliseconds, counted from the server's current time.
 	TTLMs int64 `json:"ttl_ms" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -186,11 +186,11 @@ var (
 )
 
 type ListSnapshotsRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Maximum page size
+	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
-	// Opaque snapshot-list page cursor
+	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -231,9 +231,9 @@ var (
 )
 
 type GetSnapshotRequest struct {
-	// Namespace id
+	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// Snapshot id
+	// The snapshot ID.
 	SnapshotID PinID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -261,16 +261,16 @@ func (g *GetSnapshotRequest) SetSnapshotID(snapshotID PinID) {
 	g.require(getSnapshotRequestFieldSnapshotID)
 }
 
-// Identifies the snapshot record that was deleted.
+// The snapshot record that was deleted.
 var (
 	deleteSnapshotResponseFieldNamespaceID = big.NewInt(1 << 0)
 	deleteSnapshotResponseFieldSnapshotID  = big.NewInt(1 << 1)
 )
 
 type DeleteSnapshotResponse struct {
-	// Namespace the snapshot belonged to.
+	// The namespace that the snapshot belonged to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Deleted snapshot record.
+	// The ID of the deleted snapshot record.
 	SnapshotID PinID `json:"snapshot_id" url:"snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -364,7 +364,7 @@ func (d *DeleteSnapshotResponse) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// One page of live read snapshots.
+// One page of live snapshots.
 var (
 	listSnapshotsResponseFieldNamespaceID = big.NewInt(1 << 0)
 	listSnapshotsResponseFieldNextCursor  = big.NewInt(1 << 1)
@@ -372,11 +372,11 @@ var (
 )
 
 type ListSnapshotsResponse struct {
-	// Namespace the snapshots belong to.
+	// The namespace that the snapshots belong to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Opaque cursor for the next page.
+	// An opaque cursor for the next page.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
-	// Live snapshot records in ascending snapshot-id order.
+	// The live snapshot records, in ascending snapshot ID order.
 	Snapshots []*Snapshot `json:"snapshots" url:"snapshots"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -495,17 +495,17 @@ var (
 )
 
 type Snapshot struct {
-	// Namespace sequence captured by the snapshot.
+	// The namespace sequence that the snapshot captured.
 	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
-	// Time the snapshot record was created, in Unix milliseconds.
+	// The time the snapshot record was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// When the snapshot expires, in Unix milliseconds.
+	// The time the snapshot expires, in Unix milliseconds.
 	ExpiresAtMs int64 `json:"expires_at_ms" url:"expires_at_ms"`
-	// Snapshot label.
+	// The snapshot's label.
 	Name string `json:"name" url:"name"`
-	// Namespace whose state the snapshot captured.
+	// The namespace whose state the snapshot captured.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Snapshot id.
+	// The snapshot ID.
 	SnapshotID PinID `json:"snapshot_id" url:"snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

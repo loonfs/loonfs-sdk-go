@@ -31,7 +31,7 @@ func (b *BadRequestError) Unwrap() error {
 	return b.APIError
 }
 
-// Lost a grep manifest publication race; retry
+// Another publisher changed the grep manifest first. Retry the request.
 type ConflictError struct {
 	*core.APIError
 	Body *ErrorResponse
@@ -151,7 +151,7 @@ func (n *NotFoundError) Unwrap() error {
 	return n.APIError
 }
 
-// This deployment does not maintain the grep index
+// This deployment doesn't maintain the grep index
 type NotImplementedError struct {
 	*core.APIError
 	Body *ErrorResponse
@@ -175,7 +175,7 @@ func (n *NotImplementedError) Unwrap() error {
 	return n.APIError
 }
 
-// The server cannot complete the request now. Inspect `code` to determine whether the cause is a deadline, shutdown, load, writer-session admission, required maintenance, or invalid storage credentials. The reference server returns `server_busy` with `Retry-After: 1` before reading a body when its request cap is full; health and readiness probes are exempt. A mutation may still complete after a deadline or lost acknowledgment, so determine its outcome before retrying.
+// The server can't complete the request now. Check `code` to find whether the cause is a deadline, shutdown, load, writer session admission, required maintenance, or invalid storage credentials. When its request cap is full, the reference server returns `server_busy` with `Retry-After: 1` before it reads the body. Health and readiness probes are exempt from the cap. A mutation might still complete after a deadline or a lost acknowledgment, so check its outcome before retrying.
 type ServiceUnavailableError struct {
 	*core.APIError
 	Body any

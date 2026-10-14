@@ -35,7 +35,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Lists live snapshots in snapshot-id order. Deleted and expired snapshots are omitted.
+// Lists live snapshots in snapshot ID order. The list leaves out deleted and expired snapshots.
 //
 // Example:
 //
@@ -138,7 +138,7 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
-// Returns one live snapshot, as the snapshot listing returns it. A missing id, or the id of a pin that isn't a snapshot, returns snapshot_not_found, and an expired snapshot returns snapshot_gone.
+// Returns one live snapshot, as the snapshot listing returns it. A missing ID, or the ID of a pin that isn't a snapshot, returns `snapshot_not_found`, and an expired snapshot returns `snapshot_gone`.
 //
 // Example:
 //
@@ -166,7 +166,7 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Deletes a snapshot pin. A missing id returns snapshot_not_found.
+// Deletes a snapshot pin. A missing ID returns `snapshot_not_found`.
 //
 // Example:
 //

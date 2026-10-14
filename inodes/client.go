@@ -36,7 +36,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Returns the path entry for a visible inode from the current state or a live snapshot. Unknown or hidden inodes answer `inode_not_found`.
+// Returns the path entry for a visible inode, from the current state or a live snapshot. An unknown or hidden inode returns `inode_not_found`.
 //
 // Example:
 //
@@ -67,7 +67,7 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Lists one page of a directory's children from the current state or a live snapshot, addressed by parent inode ID, in canonical name-key order. Inode addressing keeps a listing and its resumption on the same directory across concurrent renames or moves of the parent.
+// Lists one page of a directory's children, in canonical name key order, from the current state or a live snapshot. The request identifies the directory by its inode ID, so a listing and its later pages stay on the same directory even if the directory is renamed or moved at the same time.
 //
 // Example:
 //
@@ -146,7 +146,7 @@ func (c *Client) ListChildren(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Reads and verifies the current revision of a visible file inode, wherever it is bound, or the revision a live snapshot captured. Unknown or hidden inodes answer `inode_not_found`.
+// Reads and verifies the current revision of a visible file inode, wherever the inode is bound, or the revision that a live snapshot captured. An unknown or hidden inode returns `inode_not_found`.
 //
 // Example:
 //
@@ -174,7 +174,7 @@ func (c *Client) Content(
 	return response.Body, nil
 }
 
-// Authorizes a direct read of the current revision of a visible file inode, wherever it is bound, or of the revision a live snapshot captured. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response does not include a path.
+// Authorizes a direct read of the current revision of a visible file inode, wherever the inode is bound, or of the revision that a live snapshot captured. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response doesn't include a path.
 //
 // Example:
 //
@@ -202,7 +202,7 @@ func (c *Client) CreateDownload(
 	return response.Body, nil
 }
 
-// Returns retained revisions for a file inode without requiring a current path.
+// Returns the retained revisions of a file inode. The file doesn't need a current path.
 //
 // Example:
 //
@@ -307,7 +307,7 @@ func (c *Client) RevisionContent(
 	return response.Body, nil
 }
 
-// Authorizes a direct read of one retained inode revision. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response does not include a path.
+// Authorizes a direct read of one retained inode revision. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response doesn't include a path.
 //
 // Example:
 //

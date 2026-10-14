@@ -9,18 +9,19 @@ import (
 	big "math/big"
 )
 
-// Validated complete absolute namespace path, serialized as a plain string.
+// A complete absolute path in the namespace, validated and serialized as a plain string.
 type AbsolutePath = string
 
-// A validated map from principal to rights, limited to 1,000 entries and
-// 65,536 bytes of principal ids. No entry has an empty set of rights. Decoding
-// rejects repeated principals.
+// A map from each principal to its rights.
+//
+// The map can have at most 1,000 entries and 65,536 bytes of principal IDs, and no entry has an
+// empty set of rights. Decoding rejects a repeated principal.
 type AccessGrants = map[string]AccessRights
 
-// Monotonic per-inode access revision. It increases with every accepted access update.
+// The number of one revision of an inode's access row. It increases with every accepted access update.
 type AccessRevisionNo = int64
 
-// One right a grant can carry.
+// One right that a grant can include.
 type AccessRight string
 
 const (
@@ -61,37 +62,38 @@ func (a AccessRight) Ptr() *AccessRight {
 	return &a
 }
 
-// A set of rights. Encoded as distinct names in `read`, `history`, `write`,
-// `create`, `remove`, `share`, `manage`, `admin` order. Decoding accepts any
-// order and rejects repeated names.
+// A set of rights.
+//
+// The set is encoded as distinct right names in `read`, `history`, `write`, `create`, `remove`,
+// `share`, `manage`, `admin` order. Decoding accepts any order and rejects a repeated name.
 type AccessRights = []AccessRight
 
-// Stable opaque actor id containing 1 to 256 visible ASCII characters.
+// A stable, opaque actor ID of 1 to 256 visible ASCII characters.
 type ActorID = string
 
-// A validated inode attribute value of at most 4,096 UTF-8 bytes.
+// One validated inode attribute value of at most 4,096 UTF-8 bytes.
 //
-// Empty strings and control characters are valid, and only an explicit remove
-// operation deletes an attribute.
+// Empty strings and control characters are valid, and an attribute is deleted only by an
+// explicit remove operation.
 type AttributeValue = string
 
-// A validated attribute map limited to 100 entries and 65,536 total key and
-// value UTF-8 bytes.
+// A map from attribute keys to values, with at most 100 entries and 65,536 UTF-8 bytes of keys and
+// values in total.
 //
-// Construction and decoding reject values over these limits; an empty map
-// represents cleared attributes.
+// Construction and decoding reject a map over these limits. An empty map means that the inode has
+// no attributes.
 type Attributes = map[string]AttributeValue
 
-// Revision number for an inode's attributes. It starts at 0 and increases whenever the attribute map changes.
+// The number of one revision of an inode's attributes. It starts at 0 and increases with every accepted attribute update, even when the map doesn't change.
 type AttributesRevisionNo = int64
 
-// Opaque token identifying one parent and name binding version.
+// An opaque token for one version of a parent and name binding.
 type BindingVersion = string
 
-// Sequence number assigned to a namespace commit. It determines the order in which commits become visible.
+// The sequence number of one namespace commit. Commits become visible in the order of these numbers.
 type ChangeSeq = int64
 
-// One checkpoint resource described by its durable record.
+// One checkpoint, as its durable record stores it.
 var (
 	checkpointFieldCapturedSeq  = big.NewInt(1 << 0)
 	checkpointFieldCheckpointID = big.NewInt(1 << 1)
@@ -103,19 +105,20 @@ var (
 )
 
 type Checkpoint struct {
-	// Namespace sequence captured by the checkpoint.
+	// The namespace sequence that the checkpoint captured.
 	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
-	// Durable checkpoint id used to address the checkpoint for deletion.
+	// The checkpoint's durable ID. Use it to delete the checkpoint.
 	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
-	// Time the checkpoint record was created, in Unix milliseconds.
+	// The time the checkpoint record was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// Expiry in Unix milliseconds; collection waits one further grace window.
+	// The time the checkpoint expires, in Unix milliseconds. Garbage collection waits one more
+	// grace window before it deletes the record.
 	ExpiresAtMs *int64 `json:"expires_at_ms,omitempty" url:"expires_at_ms,omitempty"`
-	// Manifest pinned by the checkpoint.
+	// The manifest that the checkpoint pins.
 	ManifestNo ManifestNo `json:"manifest_no" url:"manifest_no"`
-	// Namespace that owns the checkpoint.
+	// The namespace that the checkpoint belongs to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Who owns the checkpoint, including the label carried by a user pin.
+	// The checkpoint's owner. For a user pin, the owner includes the label.
 	Owner *CheckpointOwner `json:"owner" url:"owner"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -430,13 +433,14 @@ func (c *CheckpointOwner) validate() error {
 	return nil
 }
 
-// A fork target retaining its source basis for one fork attempt.
+// A pin that keeps the source state that one fork attempt starts from.
 var (
 	checkpointOwnerForkFieldTargetNamespaceID = big.NewInt(1 << 0)
 )
 
 type CheckpointOwnerFork struct {
-	// The target namespace whose existence retains this checkpoint.
+	// The fork's target namespace. Garbage collection keeps this checkpoint while that
+	// namespace exists.
 	TargetNamespaceID NamespaceID `json:"target_namespace_id" url:"target_namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -516,13 +520,13 @@ func (c *CheckpointOwnerFork) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// An application-created read view.
+// A pin that an application created as a snapshot. It's readable until it expires.
 var (
 	checkpointOwnerSnapshotFieldName = big.NewInt(1 << 0)
 )
 
 type CheckpointOwnerSnapshot struct {
-	// A label that does not need to be unique.
+	// The snapshot's label, which doesn't need to be unique.
 	Name string `json:"name" url:"name"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -602,13 +606,13 @@ func (c *CheckpointOwnerSnapshot) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// An operator-created pin, deleted by id or by its own expiry.
+// A pin that an operator created. It's deleted by its ID or after it expires.
 var (
 	checkpointOwnerUserFieldName = big.NewInt(1 << 0)
 )
 
 type CheckpointOwnerUser struct {
-	// The non-unique label recorded by the creator.
+	// The label that the creator recorded. Labels don't need to be unique.
 	Name string `json:"name" url:"name"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -688,16 +692,16 @@ func (c *CheckpointOwnerUser) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// A checksum algorithm and its canonical lowercase hexadecimal value.
+// A checksum algorithm and the checksum's canonical lowercase hexadecimal value.
 var (
 	checksumFieldAlgorithm = big.NewInt(1 << 0)
 	checksumFieldValue     = big.NewInt(1 << 1)
 )
 
 type Checksum struct {
-	// Algorithm that produced `value`.
+	// The algorithm that produced `value`.
 	Algorithm ChecksumAlgorithm `json:"algorithm" url:"algorithm"`
-	// The canonical lowercase hexadecimal checksum without a prefix.
+	// The checksum in canonical lowercase hexadecimal, without a prefix.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -814,7 +818,7 @@ func (c ChecksumAlgorithm) Ptr() *ChecksumAlgorithm {
 	return &c
 }
 
-// One committed logical commit: its identity and the events it applied.
+// One commit, including its identity and the events it applied.
 var (
 	commitFieldCommitID      = big.NewInt(1 << 0)
 	commitFieldCommittedAtMs = big.NewInt(1 << 1)
@@ -826,19 +830,20 @@ var (
 )
 
 type Commit struct {
-	// The idempotency key for the commit.
+	// The commit's idempotency key.
 	CommitID CommitID `json:"commit_id" url:"commit_id"`
-	// The commit time in Unix milliseconds; `committed_seq` defines commit order.
+	// The time the commit was made, in Unix milliseconds. Commit order comes from `committed_seq`,
+	// not from this time.
 	CommittedAtMs int64 `json:"committed_at_ms" url:"committed_at_ms"`
-	// Actor responsible for the commit, as supplied by the application.
+	// The actor responsible for the commit, as the application supplied it.
 	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
-	// Sequence number where the commit became visible.
+	// The sequence at which the commit became visible.
 	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
-	// The semantic filesystem operations the commit applied, in request order.
+	// The semantic filesystem changes that the commit applied, in request order.
 	Events []*FilesystemChange `json:"events" url:"events"`
-	// The optional caller annotation for the commit.
+	// The caller's optional annotation for the commit.
 	Message *string `json:"message,omitempty" url:"message,omitempty"`
-	// Namespace that changed.
+	// The namespace that changed.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1002,15 +1007,15 @@ func (c *Commit) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Client-supplied idempotency key for one logical commit.
+// The client's idempotency key for one logical commit.
 //
-// Reuse the same `CommitId` when retrying the same request. The accepted
-// grammar is 1 to 128 lowercase ASCII letters, digits, dots, underscores,
-// or hyphens, starting with a letter or digit. Generated commit ids have the
-// form `c_<32 lowercase hex>`, but callers may supply any value in that grammar.
+// Reuse the same commit ID when you retry the same request. A commit ID is 1 to 128 lowercase
+// ASCII letters, digits, dots, underscores, or hyphens, and it starts with a letter or digit.
+// Generated commit IDs have the form `c_<32 lowercase hex>`, but callers can supply any value
+// that follows these rules.
 type CommitID = string
 
-// What the bounded compaction part of a maintenance pass did.
+// What the bounded compaction step of a maintenance pass did.
 type CompactionStepOutcome struct {
 	Outcome                    string
 	BoundedMergePublished      *CompactionStepOutcomeBoundedMergePublished
@@ -1209,7 +1214,7 @@ func (c *CompactionStepOutcome) validate() error {
 	return nil
 }
 
-// One family group was merged and a manifest published.
+// One family group was merged, and a new manifest was published.
 type CompactionStepOutcomeBoundedMergePublished struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1275,7 +1280,7 @@ func (c *CompactionStepOutcomeBoundedMergePublished) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// A newer runtime holds the compactor epoch.
+// A newer runtime claimed the namespace's compactor epoch, so this step published nothing.
 type CompactionStepOutcomeFenced struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1407,8 +1412,9 @@ func (c *CompactionStepOutcomeManifestAdvanced) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// A family group's window is too large for one bounded merge. Run the
-// `metadata_compaction` job, which compacts it by streaming.
+// A family group's window is too large for one bounded merge.
+//
+// Run the `metadata_compaction` job, which compacts the group by streaming.
 type CompactionStepOutcomeMetadataCompactionRequired struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1540,10 +1546,10 @@ func (c *CompactionStepOutcomeNotNeeded) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Random identity of one immutable content object.
+// The random identity of one immutable content object.
 type ContentID = string
 
-// Identifies a chain prefix by its owner, content id, size, and checksum.
+// A reference to a prefix of one content chain, by its owner, content ID, size, and checksum.
 var (
 	contentRefFieldChecksum         = big.NewInt(1 << 0)
 	contentRefFieldContentID        = big.NewInt(1 << 1)
@@ -1553,15 +1559,16 @@ var (
 )
 
 type ContentRef struct {
-	// Mandatory checksum over the referenced bytes.
+	// The required checksum of the referenced bytes.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
-	// Immutable identity of the content; with the owner, it determines the object key.
+	// The immutable identity of the content. The content ID and the owner together determine the
+	// object key.
 	ContentID ContentID `json:"content_id" url:"content_id"`
-	// Content strategy used by the referenced content.
+	// The kind of content reference. The format defines one kind, `blob_v1`.
 	Kind ContentRefKind `json:"kind" url:"kind"`
-	// Namespace that originally wrote the bytes.
+	// The namespace that originally wrote the bytes.
 	OwnerNamespaceID NamespaceID `json:"owner_namespace_id" url:"owner_namespace_id"`
-	// Byte length of the referenced bytes, a prefix of the content object.
+	// The length of the referenced bytes, which are a prefix of the content object.
 	SizeBytes int64 `json:"size_bytes" url:"size_bytes"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1697,7 +1704,7 @@ func (c *ContentRef) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// A supported content reference kind serialized as a string.
+// A supported kind of content reference, serialized as a string.
 type ContentRefKind string
 
 const (
@@ -1717,16 +1724,17 @@ func (c ContentRefKind) Ptr() *ContentRefKind {
 	return &c
 }
 
-// Proof that a specific `content_ref` may be used in a later commit.
+// A signed token that shows a `content_ref` was verified in a completed upload, so a later
+// commit can use that reference.
 var (
 	contentTokenFieldContentRef = big.NewInt(1 << 0)
 	contentTokenFieldToken      = big.NewInt(1 << 1)
 )
 
 type ContentToken struct {
-	// Content authorized by this token.
+	// The content that this token authorizes.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// The opaque server-signed token that clients must not parse.
+	// The opaque token that the server signed. Clients must not parse it.
 	Token string `json:"token" url:"token"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1820,16 +1828,16 @@ func (c *ContentToken) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Identifies the checkpoint record that was deleted.
+// The checkpoint record that was deleted.
 var (
 	deleteCheckpointResponseFieldCheckpointID = big.NewInt(1 << 0)
 	deleteCheckpointResponseFieldNamespaceID  = big.NewInt(1 << 1)
 )
 
 type DeleteCheckpointResponse struct {
-	// Deleted checkpoint record.
+	// The ID of the deleted checkpoint record.
 	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
-	// Namespace the checkpoint belonged to.
+	// The namespace that the checkpoint belonged to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1923,7 +1931,7 @@ func (d *DeleteCheckpointResponse) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// Checkpoint record counts deleted by one garbage-collection pass, grouped by owner.
+// The number of checkpoint records that one garbage collection pass deleted, grouped by owner.
 var (
 	deletedCheckpointsByOwnerFieldFork     = big.NewInt(1 << 0)
 	deletedCheckpointsByOwnerFieldSnapshot = big.NewInt(1 << 1)
@@ -1931,11 +1939,11 @@ var (
 )
 
 type DeletedCheckpointsByOwner struct {
-	// Fork-owned records deleted because their target namespaces are gone.
+	// The fork pins that the pass deleted because their target namespaces no longer exist.
 	Fork int64 `json:"fork" url:"fork"`
-	// Snapshot-owned records deleted after expiry or namespace deletion.
+	// The snapshot pins that the pass deleted after they expired or their namespace was deleted.
 	Snapshot int64 `json:"snapshot" url:"snapshot"`
-	// User-owned records deleted after expiry or namespace deletion.
+	// The user pins that the pass deleted after they expired or their namespace was deleted.
 	User int64 `json:"user" url:"user"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2043,7 +2051,7 @@ func (d *DeletedCheckpointsByOwner) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// Object counts deleted by one garbage-collection pass, grouped by family.
+// The number of objects that one garbage collection pass deleted, grouped by object family.
 var (
 	deletedObjectCountsFieldContentObjects        = big.NewInt(1 << 0)
 	deletedObjectCountsFieldManifests             = big.NewInt(1 << 1)
@@ -2055,19 +2063,21 @@ var (
 )
 
 type DeletedObjectCounts struct {
-	// Content objects no retained view names, deleted once older than the grace window.
+	// The content objects the pass deleted because no retained view referenced them and they were
+	// older than the grace window.
 	ContentObjects int64 `json:"content_objects" url:"content_objects"`
-	// Unreferenced manifests deleted.
+	// The unreferenced manifests that the pass deleted.
 	Manifests int64 `json:"manifests" url:"manifests"`
-	// Unreferenced metadata segments deleted.
+	// The unreferenced metadata segments that the pass deleted.
 	MetadataSegments int64 `json:"metadata_segments" url:"metadata_segments"`
-	// Listed content objects deleted from a retired namespace.
+	// The content objects that the pass listed under a retired namespace and deleted.
 	RetiredContentObjects int64 `json:"retired_content_objects" url:"retired_content_objects"`
-	// Store temporary objects deleted once older than the grace window.
+	// The store's temporary objects that the pass deleted because they were older than the grace
+	// window.
 	TemporaryObjects int64 `json:"temporary_objects" url:"temporary_objects"`
-	// Upload-session control objects deleted after the reap window.
+	// The upload session records that the pass deleted after their grace windows passed.
 	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
-	// Unreferenced WAL objects deleted.
+	// The unreferenced WAL objects that the pass deleted.
 	WalObjects int64 `json:"wal_objects" url:"wal_objects"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2239,11 +2249,11 @@ var (
 )
 
 type DirectoryBinding struct {
-	// Name shown to users.
+	// The name that users see.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// Name used to look up the entry.
+	// The name key that lookups use to find the entry.
 	NameKey NameKey `json:"name_key" url:"name_key"`
-	// Parent directory containing the entry.
+	// The parent directory that contains the entry.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2351,10 +2361,10 @@ func (d *DirectoryBinding) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// User-facing spelling of one path component.
+// One path component, spelled as users see it.
 type DisplayName = string
 
-// One contiguous run of a revision's bytes, read from one object.
+// One contiguous run of a revision's bytes, which the client reads from one object.
 var (
 	downloadRangeFieldAccess      = big.NewInt(1 << 0)
 	downloadRangeFieldLength      = big.NewInt(1 << 1)
@@ -2362,11 +2372,11 @@ var (
 )
 
 type DownloadRange struct {
-	// Short-lived read capability for exactly those bytes.
+	// A short-lived read capability for exactly this range's bytes.
 	Access *ObjectTransferAccess `json:"access" url:"access"`
-	// Bytes in the run.
+	// The number of bytes in the run.
 	Length int64 `json:"length" url:"length"`
-	// Offset of the run's first byte in the revision.
+	// The offset of the run's first byte in the revision.
 	StartOffset int64 `json:"start_offset" url:"start_offset"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2474,7 +2484,9 @@ func (d *DownloadRange) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// Optional machine-readable identifiers and state for an `ErrorResponse`.
+// The machine-readable identifiers and state that explain an error response.
+//
+// Every field is optional.
 var (
 	errorDetailsFieldActiveAcquiredAtMs           = big.NewInt(1 << 0)
 	errorDetailsFieldActiveWriterEpoch            = big.NewInt(1 << 1)
@@ -2506,60 +2518,63 @@ var (
 )
 
 type ErrorDetails struct {
-	// The Unix-millisecond time when the current writer acquired its epoch, when available.
+	// The time the current writer acquired its epoch, in Unix milliseconds. It's present when the
+	// current manifest records a writer.
 	ActiveAcquiredAtMs *int64 `json:"active_acquired_at_ms,omitempty" url:"active_acquired_at_ms,omitempty"`
-	// Epoch that currently owns the namespace.
+	// The namespace's current writer epoch.
 	ActiveWriterEpoch *WriterEpoch `json:"active_writer_epoch,omitempty" url:"active_writer_epoch,omitempty"`
-	// The writer ID recorded for the current epoch, when available.
+	// The writer of the current epoch. It's present when the current manifest records a writer.
 	ActiveWriterID *WriterID `json:"active_writer_id,omitempty" url:"active_writer_id,omitempty"`
-	// Access revision that is actually current for the inode.
+	// The access revision that is actually current for the inode.
 	ActualAccessRevisionNo *AccessRevisionNo `json:"actual_access_revision_no,omitempty" url:"actual_access_revision_no,omitempty"`
-	// Attribute revision that is actually current for the inode.
+	// The attribute revision that is actually current for the inode.
 	ActualAttributesRevisionNo *AttributesRevisionNo `json:"actual_attributes_revision_no,omitempty" url:"actual_attributes_revision_no,omitempty"`
-	// Current binding token.
+	// The current binding token.
 	ActualBindingVersion *BindingVersion `json:"actual_binding_version,omitempty" url:"actual_binding_version,omitempty"`
-	// Deletion sequence actually active for the inode.
+	// The deletion sequence that is actually active for the inode.
 	ActualDeletionSeq *ChangeSeq `json:"actual_deletion_seq,omitempty" url:"actual_deletion_seq,omitempty"`
-	// The actual namespace head sequence.
+	// The namespace's actual head sequence.
 	ActualHeadSeq *ChangeSeq `json:"actual_head_seq,omitempty" url:"actual_head_seq,omitempty"`
-	// The path actually contained this inode.
+	// The inode that the path actually contained.
 	ActualInodeID *InodeID `json:"actual_inode_id,omitempty" url:"actual_inode_id,omitempty"`
-	// Revision that is actually current; absent when the inode has none.
+	// The revision that is actually current. It's absent when the inode has no current revision.
 	ActualRevisionNo *RevisionNo `json:"actual_revision_no,omitempty" url:"actual_revision_no,omitempty"`
-	// Change-feed cursor the request asked to resume after.
+	// The `after_seq` value from the change feed request.
 	AfterSeq *ChangeSeq `json:"after_seq,omitempty" url:"after_seq,omitempty"`
-	// Idempotency key of the commit the error concerns.
+	// The idempotency key of the commit that the error is about.
 	CommitID *CommitID `json:"commit_id,omitempty" url:"commit_id,omitempty"`
-	// The fingerprint of the mutation that landed under `commit_id`, present with `committed_seq`.
+	// The fingerprint of the mutation that was committed under `commit_id`. This field is present
+	// exactly when `committed_seq` is present.
 	CommittedFingerprint *string `json:"committed_fingerprint,omitempty" url:"committed_fingerprint,omitempty"`
-	// The sequence where this commit ID already landed, when recorded by a durable receipt.
+	// The sequence that `commit_id` was already committed at. The server includes it when a
+	// durable commit receipt records that commit.
 	CommittedSeq *ChangeSeq `json:"committed_seq,omitempty" url:"committed_seq,omitempty"`
-	// Access revision the request expected to be current.
+	// The access revision that the request expected to be current.
 	ExpectedAccessRevisionNo *AccessRevisionNo `json:"expected_access_revision_no,omitempty" url:"expected_access_revision_no,omitempty"`
-	// Attribute revision the request expected to be current.
+	// The attribute revision that the request expected to be current.
 	ExpectedAttributesRevisionNo *AttributesRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
-	// Opaque binding token supplied by the request.
+	// The opaque binding token that the request supplied.
 	ExpectedBindingVersion *BindingVersion `json:"expected_binding_version,omitempty" url:"expected_binding_version,omitempty"`
-	// Deletion sequence the undelete expected to be active.
+	// The deletion sequence that the undelete expected to be active.
 	ExpectedDeletionSeq *ChangeSeq `json:"expected_deletion_seq,omitempty" url:"expected_deletion_seq,omitempty"`
-	// The head sequence required by the request.
+	// The head sequence that the request required.
 	ExpectedHeadSeq *ChangeSeq `json:"expected_head_seq,omitempty" url:"expected_head_seq,omitempty"`
-	// The request expected the path to contain this inode.
+	// The inode that the request expected the path to contain.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
-	// Revision the request expected to be current.
+	// The revision that the request expected to be current.
 	ExpectedRevisionNo *RevisionNo `json:"expected_revision_no,omitempty" url:"expected_revision_no,omitempty"`
-	// Epoch the failing writer session held when it was displaced.
+	// The epoch of the failed writer session at the time another writer displaced it.
 	FencedWriterEpoch *WriterEpoch `json:"fenced_writer_epoch,omitempty" url:"fenced_writer_epoch,omitempty"`
-	// Inode the failed precondition or operation targeted.
+	// The inode that the failed precondition or operation targeted.
 	InodeID *InodeID `json:"inode_id,omitempty" url:"inode_id,omitempty"`
 	// The deleted namespace that caused the operation to fail.
 	NamespaceID *NamespaceID `json:"namespace_id,omitempty" url:"namespace_id,omitempty"`
 	// The index of the failed operation in the request.
 	OperationIndex *int `json:"operation_index,omitempty" url:"operation_index,omitempty"`
-	// Zero-based position of the failed request precondition.
+	// The zero-based position of the failed request precondition.
 	PreconditionIndex *int `json:"precondition_index,omitempty" url:"precondition_index,omitempty"`
-	// Oldest position a change feed can resume after. The feed returns
-	// changes above it.
+	// The namespace's retention floor. A change feed request can set `after_seq` to this sequence
+	// or any later one, and the feed returns the changes committed after it.
 	RetentionFloorSeq *ChangeSeq `json:"retention_floor_seq,omitempty" url:"retention_floor_seq,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3003,7 +3018,7 @@ func (e *ErrorDetails) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
-// HTTP error body used by LoonFS APIs.
+// The JSON body that LoonFS APIs return with an HTTP error status.
 var (
 	errorResponseFieldCode      = big.NewInt(1 << 0)
 	errorResponseFieldDetails   = big.NewInt(1 << 1)
@@ -3014,17 +3029,17 @@ var (
 )
 
 type ErrorResponse struct {
-	// The stable machine-readable error code as a string.
+	// The stable, machine-readable error code.
 	Code string `json:"code" url:"code"`
-	// The optional machine-readable context for the error code.
+	// Optional machine-readable context for the error code.
 	Details *ErrorDetails `json:"details,omitempty" url:"details,omitempty"`
-	// The capability feature key for a `not_supported` error.
+	// The capability feature that isn't supported, when the code is `not_supported`.
 	Feature *string `json:"feature,omitempty" url:"feature,omitempty"`
-	// Human-readable error message.
+	// A human-readable description of the error.
 	Message string `json:"message" url:"message"`
-	// The invalid JSON Pointer, parameter name, CLI flag, or CLI argument.
+	// The invalid input, as a JSON Pointer, a parameter name, a CLI flag, or a CLI argument.
 	Param *string `json:"param,omitempty" url:"param,omitempty"`
-	// The request correlation ID also sent in the `x-request-id` response header.
+	// The request ID. The server also sends this ID in the `x-request-id` response header.
 	RequestID *string `json:"request_id,omitempty" url:"request_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3174,7 +3189,7 @@ func (e *ErrorResponse) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
-// One immutable file revision.
+// One immutable revision of a file.
 var (
 	fileRevisionFieldCommitID      = big.NewInt(1 << 0)
 	fileRevisionFieldCommittedAtMs = big.NewInt(1 << 1)
@@ -3186,19 +3201,20 @@ var (
 )
 
 type FileRevision struct {
-	// Commit ID for this revision.
+	// The ID of the commit that created this revision.
 	CommitID CommitID `json:"commit_id" url:"commit_id"`
-	// The commit time in Unix milliseconds; `committed_seq` defines commit order.
+	// The time the revision was committed, in Unix milliseconds. Commit order comes from
+	// `committed_seq`, not from this time.
 	CommittedAtMs int64 `json:"committed_at_ms" url:"committed_at_ms"`
-	// Actor responsible for this revision, as supplied by the application.
+	// The actor responsible for this revision, as the application supplied it.
 	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
-	// Namespace sequence that created this revision.
+	// The namespace sequence of the commit that created this revision.
 	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
-	// Content stored for this revision.
+	// The content stored for this revision.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// File inode that owns this revision.
+	// The file inode that this revision belongs to.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Revision number within the file inode.
+	// The revision number within the file inode.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3364,9 +3380,10 @@ func (f *FileRevision) String() string {
 
 // One filesystem change within a commit.
 //
-// One request operation can produce multiple changes.
+// One request operation can produce several changes.
 //
-// Newer servers may report other event kinds; clients ignore them.
+// A newer server can return a change kind that isn't listed here. Clients should skip a change
+// whose kind they don't recognize.
 type FilesystemChange struct {
 	Kind              string
 	AccessChanged     *FilesystemChangeAccessChanged
@@ -3637,8 +3654,9 @@ func (f *FilesystemChange) validate() error {
 	return nil
 }
 
-// An inode's access row was replaced. `grants` is the complete
-// direct grant map after the update.
+// An inode's access row was replaced.
+//
+// `grants` is the complete direct grant map after the update.
 var (
 	filesystemChangeAccessChangedFieldAccessRevisionNo = big.NewInt(1 << 0)
 	filesystemChangeAccessChangedFieldBoundary         = big.NewInt(1 << 1)
@@ -3647,13 +3665,13 @@ var (
 )
 
 type FilesystemChangeAccessChanged struct {
-	// Revision published by the update.
+	// The access revision that the update published.
 	AccessRevisionNo AccessRevisionNo `json:"access_revision_no" url:"access_revision_no"`
-	// Whether the directory stops inheritance from its ancestors.
+	// Whether the directory stops inheriting grants from its ancestors.
 	Boundary bool `json:"boundary" url:"boundary"`
-	// The inode's complete direct grants after this update.
+	// Every direct grant that the inode has after this update.
 	Grants AccessGrants `json:"grants" url:"grants"`
-	// Inode whose access state advanced.
+	// The inode whose access row changed.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3783,12 +3801,12 @@ var (
 )
 
 type FilesystemChangeAttributesChanged struct {
-	// The inode's complete attribute map after the update, including an empty map
-	// when all attributes were cleared.
+	// The inode's complete attribute map after the update. The map is empty when the update
+	// removed every attribute.
 	Attributes Attributes `json:"attributes" url:"attributes"`
-	// New attribute revision for that inode.
+	// The inode's new attribute revision.
 	AttributesRevisionNo AttributesRevisionNo `json:"attributes_revision_no" url:"attributes_revision_no"`
-	// Inode whose attributes advanced.
+	// The inode whose attributes changed.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3904,11 +3922,12 @@ var (
 )
 
 type FilesystemChangeContentChanged struct {
-	// Immutable content published by the revision.
+	// The immutable content that the revision published.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// File inode whose history advanced.
+	// The file inode whose history advanced.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// New monotonic position in that file's revision history.
+	// The file's new revision number, which is higher than the number of every earlier
+	// revision.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4023,9 +4042,9 @@ var (
 )
 
 type FilesystemChangeDeleted struct {
-	// Directory binding removed by the deletion.
+	// The directory binding that the deletion removed.
 	DeletedBinding *DirectoryBinding `json:"deleted_binding" url:"deleted_binding"`
-	// Inode at the root of the deleted subtree.
+	// The inode at the root of the deleted subtree.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4128,13 +4147,13 @@ var (
 )
 
 type FilesystemChangeDirectoryCreated struct {
-	// Opaque identifier for the binding created by this event.
+	// The binding that this event created. The value is opaque.
 	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
-	// User-facing spelling of the new entry.
+	// The display name of the new entry.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// Newly allocated namespace-scoped inode identity.
+	// The newly allocated inode, unique within the namespace.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Directory the new entry was bound under.
+	// The directory that the new entry was bound under.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4267,17 +4286,17 @@ var (
 )
 
 type FilesystemChangeFileCreated struct {
-	// Opaque identifier for the binding created by this event.
+	// The binding that this event created. The value is opaque.
 	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
-	// Content of the first revision.
+	// The content of the first revision.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// User-facing spelling of the new entry.
+	// The display name of the new entry.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// Newly allocated namespace-scoped inode identity.
+	// The newly allocated inode, unique within the namespace.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Directory the new entry was bound under.
+	// The directory that the new entry was bound under.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
-	// First revision number.
+	// The file's first revision number.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4438,17 +4457,17 @@ var (
 )
 
 type FilesystemChangeMoved struct {
-	// Opaque identifier for the binding created by this event.
+	// The binding that this event created. The value is opaque.
 	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
-	// Spelling of the new binding.
+	// The display name of the new binding.
 	DestinationDisplayName DisplayName `json:"destination_display_name" url:"destination_display_name"`
-	// Directory holding the new binding.
+	// The directory that contains the new binding.
 	DestinationParentInodeID InodeID `json:"destination_parent_inode_id" url:"destination_parent_inode_id"`
-	// Inode whose binding changed.
+	// The inode whose binding changed.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Spelling of the removed binding.
+	// The display name of the removed binding.
 	SourceDisplayName DisplayName `json:"source_display_name" url:"source_display_name"`
-	// Directory that held the removed binding.
+	// The directory that contained the removed binding.
 	SourceParentInodeID InodeID `json:"source_parent_inode_id" url:"source_parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4607,13 +4626,13 @@ var (
 )
 
 type FilesystemChangeUndeleted struct {
-	// Opaque identifier for the binding created by this event.
+	// The binding that this event created. The value is opaque.
 	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
-	// Spelling of the recovered binding.
+	// The display name of the recovered binding.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// Recovered inode.
+	// The recovered inode.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Directory the recovered entry was bound under.
+	// The directory that the recovered entry was bound under.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4886,7 +4905,7 @@ func (g *GrepIndex) validate() error {
 	return nil
 }
 
-// An index following the change feed through its searchable watermark.
+// An index that follows the change feed and can be searched through its watermark.
 var (
 	grepIndexStatusActiveFieldBuiltThroughSeq   = big.NewInt(1 << 0)
 	grepIndexStatusActiveFieldNamespaceID       = big.NewInt(1 << 1)
@@ -4896,16 +4915,16 @@ var (
 )
 
 type GrepIndexStatusActive struct {
-	// Sequence of the commit at the index cursor.
+	// The sequence of the commit at the index cursor.
 	BuiltThroughSeq ChangeSeq `json:"built_through_seq" url:"built_through_seq"`
-	// Namespace the status describes.
+	// The namespace that the status describes.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The next change-event offset within `built_through_seq`, or zero when the
-	// whole commit is indexed.
+	// The offset of the next change event within `built_through_seq`. It's zero when the whole
+	// commit is indexed.
 	NextEventIndex int `json:"next_event_index" url:"next_event_index"`
-	// Run number the index allocates next.
+	// The next run number that the index allocates.
 	NextRunNo RunNo `json:"next_run_no" url:"next_run_no"`
-	// True while a partitioned segment reorganization is in progress.
+	// Whether a partitioned segment reorganization is in progress.
 	ReorganizePending bool `json:"reorganize_pending" url:"reorganize_pending"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5041,7 +5060,7 @@ func (g *GrepIndexStatusActive) String() string {
 	return fmt.Sprintf("%#v", g)
 }
 
-// An initial scan of a pinned checkpoint that is not yet searchable.
+// An index that is running its initial scan of a pinned checkpoint and can't be searched yet.
 var (
 	grepIndexStatusBackfillingFieldCapturedSeq       = big.NewInt(1 << 0)
 	grepIndexStatusBackfillingFieldCheckpointID      = big.NewInt(1 << 1)
@@ -5052,17 +5071,17 @@ var (
 )
 
 type GrepIndexStatusBackfilling struct {
-	// The namespace sequence that completes the backfill when reached.
+	// The namespace sequence that completes the backfill when the index reaches it.
 	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
-	// Checkpoint pinning the state being walked.
+	// The checkpoint that pins the state being scanned.
 	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
-	// The inode after which the scan resumes, absent before the first page.
+	// The inode that the scan resumes after. It's absent before the first page.
 	CursorInodeID *InodeID `json:"cursor_inode_id,omitempty" url:"cursor_inode_id,omitempty"`
-	// Namespace the status describes.
+	// The namespace that the status describes.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Run number the index allocates next.
+	// The next run number that the index allocates.
 	NextRunNo RunNo `json:"next_run_no" url:"next_run_no"`
-	// True while a partitioned segment reorganization is in progress.
+	// Whether a partitioned segment reorganization is in progress.
 	ReorganizePending bool `json:"reorganize_pending" url:"reorganize_pending"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5220,11 +5239,11 @@ var (
 )
 
 type GrepIndexStatusDisabled struct {
-	// Namespace the status describes.
+	// The namespace that the status describes.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Run number the index allocates next.
+	// The next run number that the index allocates.
 	NextRunNo RunNo `json:"next_run_no" url:"next_run_no"`
-	// True while a partitioned segment reorganization is in progress.
+	// Whether a partitioned segment reorganization is in progress.
 	ReorganizePending bool `json:"reorganize_pending" url:"reorganize_pending"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5332,11 +5351,11 @@ func (g *GrepIndexStatusDisabled) String() string {
 	return fmt.Sprintf("%#v", g)
 }
 
-// Stable inode ID within a namespace
+// The stable ID of one inode within a namespace. An inode's ID doesn't change.
 type InodeID = string
 
-// One page of existing checkpoint records, including expired records that
-// collection has not yet deleted.
+// One page of checkpoint records, including expired records that garbage collection hasn't deleted
+// yet.
 var (
 	listCheckpointsResponseFieldCheckpoints = big.NewInt(1 << 0)
 	listCheckpointsResponseFieldNamespaceID = big.NewInt(1 << 1)
@@ -5344,11 +5363,11 @@ var (
 )
 
 type ListCheckpointsResponse struct {
-	// The records in ascending checkpoint ID order.
+	// The records, in ascending checkpoint ID order.
 	Checkpoints []*Checkpoint `json:"checkpoints" url:"checkpoints"`
-	// Namespace the records belong to.
+	// The namespace that the records belong to.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Opaque cursor for the next page.
+	// An opaque cursor for the next page.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5456,7 +5475,7 @@ func (l *ListCheckpointsResponse) String() string {
 	return fmt.Sprintf("%#v", l)
 }
 
-// Response for listing file revisions.
+// One page of a file's revisions.
 var (
 	listFileRevisionsResponseFieldHeadSeq     = big.NewInt(1 << 0)
 	listFileRevisionsResponseFieldInodeID     = big.NewInt(1 << 1)
@@ -5466,15 +5485,15 @@ var (
 )
 
 type ListFileRevisionsResponse struct {
-	// Namespace head sequence used for the read.
+	// The namespace head sequence that the read used.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// File inode whose revisions were returned.
+	// The file inode whose revisions were returned.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Namespace that was read.
+	// The namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Opaque cursor for the next page, if more revisions are available.
+	// An opaque cursor for the next page, if more revisions are available.
 	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
-	// Retained revisions in order.
+	// The retained revisions, in order.
 	Revisions []*FileRevision `json:"revisions" url:"revisions"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5610,7 +5629,7 @@ func (l *ListFileRevisionsResponse) String() string {
 	return fmt.Sprintf("%#v", l)
 }
 
-// Monotonic manifest counter for one namespace. It can increase when metadata changes, even if no namespace commit is written.
+// The number of one of a namespace's manifests. Later manifests have higher numbers, and the number can increase when metadata changes, even if no namespace commit is written.
 type ManifestNo = int64
 
 // The outcome of one metadata compaction run.
@@ -5836,7 +5855,8 @@ func (m *MetadataCompactionOutcome) validate() error {
 	return nil
 }
 
-// Inputs changed, time ran out, or publication retries were exhausted.
+// The run stopped because its inputs changed, time ran out, or publication retries were
+// exhausted.
 type MetadataCompactionOutcomeAbandoned struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5902,7 +5922,7 @@ func (m *MetadataCompactionOutcomeAbandoned) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// The selected window fit a bounded step and this run published it.
+// The selected window fit in a bounded step, and this run published it.
 type MetadataCompactionOutcomeBoundedMergePublished struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5968,7 +5988,7 @@ func (m *MetadataCompactionOutcomeBoundedMergePublished) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// The run was cancelled; the manifest did not move.
+// The run was cancelled, so the current manifest didn't change.
 type MetadataCompactionOutcomeCancelled struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6034,7 +6054,7 @@ func (m *MetadataCompactionOutcomeCancelled) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// Another process claimed the namespace compactor role; nothing was published.
+// Another process claimed the namespace's compactor epoch, so nothing was published.
 type MetadataCompactionOutcomeFenced struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6100,7 +6120,7 @@ func (m *MetadataCompactionOutcomeFenced) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// No eligible family group was available and nothing was published.
+// No eligible family group was available, so nothing was published.
 type MetadataCompactionOutcomeNotNeeded struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6166,7 +6186,7 @@ func (m *MetadataCompactionOutcomeNotNeeded) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// The selected run window was replaced in a published manifest.
+// A streaming compaction merged the selected window and published the next manifest.
 var (
 	metadataCompactionOutcomePublishedFieldInputBytes     = big.NewInt(1 << 0)
 	metadataCompactionOutcomePublishedFieldManifestNo     = big.NewInt(1 << 1)
@@ -6177,17 +6197,17 @@ var (
 )
 
 type MetadataCompactionOutcomePublished struct {
-	// Input bytes read by the compaction.
+	// The input bytes that the compaction read.
 	InputBytes int64 `json:"input_bytes" url:"input_bytes"`
-	// Manifest published by the compaction.
+	// The manifest that the compaction published.
 	ManifestNo ManifestNo `json:"manifest_no" url:"manifest_no"`
-	// Output bytes written by the compaction.
+	// The output bytes that the compaction wrote.
 	OutputBytes int64 `json:"output_bytes" url:"output_bytes"`
-	// Output segments written by the compaction.
+	// The output segments that the compaction wrote.
 	OutputSegments int64 `json:"output_segments" url:"output_segments"`
-	// Rows read by the compaction.
+	// The rows that the compaction read.
 	RowsRead int64 `json:"rows_read" url:"rows_read"`
-	// Rows written by the compaction.
+	// The rows that the compaction wrote.
 	RowsWritten int64 `json:"rows_written" url:"rows_written"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6337,13 +6357,13 @@ func (m *MetadataCompactionOutcomePublished) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// Name-policy-derived directory entry key.
+// The directory entry key that the namespace's naming mode derives from a display name.
 //
-// Use this for exact name preconditions. Keep user-facing spelling in
-// `DisplayName`.
+// Use the name key for exact name preconditions, and use the display name for the spelling
+// that users see.
 type NameKey = string
 
-// Namespace state and storage details used by maintenance.
+// A namespace's state and the storage details that maintenance uses.
 var (
 	namespaceDiagnosticsFieldCreatedAtMs       = big.NewInt(1 << 0)
 	namespaceDiagnosticsFieldCreatedBy         = big.NewInt(1 << 1)
@@ -6358,26 +6378,28 @@ var (
 )
 
 type NamespaceDiagnostics struct {
-	// Time the namespace was created, in Unix milliseconds.
+	// The time the namespace was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// Actor that created the namespace, as supplied by the application.
+	// The actor that created the namespace, as the application supplied it.
 	CreatedBy ActorID `json:"created_by" url:"created_by"`
-	// The namespace's current manifest number.
+	// The number of the namespace's current manifest.
 	CurrentManifestNo *ManifestNo `json:"current_manifest_no,omitempty" url:"current_manifest_no,omitempty"`
-	// Present only for a fork: the source it was forked from.
+	// The namespace and sequence this namespace was forked from. Only a forked namespace has this
+	// field.
 	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
-	// Current visible namespace sequence.
+	// The sequence of the namespace's newest visible commit.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Number of user checkpoints, including expired records awaiting collection.
+	// The number of user checkpoints, including expired records that garbage collection hasn't
+	// deleted yet.
 	LiveCheckpoints int64 `json:"live_checkpoints" url:"live_checkpoints"`
-	// Number of snapshots that had not expired when diagnostics began.
+	// The number of snapshots that hadn't expired when the diagnostics read began.
 	LiveSnapshots int64 `json:"live_snapshots" url:"live_snapshots"`
-	// Namespace ID.
+	// The namespace ID.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Oldest position a change feed can resume after. The feed returns
-	// changes above it.
+	// The namespace's retention floor. A change feed request can set `after_seq` to this sequence
+	// or any later one, and the feed returns the changes committed after it.
 	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
-	// Number of visible WAL objects after the current manifest.
+	// The number of visible WAL objects after the current manifest.
 	WalTailObjects int64 `json:"wal_tail_objects" url:"wal_tail_objects"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6583,16 +6605,16 @@ func (n *NamespaceDiagnostics) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
-// The source a forked namespace started from.
+// The source namespace and sequence that a forked namespace started from.
 var (
 	namespaceForkBasisFieldSourceHeadSeq     = big.NewInt(1 << 0)
 	namespaceForkBasisFieldSourceNamespaceID = big.NewInt(1 << 1)
 )
 
 type NamespaceForkBasis struct {
-	// Source sequence the fork captured.
+	// The source namespace's sequence that the fork captured.
 	SourceHeadSeq ChangeSeq `json:"source_head_seq" url:"source_head_seq"`
-	// Namespace the fork was taken from.
+	// The namespace that the fork was taken from.
 	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"source_namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6686,15 +6708,14 @@ func (n *NamespaceForkBasis) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
-// Durable id for one namespace.
+// The durable ID of one namespace.
 //
-// A namespace id names one lifetime. This id is not a display name.
-// Its serialized form is 1 to 128
-// lowercase ASCII letters, digits, dots, underscores, or hyphens, starting
-// with a letter or digit; the `loonfs-` prefix is reserved for system use.
+// Each namespace ID refers to one namespace lifetime, and it isn't a display name. Its
+// serialized form is 1 to 128 lowercase ASCII letters, digits, dots, underscores, or hyphens,
+// and it starts with a letter or digit. The `loonfs-` prefix is reserved for system use.
 type NamespaceID = string
 
-// Client-facing direct transfer capability.
+// A capability that lets a client transfer bytes directly to or from object storage.
 type ObjectTransferAccess struct {
 	Kind         string
 	PresignedURL *ObjectTransferAccessPresignedURL
@@ -6797,7 +6818,7 @@ func (o *ObjectTransferAccess) validate() error {
 	return nil
 }
 
-// Short-lived URL plus required headers for one object-store read or write.
+// A short-lived URL, with the headers that one object store read or write requires.
 var (
 	objectTransferAccessPresignedURLFieldExpiresAtMs = big.NewInt(1 << 0)
 	objectTransferAccessPresignedURLFieldHeaders     = big.NewInt(1 << 1)
@@ -6806,13 +6827,13 @@ var (
 )
 
 type ObjectTransferAccessPresignedURL struct {
-	// Expiration timestamp in Unix milliseconds.
+	// The time the URL expires, in Unix milliseconds.
 	ExpiresAtMs int64 `json:"expires_at_ms" url:"expires_at_ms"`
-	// Headers that are covered by the signature and must be sent.
+	// The headers that the signature covers, which the client must send.
 	Headers map[string]string `json:"headers" url:"headers"`
-	// HTTP method the client must use.
+	// The HTTP method that the client must use.
 	Method string `json:"method" url:"method"`
-	// Full presigned URL.
+	// The full presigned URL.
 	URL string `json:"url" url:"url"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6934,11 +6955,12 @@ func (o *ObjectTransferAccessPresignedURL) String() string {
 	return fmt.Sprintf("%#v", o)
 }
 
-// Metadata for one path returned by stat and directory listings.
+// The metadata for one path, as stat and directory listings return it.
 //
-// Attribute fields are included only when requested.
+// The response includes attribute fields only when the request asks for them.
 //
-// Newer servers may report other inode kinds; clients read only the fields every entry carries.
+// A newer server can return an inode kind that isn't listed here. Clients should read only the
+// fields that every entry includes.
 type PathEntry struct {
 	InodeKind string
 	Dir       *PathEntryDirectory
@@ -7065,7 +7087,7 @@ func (p *PathEntry) validate() error {
 	return nil
 }
 
-// A directory without a revision payload.
+// A directory, which has no revision fields.
 var (
 	pathEntryDirectoryFieldAttributes            = big.NewInt(1 << 0)
 	pathEntryDirectoryFieldAttributesRevisionNo  = big.NewInt(1 << 1)
@@ -7083,34 +7105,34 @@ var (
 )
 
 type PathEntryDirectory struct {
-	// The complete attribute map at `attributes_revision_no`, including an empty map
-	// for the initial state.
+	// The complete attribute map at `attributes_revision_no`. The map is empty before the first
+	// update.
 	Attributes *Attributes `json:"attributes,omitempty" url:"attributes,omitempty"`
-	// The attribute revision this projection represents.
+	// The attribute revision that these attributes come from.
 	AttributesRevisionNo *AttributesRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
-	// The latest attribute update time in Unix milliseconds, absent for the
-	// initial empty state.
+	// The time of the latest attribute update, in Unix milliseconds. It's absent before the first
+	// update.
 	AttributesUpdatedAtMs *int64 `json:"attributes_updated_at_ms,omitempty" url:"attributes_updated_at_ms,omitempty"`
-	// The actor responsible for the latest attribute update, absent for the
-	// initial empty state.
+	// The actor responsible for the latest attribute update. It's absent before the first update.
 	AttributesUpdatedBy *ActorID `json:"attributes_updated_by,omitempty" url:"attributes_updated_by,omitempty"`
-	// The opaque ID for the current parent and name binding, absent for the namespace root.
+	// The opaque ID of the current binding of the entry's parent and name. It's absent for the
+	// namespace root.
 	BindingVersion *BindingVersion `json:"binding_version,omitempty" url:"binding_version,omitempty"`
-	// The inode creation time in Unix milliseconds.
+	// The time the inode was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// Actor that created this inode, as supplied by the application.
+	// The actor that created this inode, as the application supplied it.
 	CreatedBy ActorID `json:"created_by" url:"created_by"`
-	// Stored display name for this path component, absent for the nameless root.
+	// The stored display name of this path component. It's absent for the root, which has no name.
 	DisplayName *DisplayName `json:"display_name,omitempty" url:"display_name,omitempty"`
-	// Namespace head sequence this answer was read from.
+	// The namespace head sequence that this response was read at.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Stable inode identity for this item.
+	// The entry's stable inode ID.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Namespace that was read.
+	// The namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Parent directory inode, absent for the root.
+	// The parent directory's inode. It's absent for the root.
 	ParentInodeID *InodeID `json:"parent_inode_id,omitempty" url:"parent_inode_id,omitempty"`
-	// Absolute path as rendered from stored display names.
+	// The absolute path, built from the stored display names.
 	Path AbsolutePath `json:"path" url:"path"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7358,7 +7380,7 @@ func (p *PathEntryDirectory) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
-// A file and its current revision summary.
+// A file, with a summary of its current revision.
 var (
 	pathEntryFileFieldAttributes            = big.NewInt(1 << 0)
 	pathEntryFileFieldAttributesRevisionNo  = big.NewInt(1 << 1)
@@ -7381,44 +7403,44 @@ var (
 )
 
 type PathEntryFile struct {
-	// The complete attribute map at `attributes_revision_no`, including an empty map
-	// for the initial state.
+	// The complete attribute map at `attributes_revision_no`. The map is empty before the first
+	// update.
 	Attributes *Attributes `json:"attributes,omitempty" url:"attributes,omitempty"`
-	// The attribute revision this projection represents.
+	// The attribute revision that these attributes come from.
 	AttributesRevisionNo *AttributesRevisionNo `json:"attributes_revision_no,omitempty" url:"attributes_revision_no,omitempty"`
-	// The latest attribute update time in Unix milliseconds, absent for the
-	// initial empty state.
+	// The time of the latest attribute update, in Unix milliseconds. It's absent before the first
+	// update.
 	AttributesUpdatedAtMs *int64 `json:"attributes_updated_at_ms,omitempty" url:"attributes_updated_at_ms,omitempty"`
-	// The actor responsible for the latest attribute update, absent for the
-	// initial empty state.
+	// The actor responsible for the latest attribute update. It's absent before the first update.
 	AttributesUpdatedBy *ActorID `json:"attributes_updated_by,omitempty" url:"attributes_updated_by,omitempty"`
-	// The opaque ID for the current parent and name binding, absent for the namespace root.
+	// The opaque ID of the current binding of the entry's parent and name. It's absent for the
+	// namespace root.
 	BindingVersion *BindingVersion `json:"binding_version,omitempty" url:"binding_version,omitempty"`
-	// Current content reference.
+	// The file's current content.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
-	// The inode creation time in Unix milliseconds.
+	// The time the inode was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// Actor that created this inode, as supplied by the application.
+	// The actor that created this inode, as the application supplied it.
 	CreatedBy ActorID `json:"created_by" url:"created_by"`
-	// Stored display name for this path component, absent for the nameless root.
+	// The stored display name of this path component. It's absent for the root, which has no name.
 	DisplayName *DisplayName `json:"display_name,omitempty" url:"display_name,omitempty"`
-	// Namespace head sequence this answer was read from.
+	// The namespace head sequence that this response was read at.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// Stable inode identity for this item.
+	// The entry's stable inode ID.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
-	// Namespace that was read.
+	// The namespace that was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Parent directory inode, absent for the root.
+	// The parent directory's inode. It's absent for the root.
 	ParentInodeID *InodeID `json:"parent_inode_id,omitempty" url:"parent_inode_id,omitempty"`
-	// Absolute path as rendered from stored display names.
+	// The absolute path, built from the stored display names.
 	Path AbsolutePath `json:"path" url:"path"`
-	// The current revision time in Unix milliseconds.
+	// The time the current revision was committed, in Unix milliseconds.
 	RevisionCommittedAtMs int64 `json:"revision_committed_at_ms" url:"revision_committed_at_ms"`
-	// Actor responsible for the current revision.
+	// The actor responsible for the current revision.
 	RevisionCommittedBy ActorID `json:"revision_committed_by" url:"revision_committed_by"`
-	// Current file revision number.
+	// The file's current revision number.
 	RevisionNo RevisionNo `json:"revision_no" url:"revision_no"`
-	// The current file size in bytes.
+	// The file's current size in bytes.
 	SizeBytes int64 `json:"size_bytes" url:"size_bytes"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7736,16 +7758,20 @@ func (p *PathEntryFile) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
-// Durable pin identifier. The manifest number determines which namespace manifest it pins.
+// The durable ID of one pin.
+//
+// The manifest number in the ID determines which namespace manifest the pin protects.
 type PinID = string
 
-// Stable opaque principal id containing 1 to 256 visible ASCII characters other than the comma.
+// A stable, opaque principal ID of 1 to 256 visible ASCII characters other than the comma.
 type PrincipalID = string
 
-// Identifies one store probe run and the objects it writes.
+// The ID of one run of the store contract probe.
+//
+// The probe stores its temporary objects under a key prefix that includes this ID.
 type ProbeRunID = string
 
-// The candidates inspected but not deleted by one garbage-collection pass.
+// The candidates that one garbage collection pass inspected but didn't delete, counted by reason.
 var (
 	retainedCandidatesFieldCheckpointNotDeletable = big.NewInt(1 << 0)
 	retainedCandidatesFieldNoProviderTimestamp    = big.NewInt(1 << 1)
@@ -7757,19 +7783,23 @@ var (
 )
 
 type RetainedCandidates struct {
-	// Checkpoint records whose owner or grace window prevents deletion.
+	// The checkpoint records that the pass couldn't delete because of their owner or their grace
+	// window.
 	CheckpointNotDeletable int64 `json:"checkpoint_not_deletable" url:"checkpoint_not_deletable"`
-	// Unreachable candidates without provider timestamps.
+	// The unreferenced candidates that had no provider timestamp, so their age was unknown.
 	NoProviderTimestamp int64 `json:"no_provider_timestamp" url:"no_provider_timestamp"`
-	// Candidates protected by current references or manifest discovery.
+	// The candidates that a current root or the shared base filter protected, or that manifest
+	// discovery needed.
 	Referenced int64 `json:"referenced" url:"referenced"`
-	// Unrecognized keys retained from object families scanned by garbage collection.
+	// The keys that garbage collection didn't recognize in the object families it scanned. The
+	// pass keeps these objects.
 	UnrecognizedKey int64 `json:"unrecognized_key" url:"unrecognized_key"`
-	// Upload sessions whose deletion safety could not be determined.
+	// The upload sessions that the pass couldn't prove safe to delete.
 	UploadSessionUndecided int64 `json:"upload_session_undecided" url:"upload_session_undecided"`
-	// Upload sessions still protected by a lease or grace window.
+	// The upload sessions that a lease or grace window still protected.
 	UploadSessionWindow int64 `json:"upload_session_window" url:"upload_session_window"`
-	// Unreachable candidates younger than the grace window by their provider timestamps.
+	// The unreferenced candidates that were younger than the grace window, according to their
+	// provider timestamps.
 	WithinGraceWindow int64 `json:"within_grace_window" url:"within_grace_window"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7933,7 +7963,7 @@ func (r *RetainedCandidates) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Revision number for a file's content. It increases whenever the content is replaced or restored.
+// The number of one revision of a file's content. It increases with every new revision of the file, whether from a put, an append, a replacing copy, or a restore.
 type RevisionNo = int64
 
 // One maintenance job for one namespace.
@@ -8159,14 +8189,14 @@ func (r *RunMaintenanceRequest) validate() error {
 	return nil
 }
 
-// Collects aged, unreferenced objects.
+// A garbage collection job for aged, unreferenced objects.
 var (
 	runMaintenanceRequestGcFieldGraceWindowMs = big.NewInt(1 << 0)
 )
 
 type RunMaintenanceRequestGc struct {
-	// The minimum object age for deletion in milliseconds, which must meet the
-	// server's advertised safety floor.
+	// The minimum age, in milliseconds, that an object must reach before the pass can delete it.
+	// The value must be at least the server's advertised safety floor.
 	GraceWindowMs *int64 `json:"grace_window_ms,omitempty" url:"grace_window_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8246,7 +8276,7 @@ func (r *RunMaintenanceRequestGc) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Collects aged, unreferenced grep index objects.
+// A garbage collection job for aged, unreferenced grep index objects.
 type RunMaintenanceRequestGrepGc struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8312,14 +8342,14 @@ func (r *RunMaintenanceRequestGrepGc) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Folds the WAL tail and runs one bounded compaction step.
+// A job that folds the WAL tail and runs one bounded compaction step.
 var (
 	runMaintenanceRequestMetadataFieldMaxWalTailObjects = big.NewInt(1 << 0)
 )
 
 type RunMaintenanceRequestMetadata struct {
-	// The WAL tail length, in WAL objects, that triggers a fold. Omit it for
-	// the server default.
+	// The WAL tail length, in WAL objects, that triggers a fold. Omit it to use the server
+	// default.
 	MaxWalTailObjects *int64 `json:"max_wal_tail_objects,omitempty" url:"max_wal_tail_objects,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8399,8 +8429,8 @@ func (r *RunMaintenanceRequestMetadata) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Runs one metadata compaction unit: one bounded merge, or one streaming
-// compaction of a family group.
+// A job that runs one unit of metadata compaction, which is either one bounded merge or one
+// streaming compaction of a family group.
 type RunMaintenanceRequestMetadataCompaction struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8466,13 +8496,13 @@ func (r *RunMaintenanceRequestMetadataCompaction) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Restores a root administrator.
+// A job that restores a root administrator.
 var (
 	runMaintenanceRequestRecoverAdministratorFieldPrincipalID = big.NewInt(1 << 0)
 )
 
 type RunMaintenanceRequestRecoverAdministrator struct {
-	// Principal receiving administrator rights.
+	// The principal that receives administrator rights.
 	PrincipalID PrincipalID `json:"principal_id" url:"principal_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8552,21 +8582,20 @@ func (r *RunMaintenanceRequestRecoverAdministrator) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Advances the retention floor, to the folded manifest head unless the
-// request names a target.
+// A job that advances the retention floor to the folded manifest head, or to the target that
+// the request sets.
 var (
 	runMaintenanceRequestRetentionFieldCutoffAtMs = big.NewInt(1 << 0)
 	runMaintenanceRequestRetentionFieldToSeq      = big.NewInt(1 << 1)
 )
 
 type RunMaintenanceRequestRetention struct {
-	// Advance the floor to the last commit committed at or before this Unix
-	// time in milliseconds. Commits are read upward from the floor, and the
-	// first one committed after this time ends the advance. Cannot be
-	// combined with `to_seq`.
+	// A Unix time in milliseconds. The floor advances to the last commit made at or before this
+	// time. LoonFS reads commits upward from the floor, and the first commit made after this time
+	// ends the advance. This field can't be combined with `to_seq`.
 	CutoffAtMs *int64 `json:"cutoff_at_ms,omitempty" url:"cutoff_at_ms,omitempty"`
-	// Advance the floor to this sequence, or to the folded manifest head
-	// when that is lower. Cannot be combined with `cutoff_at_ms`.
+	// The sequence to advance the floor to. If the folded manifest head is lower, the floor
+	// advances to the head instead. This field can't be combined with `cutoff_at_ms`.
 	ToSeq *ChangeSeq `json:"to_seq,omitempty" url:"to_seq,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8660,7 +8689,9 @@ func (r *RunMaintenanceRequestRetention) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// The result of one maintenance job. The `kind` matches the request.
+// The result of one maintenance job.
+//
+// The `kind` matches the request.
 type RunMaintenanceResponse struct {
 	Kind                 string
 	Gc                   *RunMaintenanceResponseGc
@@ -8883,7 +8914,7 @@ func (r *RunMaintenanceResponse) validate() error {
 	return nil
 }
 
-// Counts and deadlines from one collection call.
+// The counts and deadlines from one garbage collection call.
 var (
 	runMaintenanceResponseGcFieldDeleted                   = big.NewInt(1 << 0)
 	runMaintenanceResponseGcFieldDeletedCheckpointsByOwner = big.NewInt(1 << 1)
@@ -8894,17 +8925,17 @@ var (
 )
 
 type RunMaintenanceResponseGc struct {
-	// Objects the pass deleted, split by object family.
+	// The objects that the pass deleted, counted by object family.
 	Deleted *DeletedObjectCounts `json:"deleted" url:"deleted"`
-	// The checkpoint records deleted by the pass, grouped by owner.
+	// The checkpoint records that the pass deleted, counted by owner.
 	DeletedCheckpointsByOwner *DeletedCheckpointsByOwner `json:"deleted_checkpoints_by_owner" url:"deleted_checkpoints_by_owner"`
-	// Namespace the pass ran against.
+	// The namespace that the pass ran against.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// The earliest future retirement deadline, pin deletion time, or upload cleanup time.
 	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
-	// The current tombstone's deletion time plus the configured retirement grace.
+	// The deletion time of the current tombstone plus the configured retirement grace.
 	ReclaimableAtMs *int64 `json:"reclaimable_at_ms,omitempty" url:"reclaimable_at_ms,omitempty"`
-	// Candidates retained at deletion time, grouped by reason.
+	// The candidates that the pass kept at deletion time, counted by reason.
 	Retained *RetainedCandidates `json:"retained" url:"retained"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -9054,7 +9085,7 @@ func (r *RunMaintenanceResponseGc) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Counts from one grep index collection pass.
+// The counts from one garbage collection pass over the grep index.
 var (
 	runMaintenanceResponseGrepGcFieldDeletedOtherObjects = big.NewInt(1 << 0)
 	runMaintenanceResponseGrepGcFieldDeletedSegments     = big.NewInt(1 << 1)
@@ -9064,15 +9095,18 @@ var (
 )
 
 type RunMaintenanceResponseGrepGc struct {
-	// Other unreferenced grep objects deleted after the grace window.
+	// The other unreferenced grep objects that the pass deleted after the grace window.
 	DeletedOtherObjects int64 `json:"deleted_other_objects" url:"deleted_other_objects"`
-	// Unreferenced grep segments older than the minimum segment age.
+	// The unreferenced grep segments that the pass deleted because they were older than the
+	// minimum segment age.
 	DeletedSegments int64 `json:"deleted_segments" url:"deleted_segments"`
-	// Namespace whose grep-owned keyspace was inspected.
+	// The namespace whose grep keyspace the pass inspected.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Whether an absent or tombstoned namespace had extension state reaped.
+	// Whether the pass deleted the grep extension state of a namespace that is missing or
+	// deleted.
 	NamespaceReaped bool `json:"namespace_reaped" url:"namespace_reaped"`
-	// Referenced, young, or unrecognized candidates retained by the pass.
+	// The candidates that the pass kept because they were referenced, too young, or
+	// unrecognized.
 	RetainedCandidates int64 `json:"retained_candidates" url:"retained_candidates"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -9208,7 +9242,7 @@ func (r *RunMaintenanceResponseGrepGc) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Result of the WAL fold and one bounded compaction step.
+// The result of the WAL fold and one bounded compaction step.
 var (
 	runMaintenanceResponseMetadataFieldCompaction  = big.NewInt(1 << 0)
 	runMaintenanceResponseMetadataFieldNamespaceID = big.NewInt(1 << 1)
@@ -9218,7 +9252,7 @@ var (
 type RunMaintenanceResponseMetadata struct {
 	// What the bounded compaction step did.
 	Compaction *CompactionStepOutcome `json:"compaction" url:"compaction"`
-	// Namespace maintained by this run.
+	// The namespace that this run maintained.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// What the WAL fold did.
 	WalFold *WalFoldStepOutcome `json:"wal_fold" url:"wal_fold"`
@@ -9328,16 +9362,16 @@ func (r *RunMaintenanceResponseMetadata) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Result of one metadata compaction unit.
+// The result of one unit of metadata compaction.
 var (
 	runMaintenanceResponseMetadataCompactionFieldCompaction  = big.NewInt(1 << 0)
 	runMaintenanceResponseMetadataCompactionFieldNamespaceID = big.NewInt(1 << 1)
 )
 
 type RunMaintenanceResponseMetadataCompaction struct {
-	// The compaction outcome.
+	// The outcome of the compaction.
 	Compaction *MetadataCompactionOutcome `json:"compaction" url:"compaction"`
-	// Namespace compacted by this run.
+	// The namespace that this run compacted.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -9440,13 +9474,13 @@ var (
 )
 
 type RunMaintenanceResponseRecoverAdministrator struct {
-	// Root access revision after recovery.
+	// The root's access revision after the recovery.
 	AccessRevisionNo AccessRevisionNo `json:"access_revision_no" url:"access_revision_no"`
-	// Recovery commit id.
+	// The ID of the recovery commit.
 	CommitID CommitID `json:"commit_id" url:"commit_id"`
-	// Sequence assigned to the recovery commit.
+	// The sequence of the recovery commit.
 	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
-	// Namespace whose root grants changed.
+	// The namespace whose root grants changed.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -9568,16 +9602,16 @@ func (r *RunMaintenanceResponseRecoverAdministrator) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Result of advancing the retention floor.
+// The result of advancing the retention floor.
 var (
 	runMaintenanceResponseRetentionFieldNamespaceID       = big.NewInt(1 << 0)
 	runMaintenanceResponseRetentionFieldRetentionFloorSeq = big.NewInt(1 << 1)
 )
 
 type RunMaintenanceResponseRetention struct {
-	// Namespace whose retention floor was advanced.
+	// The namespace whose retention floor was advanced.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// New minimum sequence for incremental replay.
+	// The new retention floor, which is the minimum sequence for incremental replay.
 	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -9671,10 +9705,10 @@ func (r *RunMaintenanceResponseRetention) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// Monotonic run counter allocated by the manifest that names the run. A run is the set of segments one producer wrote together.
+// The number of one run among the runs that a manifest lists. A run is the set of segments that one producer wrote together.
 type RunNo = int64
 
-// HTTP error body used by LoonFS APIs.
+// The JSON body that LoonFS APIs return with an HTTP error status.
 var (
 	serviceUnavailableErrorBodyFieldCode      = big.NewInt(1 << 0)
 	serviceUnavailableErrorBodyFieldDetails   = big.NewInt(1 << 1)
@@ -9685,17 +9719,17 @@ var (
 )
 
 type ServiceUnavailableErrorBody struct {
-	// The stable machine-readable error code as a string.
+	// The stable, machine-readable error code.
 	Code string `json:"code" url:"code"`
-	// The optional machine-readable context for the error code.
+	// Optional machine-readable context for the error code.
 	Details *ErrorDetails `json:"details,omitempty" url:"details,omitempty"`
-	// The capability feature key for a `not_supported` error.
+	// The capability feature that isn't supported, when the code is `not_supported`.
 	Feature *string `json:"feature,omitempty" url:"feature,omitempty"`
-	// Human-readable error message.
+	// A human-readable description of the error.
 	Message string `json:"message" url:"message"`
-	// The invalid JSON Pointer, parameter name, CLI flag, or CLI argument.
+	// The invalid input, as a JSON Pointer, a parameter name, a CLI flag, or a CLI argument.
 	Param *string `json:"param,omitempty" url:"param,omitempty"`
-	// The request correlation ID also sent in the `x-request-id` response header.
+	// The request ID. The server also sends this ID in the `x-request-id` response header.
 	RequestID *string `json:"request_id,omitempty" url:"request_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -9845,7 +9879,7 @@ func (s *ServiceUnavailableErrorBody) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// What one contract check concluded about the store.
+// What one contract check found about the store.
 type StoreProbeCheckOutcome string
 
 const (
@@ -9871,7 +9905,7 @@ func (s StoreProbeCheckOutcome) Ptr() *StoreProbeCheckOutcome {
 	return &s
 }
 
-// One named contract check and what the store did with it.
+// The result of one contract check.
 var (
 	storeProbeCheckResultFieldMessage = big.NewInt(1 << 0)
 	storeProbeCheckResultFieldName    = big.NewInt(1 << 1)
@@ -9881,9 +9915,9 @@ var (
 type StoreProbeCheckResult struct {
 	// The expected and actual behavior for a failed check.
 	Message *string `json:"message,omitempty" url:"message,omitempty"`
-	// Stable check name.
+	// The check's stable name.
 	Name string `json:"name" url:"name"`
-	// What the store did.
+	// Whether the store passed the check, failed it, or doesn't support the capability.
 	Outcome StoreProbeCheckOutcome `json:"outcome" url:"outcome"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -9991,19 +10025,20 @@ func (s *StoreProbeCheckResult) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// An empty request for one store contract probe.
+// A request for one run of the store contract probe, with an empty body.
 type StoreProbeRequest = map[string]any
 
-// The ordered results from one store contract probe.
+// The results of one store contract probe, in order.
 var (
 	storeProbeResponseFieldChecks = big.NewInt(1 << 0)
 	storeProbeResponseFieldRunID  = big.NewInt(1 << 1)
 )
 
 type StoreProbeResponse struct {
-	// The check results in execution order.
+	// The check results, in the order that the checks ran.
 	Checks []*StoreProbeCheckResult `json:"checks" url:"checks"`
-	// The server-generated label for this probe run and its objects.
+	// The ID of this probe run. The server generates the ID and writes the probe's temporary
+	// objects under it.
 	RunID ProbeRunID `json:"run_id" url:"run_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -10097,7 +10132,7 @@ func (s *StoreProbeResponse) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// What the WAL fold part of a maintenance pass did.
+// What the WAL fold step of a maintenance pass did.
 type WalFoldStepOutcome struct {
 	Outcome          string
 	AlreadyPublished *WalFoldStepOutcomeAlreadyPublished
@@ -10272,16 +10307,17 @@ func (w *WalFoldStepOutcome) validate() error {
 	return nil
 }
 
-// The current manifest already covered the captured WAL tail; this step published no manifest.
+// The current manifest already included the captured WAL tail, so this step didn't publish a
+// manifest.
 var (
 	walFoldStepOutcomeAlreadyPublishedFieldAttemptedSeq      = big.NewInt(1 << 0)
 	walFoldStepOutcomeAlreadyPublishedFieldCurrentManifestNo = big.NewInt(1 << 1)
 )
 
 type WalFoldStepOutcomeAlreadyPublished struct {
-	// Sequence this step attempted to fold through.
+	// The sequence that this step tried to fold through.
 	AttemptedSeq ChangeSeq `json:"attempted_seq" url:"attempted_seq"`
-	// The namespace's current manifest number.
+	// The number of the namespace's current manifest.
 	CurrentManifestNo ManifestNo `json:"current_manifest_no" url:"current_manifest_no"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -10381,7 +10417,7 @@ var (
 )
 
 type WalFoldStepOutcomeFolded struct {
-	// Sequence covered by the published manifest.
+	// The last sequence that the published manifest includes.
 	ManifestHeadSeq ChangeSeq `json:"manifest_head_seq" url:"manifest_head_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -10533,7 +10569,7 @@ var (
 )
 
 type WalFoldStepOutcomeRetriesExhausted struct {
-	// Head sequence observed before the step ran.
+	// The head sequence observed before the step ran.
 	ObservedHeadSeq ChangeSeq `json:"observed_head_seq" url:"observed_head_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -10613,8 +10649,8 @@ func (w *WalFoldStepOutcomeRetriesExhausted) String() string {
 	return fmt.Sprintf("%#v", w)
 }
 
-// Counter used to reject writes from an older writer.
+// The counter that LoonFS uses to reject writes from an older writer.
 type WriterEpoch = int64
 
-// Stable writer label supplied by the embedding process.
+// A stable writer label that the embedding process supplies.
 type WriterID = string

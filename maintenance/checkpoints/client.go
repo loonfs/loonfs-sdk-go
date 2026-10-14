@@ -36,7 +36,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Lists existing pins in checkpoint-id order. Expired pins remain visible until collection deletes them after expiry plus grace. The cursor resumes a live listing.
+// Lists existing pins in checkpoint ID order. An expired pin stays in the list until garbage collection deletes it, after its expiry plus the grace window. A cursor continues the listing against the current set of pins.
 //
 // Example:
 //
@@ -110,7 +110,7 @@ func (c *Client) List(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Creates a user-owned checkpoint record pinning the current namespace view. It first folds any WAL tail after the current manifest. Every call creates a new record under a new id; the name is a label, not a key. The record retains its manifest until it is deleted, either explicitly or by collection after expiry plus grace, so routine maintenance should fold the WAL instead. This is a maintenance operation, not a file mutation.
+// Creates a user checkpoint record that pins the current namespace view. The server first folds any WAL tail after the current manifest. Every call creates a new record with a new ID, and the name is a label, not a key. The record keeps its manifest until the record is deleted, either explicitly or by garbage collection after the record expires and its grace window passes. Because of that, routine maintenance should fold the WAL instead of creating checkpoints. This is a maintenance operation, not a file change.
 //
 // Example:
 //
@@ -138,7 +138,7 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
-// Returns one existing pin as the checkpoint listing returns it, including an expired pin that collection has not deleted. A missing id returns checkpoint_not_found.
+// Returns one existing pin, as the checkpoint listing returns it, including an expired pin that garbage collection hasn't deleted. A missing ID returns `checkpoint_not_found`.
 //
 // Example:
 //
@@ -166,7 +166,7 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Deletes a user-owned checkpoint pin. A missing id returns checkpoint_not_found. Garbage collection can reclaim its unreferenced manifest and runs.
+// Deletes a user checkpoint pin. A missing ID returns `checkpoint_not_found`. Garbage collection can then reclaim the pin's unreferenced manifest and runs.
 //
 // Example:
 //
