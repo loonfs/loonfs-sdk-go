@@ -36,7 +36,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Lists existing pins in checkpoint ID order. An expired pin stays in the list until garbage collection deletes it, after its expiry plus the grace window. A cursor continues the listing against the current set of pins.
+// Lists every pin, snapshots and fork pins, in checkpoint ID order. This is the inventory of what keeps manifests from garbage collection. An expired snapshot stays in the list until garbage collection deletes it, after its expiry plus the grace window. A cursor continues the listing against the current set of pins.
 //
 // Example:
 //
@@ -110,35 +110,7 @@ func (c *Client) List(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Creates a user checkpoint record that pins the current namespace view. The server first folds any WAL tail after the current manifest. Every call creates a new record with a new ID, and the name is a label, not a key. The record keeps its manifest until the record is deleted, either explicitly or by garbage collection after the record expires and its grace window passes. Because of that, routine maintenance should fold the WAL instead of creating checkpoints. This is a maintenance operation, not a file change.
-//
-// Example:
-//
-//	request := &maintenance.CreateCheckpointRequest{
-//	    NamespaceID: "namespace_id",
-//	    Name: "name",
-//	}
-//	client.Maintenance.Checkpoints.Create(
-//	    context.TODO(),
-//	    request,
-//	)
-func (c *Client) Create(
-	ctx context.Context,
-	request *maintenance.CreateCheckpointRequest,
-	opts ...option.RequestOption,
-) (*loonfs.Checkpoint, error) {
-	response, err := c.WithRawResponse.Create(
-		ctx,
-		request,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
-}
-
-// Returns one existing pin, as the checkpoint listing returns it, including an expired pin that garbage collection hasn't deleted. A missing ID returns `checkpoint_not_found`.
+// Returns one existing pin, as the checkpoint listing returns it, including an expired snapshot that garbage collection hasn't deleted. A missing ID returns `snapshot_not_found`.
 //
 // Example:
 //
@@ -156,34 +128,6 @@ func (c *Client) Retrieve(
 	opts ...option.RequestOption,
 ) (*loonfs.Checkpoint, error) {
 	response, err := c.WithRawResponse.Retrieve(
-		ctx,
-		request,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
-}
-
-// Deletes a user checkpoint pin. A missing ID returns `checkpoint_not_found`. Garbage collection can then reclaim the pin's unreferenced manifest and runs.
-//
-// Example:
-//
-//	request := &maintenance.DeleteCheckpointRequest{
-//	    NamespaceID: "namespace_id",
-//	    CheckpointID: "checkpoint_id",
-//	}
-//	client.Maintenance.Checkpoints.Delete(
-//	    context.TODO(),
-//	    request,
-//	)
-func (c *Client) Delete(
-	ctx context.Context,
-	request *maintenance.DeleteCheckpointRequest,
-	opts ...option.RequestOption,
-) (*loonfs.DeleteCheckpointResponse, error) {
-	response, err := c.WithRawResponse.Delete(
 		ctx,
 		request,
 		opts...,

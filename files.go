@@ -10,13 +10,18 @@ import (
 )
 
 var (
-	getFileContentRequestFieldNamespaceID = big.NewInt(1 << 0)
-	getFileContentRequestFieldPath        = big.NewInt(1 << 1)
-	getFileContentRequestFieldRevisionNo  = big.NewInt(1 << 2)
-	getFileContentRequestFieldSnapshotID  = big.NewInt(1 << 3)
+	getFileContentRequestFieldRange          = big.NewInt(1 << 0)
+	getFileContentRequestFieldNamespaceID    = big.NewInt(1 << 1)
+	getFileContentRequestFieldPath           = big.NewInt(1 << 2)
+	getFileContentRequestFieldRevisionNo     = big.NewInt(1 << 3)
+	getFileContentRequestFieldSnapshotID     = big.NewInt(1 << 4)
+	getFileContentRequestFieldConsistency    = big.NewInt(1 << 5)
+	getFileContentRequestFieldMaxStalenessMs = big.NewInt(1 << 6)
 )
 
 type GetFileContentRequest struct {
+	// One byte range of the file to read instead of the whole file, as `bytes=start-end`, where `end` is the offset of the last byte, or as `bytes=start-`. An `end` past the last byte reads to the end of the file. Any other value, including a suffix range or several ranges, returns 400 `invalid_request`.
+	Range *string `json:"-" url:"-"`
 	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
 	// The absolute path of the file to read.
@@ -25,6 +30,14 @@ type GetFileContentRequest struct {
 	RevisionNo *RevisionNo `json:"-" url:"revision_no,omitempty"`
 	// The snapshot whose captured file revision to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -35,6 +48,13 @@ func (g *GetFileContentRequest) require(field *big.Int) {
 		g.explicitFields = big.NewInt(0)
 	}
 	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetRange sets the Range field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileContentRequest) SetRange(range_ *string) {
+	g.Range = range_
+	g.require(getFileContentRequestFieldRange)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
@@ -65,17 +85,41 @@ func (g *GetFileContentRequest) SetSnapshotID(snapshotID *PinID) {
 	g.require(getFileContentRequestFieldSnapshotID)
 }
 
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileContentRequest) SetConsistency(consistency *ReadConsistency) {
+	g.Consistency = consistency
+	g.require(getFileContentRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileContentRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	g.MaxStalenessMs = maxStalenessMs
+	g.require(getFileContentRequestFieldMaxStalenessMs)
+}
+
 var (
-	createDownloadRequestFieldNamespaceID = big.NewInt(1 << 0)
-	createDownloadRequestFieldPath        = big.NewInt(1 << 1)
-	createDownloadRequestFieldRevisionNo  = big.NewInt(1 << 2)
-	createDownloadRequestFieldSnapshotID  = big.NewInt(1 << 3)
-	createDownloadRequestFieldStartOffset = big.NewInt(1 << 4)
+	createDownloadRequestFieldNamespaceID    = big.NewInt(1 << 0)
+	createDownloadRequestFieldConsistency    = big.NewInt(1 << 1)
+	createDownloadRequestFieldMaxStalenessMs = big.NewInt(1 << 2)
+	createDownloadRequestFieldPath           = big.NewInt(1 << 3)
+	createDownloadRequestFieldRevisionNo     = big.NewInt(1 << 4)
+	createDownloadRequestFieldSnapshotID     = big.NewInt(1 << 5)
+	createDownloadRequestFieldStartOffset    = big.NewInt(1 << 6)
 )
 
 type CreateDownloadRequest struct {
 	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"consistency,omitempty" url:"-"`
+	// With `consistency` set to `eventual`, how old the server's last confirmation of the head can
+	// be, in milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"max_staleness_ms,omitempty" url:"-"`
 	// The absolute path of the file to read.
 	Path AbsolutePath `json:"path" url:"-"`
 	// The revision to read. Omit it to read the path's current revision. It can't be combined with
@@ -106,6 +150,20 @@ func (c *CreateDownloadRequest) require(field *big.Int) {
 func (c *CreateDownloadRequest) SetNamespaceID(namespaceID string) {
 	c.NamespaceID = namespaceID
 	c.require(createDownloadRequestFieldNamespaceID)
+}
+
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadRequest) SetConsistency(consistency *ReadConsistency) {
+	c.Consistency = consistency
+	c.require(createDownloadRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	c.MaxStalenessMs = maxStalenessMs
+	c.require(createDownloadRequestFieldMaxStalenessMs)
 }
 
 // SetPath sets the Path field and marks it as non-optional;
@@ -172,17 +230,21 @@ var (
 type GrepRequest struct {
 	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// The search pattern, in the Rust `regex` crate's syntax. Its UTF-8 encoding must be at most 1024 bytes.
+	// The search pattern, in the Rust `regex` crate's syntax. Its UTF-8 encoding must be at most
+	// 1024 bytes.
 	Pattern string `json:"-" url:"pattern"`
 	// Whether matching ignores case. The default is `false`.
 	CaseInsensitive *bool `json:"-" url:"case_insensitive,omitempty"`
-	// A complete absolute path that limits matches to its descendants. It can't be combined with `inode_id`.
+	// A complete absolute path that limits matches to its descendants. It can't be combined with
+	// `inode_id`.
 	PathPrefix *string `json:"-" url:"path_prefix,omitempty"`
 	// An inode that limits matches to its descendants. It can't be combined with `path_prefix`.
 	InodeID *string `json:"-" url:"inode_id,omitempty"`
-	// Whether a pattern with no required literal bytes can use a capped exhaustive scan. The default is `false`.
+	// Whether a pattern with no required literal bytes can use a capped exhaustive scan. The
+	// default is `false`.
 	AllowScan *bool `json:"-" url:"allow_scan,omitempty"`
-	// Whether the server returns results from the index alone when the unindexed tail exceeds the scan budget. The default is `false`.
+	// Whether the server returns results from the index alone when the unindexed tail exceeds the
+	// scan budget. The default is `false`.
 	AllowStale *bool `json:"-" url:"allow_stale,omitempty"`
 	// The maximum number of matches per page.
 	Limit *int `json:"-" url:"limit,omitempty"`
@@ -269,7 +331,10 @@ var (
 	listPathEntriesRequestFieldLimit             = big.NewInt(1 << 2)
 	listPathEntriesRequestFieldCursor            = big.NewInt(1 << 3)
 	listPathEntriesRequestFieldIncludeAttributes = big.NewInt(1 << 4)
-	listPathEntriesRequestFieldSnapshotID        = big.NewInt(1 << 5)
+	listPathEntriesRequestFieldRecursive         = big.NewInt(1 << 5)
+	listPathEntriesRequestFieldSnapshotID        = big.NewInt(1 << 6)
+	listPathEntriesRequestFieldConsistency       = big.NewInt(1 << 7)
+	listPathEntriesRequestFieldMaxStalenessMs    = big.NewInt(1 << 8)
 )
 
 type ListPathEntriesRequest struct {
@@ -281,10 +346,23 @@ type ListPathEntriesRequest struct {
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
-	// Whether the response includes each entry's attribute map and attribute revision. The default is `false`, because a page can have many entries and each map can be up to 64 KiB.
+	// Whether the response includes each entry's attribute map and attribute revision. The default
+	// is `false`, because a page can have many entries and each map can be up to 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
+	// Whether the listing includes the directory's whole subtree, depth first, with each
+	// directory's entry before its descendants. The default is `false`, which lists the
+	// directory's children only.
+	Recursive *bool `json:"-" url:"recursive,omitempty"`
 	// The snapshot whose captured directory state to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -332,6 +410,13 @@ func (l *ListPathEntriesRequest) SetIncludeAttributes(includeAttributes *bool) {
 	l.require(listPathEntriesRequestFieldIncludeAttributes)
 }
 
+// SetRecursive sets the Recursive field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListPathEntriesRequest) SetRecursive(recursive *bool) {
+	l.Recursive = recursive
+	l.require(listPathEntriesRequestFieldRecursive)
+}
+
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (l *ListPathEntriesRequest) SetSnapshotID(snapshotID *PinID) {
@@ -339,11 +424,27 @@ func (l *ListPathEntriesRequest) SetSnapshotID(snapshotID *PinID) {
 	l.require(listPathEntriesRequestFieldSnapshotID)
 }
 
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListPathEntriesRequest) SetConsistency(consistency *ReadConsistency) {
+	l.Consistency = consistency
+	l.require(listPathEntriesRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListPathEntriesRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	l.MaxStalenessMs = maxStalenessMs
+	l.require(listPathEntriesRequestFieldMaxStalenessMs)
+}
+
 var (
-	listFileRevisionsRequestFieldNamespaceID = big.NewInt(1 << 0)
-	listFileRevisionsRequestFieldPath        = big.NewInt(1 << 1)
-	listFileRevisionsRequestFieldLimit       = big.NewInt(1 << 2)
-	listFileRevisionsRequestFieldCursor      = big.NewInt(1 << 3)
+	listFileRevisionsRequestFieldNamespaceID    = big.NewInt(1 << 0)
+	listFileRevisionsRequestFieldPath           = big.NewInt(1 << 1)
+	listFileRevisionsRequestFieldLimit          = big.NewInt(1 << 2)
+	listFileRevisionsRequestFieldCursor         = big.NewInt(1 << 3)
+	listFileRevisionsRequestFieldConsistency    = big.NewInt(1 << 4)
+	listFileRevisionsRequestFieldMaxStalenessMs = big.NewInt(1 << 5)
 )
 
 type ListFileRevisionsRequest struct {
@@ -355,6 +456,14 @@ type ListFileRevisionsRequest struct {
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -395,11 +504,27 @@ func (l *ListFileRevisionsRequest) SetCursor(cursor *string) {
 	l.require(listFileRevisionsRequestFieldCursor)
 }
 
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFileRevisionsRequest) SetConsistency(consistency *ReadConsistency) {
+	l.Consistency = consistency
+	l.require(listFileRevisionsRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFileRevisionsRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	l.MaxStalenessMs = maxStalenessMs
+	l.require(listFileRevisionsRequestFieldMaxStalenessMs)
+}
+
 var (
 	getPathEntryRequestFieldNamespaceID       = big.NewInt(1 << 0)
 	getPathEntryRequestFieldPath              = big.NewInt(1 << 1)
 	getPathEntryRequestFieldIncludeAttributes = big.NewInt(1 << 2)
 	getPathEntryRequestFieldSnapshotID        = big.NewInt(1 << 3)
+	getPathEntryRequestFieldConsistency       = big.NewInt(1 << 4)
+	getPathEntryRequestFieldMaxStalenessMs    = big.NewInt(1 << 5)
 )
 
 type GetPathEntryRequest struct {
@@ -407,10 +532,19 @@ type GetPathEntryRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// The absolute path to read.
 	Path string `json:"-" url:"path"`
-	// Whether the response includes the inode's attribute map and attribute revision. The default is `true`, because a stat reads one path and a map is at most 64 KiB.
+	// Whether the response includes the inode's attribute map and attribute revision. The default
+	// is `true`, because a stat reads one path and a map is at most 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// The snapshot whose captured path state to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -449,6 +583,20 @@ func (g *GetPathEntryRequest) SetIncludeAttributes(includeAttributes *bool) {
 func (g *GetPathEntryRequest) SetSnapshotID(snapshotID *PinID) {
 	g.SnapshotID = snapshotID
 	g.require(getPathEntryRequestFieldSnapshotID)
+}
+
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetPathEntryRequest) SetConsistency(consistency *ReadConsistency) {
+	g.Consistency = consistency
+	g.require(getPathEntryRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetPathEntryRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	g.MaxStalenessMs = maxStalenessMs
+	g.require(getPathEntryRequestFieldMaxStalenessMs)
 }
 
 // The signed object ranges for one revision.
@@ -807,9 +955,11 @@ type GrepResponse struct {
 	// The last sequence that the index covers. The server searched the commits at or below this
 	// sequence through the index.
 	BuiltThroughSeq ChangeSeq `json:"built_through_seq" url:"built_through_seq"`
-	// The namespace head sequence that the server used to evaluate this page.
+	// The sequence that the server read the namespace at for this page. A first page reads at
+	// the namespace's head, and a later page reads at the first page's `head_seq`.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// The matches, in ascending `(inode_id, byte_offset)` order.
+	// The matches, ordered by the content value of each file's revision (its content ID and
+	// size), then by `inode_id`, and then by `byte_offset`.
 	Matches []*GrepMatch `json:"matches" url:"matches"`
 	// The namespace that was searched.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`

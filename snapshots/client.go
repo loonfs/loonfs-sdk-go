@@ -35,7 +35,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Lists live snapshots in snapshot ID order. The list leaves out deleted and expired snapshots.
+// Lists snapshots in snapshot ID order. An expired snapshot stays in the list until garbage collection deletes it, after its expiry plus the grace window. The list leaves out fork pins, which the maintenance checkpoint inventory lists.
 //
 // Example:
 //
@@ -109,14 +109,13 @@ func (c *Client) List(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Creates a snapshot of the current namespace state. Every accepted call creates a new snapshot.
+// Creates a snapshot of the current namespace state. The server first folds any WAL tail after the current manifest. Every accepted call creates a new snapshot with a new ID, and the name is a label, not a key. A snapshot with `ttl_ms` expires that many milliseconds from the server's current time, and a snapshot without it doesn't expire. The snapshot keeps its manifest until it's deleted, either explicitly or by garbage collection after it expires and its grace window passes.
 //
 // Example:
 //
 //	request := &loonfs.CreateSnapshotRequest{
 //	    NamespaceID: "namespace_id",
 //	    Name: "name",
-//	    TTLMs: int64(1000000),
 //	}
 //	client.Snapshots.Create(
 //	    context.TODO(),
@@ -138,7 +137,7 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
-// Returns one live snapshot, as the snapshot listing returns it. A missing ID, or the ID of a pin that isn't a snapshot, returns `snapshot_not_found`, and an expired snapshot returns `snapshot_gone`.
+// Returns one snapshot, as the snapshot listing returns it, including an expired snapshot that garbage collection hasn't deleted. A missing ID, or the ID of a fork pin, returns `snapshot_not_found`.
 //
 // Example:
 //
@@ -166,7 +165,7 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Deletes a snapshot pin. A missing ID returns `snapshot_not_found`.
+// Deletes a snapshot. Garbage collection can then reclaim its unreferenced manifest and runs. Deleting a missing snapshot succeeds, so repeating the request has the same result. The ID of a fork pin returns `snapshot_not_found`. Deletion stays available after the namespace is deleted.
 //
 // Example:
 //
@@ -194,7 +193,7 @@ func (c *Client) Delete(
 	return response.Body, nil
 }
 
-// Extends a live snapshot without passing its lifetime limit. Repeating the request has the same result.
+// Moves an unexpired snapshot's expiry to `ttl_ms` from the server's current time. The expiry never moves earlier, so a snapshot without an expiry is returned unchanged. A missing or expired snapshot returns `snapshot_not_found`. Repeating the request has the same result.
 //
 // Example:
 //

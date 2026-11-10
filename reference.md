@@ -109,10 +109,12 @@ default is unrestricted.
 <dl>
 <dd>
 
-**naming:** `*loonfs.NamespaceNaming` 
+**retentionWindowMs:** `*int64` 
 
-How the namespace compares sibling names. The mode can't be changed after the namespace is
-created, and it defaults to `case_insensitive`.
+The namespace's retention window, in milliseconds, which must be positive. The reference
+server's maintenance sweep uses this window for the namespace. Without this field, the
+namespace's window is the server's `retention_window_ms` setting, if the server has that
+setting. A `retention_window` maintenance run can change or clear the window later.
     
 </dd>
 </dl>
@@ -264,7 +266,7 @@ client.Namespaces.Delete(
 <dl>
 <dd>
 
-Creates a new namespace from the source namespace's current head or from a live snapshot.
+Creates a new namespace from the source namespace's current head or from an unexpired snapshot.
 </dd>
 </dl>
 </dd>
@@ -317,7 +319,291 @@ client.Namespaces.Fork(
 <dl>
 <dd>
 
-**snapshotID:** `*loonfs.PinID` — A live snapshot to fork from. Without it, the fork starts from the current head.
+**snapshotID:** `*loonfs.PinID` — An unexpired snapshot to fork from. Without it, the fork starts from the current head.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Namespaces.NextMergeRange(NamespaceID) -> *loonfs.NextMergeRangeResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Returns where the fork's next merge into the namespace starts, without planning the merge: the fork's newest merge into the namespace, the fork sequence that the next merge starts after, the fork point, and the fork's head. When the namespace is a rebase's new fork for the fork, the range continues the new fork's replay commits. When a retention floor would refuse the merge with `rebootstrap_required`, the response's `outcome` says which floor instead of failing.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.GetNextMergeRangeRequest{
+    NamespaceID: "namespace_id",
+    Source: "demo",
+}
+client.Namespaces.NextMergeRange(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — The namespace that the fork merges into.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**source:** `loonfs.NamespaceID` 
+
+The fork whose next merge into the namespace the query reads. It has to be a fork of the
+namespace, or the fork that a rebase replays into the namespace.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Namespaces.Merge(NamespaceID, request) -> *loonfs.Commit</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Merges a fork's commits into the namespace as one commit. The merge applies the fork's net change since its previous merge, or since the fork point, through `through_seq` or the fork's head. A change that conflicts with the namespace returns `merge_conflict`, and nothing is committed. The commit ID makes retries idempotent. The merge's WAL object counts toward the namespace's fold triggers like any commit.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.MergeForkRequest{
+    NamespaceID: "namespace_id",
+    CommitID: "c_7kn71d9dq885x91hejz3gvf9p0",
+    SourceNamespaceID: "demo",
+}
+client.Namespaces.Merge(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — The namespace that the merge commits into.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**commitID:** `loonfs.CommitID` — The caller's idempotency key for the merge.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**message:** `*string` — An annotation from the caller. The message is part of the merge's identity.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**sourceNamespaceID:** `loonfs.NamespaceID` 
+
+The fork whose commits the merge applies. It has to be a fork of the namespace that the
+request merges into.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**throughSeq:** `*loonfs.ChangeSeq` 
+
+The fork sequence that the merge applies the fork's commits through. Without it, the merge
+applies them through the fork's head.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Namespaces.Rebase(NamespaceID, request) -> *loonfs.RebaseForkResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replays a fork's unmerged commits into a new fork of the namespace as one replay commit, which applies the changes that don't conflict with the namespace and reports the ones that do. The first rebase of a fork creates the new fork from the namespace's head, and a later rebase continues into it. The commit ID makes retries idempotent, and a retry of a committed replay commit returns the new fork without the conflict report.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.RebaseForkRequest{
+    NamespaceID: "namespace_id",
+    CommitID: "c_7kn71d9dq885x91hejz3gvf9p0",
+    NewNamespaceID: "demo",
+    SourceNamespaceID: "demo",
+}
+client.Namespaces.Rebase(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — The namespace that the fork was forked from.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**commitID:** `loonfs.CommitID` — The caller's idempotency key for the replay commit.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**message:** `*string` — An annotation from the caller. The message is part of the replay commit's identity.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**newNamespaceID:** `loonfs.NamespaceID` 
+
+The new fork that the replay commit commits into. The first rebase of the fork creates it
+from the namespace's head, and a later rebase continues into it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**sourceNamespaceID:** `loonfs.NamespaceID` 
+
+The fork whose unmerged commits the rebase replays. It has to be a fork of the namespace
+that the request names in its path.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**throughSeq:** `*loonfs.ChangeSeq` 
+
+The fork sequence that the replay commit replays the fork's commits through. Without it,
+the replay commit replays them through the fork's head.
     
 </dd>
 </dl>
@@ -390,7 +676,33 @@ client.Changes.List(
 <dl>
 <dd>
 
-**afterSeq:** `loonfs.ChangeSeq` — The sequence after which to return committed changes.
+**afterSeq:** `loonfs.ChangeSeq` 
+
+The sequence after which to return committed changes. With `event_index`, the commit at
+this sequence that the page resumes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**splitCommits:** `*bool` 
+
+Whether a page can end inside a commit that alone exceeds the page's budget. The default is
+`false`, which returns every commit whole.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**eventIndex:** `*int` 
+
+The `next_event_index` that the previous page returned, which resumes the commit at
+`after_seq` at that event. It requires `split_commits=true`. The default is 0, which starts
+after the commit at `after_seq`.
     
 </dd>
 </dl>
@@ -407,6 +719,30 @@ client.Changes.List(
 <dd>
 
 **snapshotID:** `*loonfs.PinID` — A snapshot to read the feed from. The feed ends at the sequence that the snapshot captured.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
     
 </dd>
 </dl>
@@ -448,7 +784,7 @@ Applies one commit, which is an ordered, non-empty list of path operations that 
 ```go
 request := &loonfs.CommitRequest{
     NamespaceID: "namespace_id",
-    CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
+    CommitID: "c_7kn71d9dq885x91hejz3gvf9p0",
     Operations: []*loonfs.FilesystemOperation{
         &loonfs.FilesystemOperation{
             AppendFile: &loonfs.FilesystemOperationAppendFile{
@@ -528,6 +864,160 @@ client.Commits.Create(
 </dl>
 </details>
 
+## Diff
+<details><summary><code>client.Diff.List(NamespaceID) -> *loonfs.DiffResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Returns a page of the inodes whose visible state at `to_seq` differs from their state at `from_seq`, read from the commits between the two sequences.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ListDiffRequest{
+    NamespaceID: "namespace_id",
+    FromSeq: int64(1000000),
+}
+client.Diff.List(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**namespaceID:** `string` — The namespace ID.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**fromSeq:** `loonfs.ChangeSeq` 
+
+The sequence that the diff starts after. Each entry compares an inode's state at this
+sequence with its state at `to_seq`. It can't be below the namespace's retention floor.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**toSeq:** `*loonfs.ChangeSeq` 
+
+The sequence that the diff ends at, inclusive. The default is the head that the request
+reads. A later page passes the `to_seq` that the first page returned.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**path:** `*string` — The absolute path of the directory whose subtree the diff reports. The default is the root.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**afterSeq:** `*loonfs.ChangeSeq` — The `next_after_seq` that the previous page returned. The default is `from_seq`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**splitCommits:** `*bool` 
+
+Whether a page can end inside a commit that alone touches more inodes than one page
+examines. The default is `false`, which reads every commit whole.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**eventIndex:** `*int` 
+
+The `next_event_index` that the previous page returned, which resumes the commit at
+`after_seq` at that event. It requires `split_commits=true`. The default is 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — The maximum number of commits that the page reads.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## Files
 <details><summary><code>client.Files.Content(NamespaceID) -> string</code></summary>
 <dl>
@@ -541,7 +1031,7 @@ client.Commits.Create(
 <dl>
 <dd>
 
-Returns the current file bytes, a retained revision, or the revision captured by a live snapshot.
+Returns the current file bytes, a retained revision, or the revision captured by an unexpired snapshot. A `Range` header asks for one byte range of the file instead.
 </dd>
 </dl>
 </dd>
@@ -603,6 +1093,38 @@ client.Files.Content(
 <dd>
 
 **snapshotID:** `*loonfs.PinID` — The snapshot whose captured file revision to read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**range_:** `*string` — One byte range of the file to read instead of the whole file, as `bytes=start-end`, where `end` is the offset of the last byte, or as `bytes=start-`. An `end` past the last byte reads to the end of the file. Any other value, including a suffix range or several ranges, returns 400 `invalid_request`.
     
 </dd>
 </dl>
@@ -671,6 +1193,30 @@ client.Files.CreateDownload(
 <dl>
 <dd>
 
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency` set to `eventual`, how old the server's last confirmation of the head can
+be, in milliseconds. The default is the server's `max_staleness_ms`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **path:** `loonfs.AbsolutePath` — The absolute path of the file to read.
     
 </dd>
@@ -730,7 +1276,7 @@ size. For a revision of zero bytes, it must be 0.
 <dl>
 <dd>
 
-Lists a directory from the current state or a live snapshot.
+Lists a directory from the current state or an unexpired snapshot.
 </dd>
 </dl>
 </dd>
@@ -802,7 +1348,22 @@ client.Files.List(
 <dl>
 <dd>
 
-**includeAttributes:** `*bool` — Whether the response includes each entry's attribute map and attribute revision. The default is `false`, because a page can have many entries and each map can be up to 64 KiB.
+**includeAttributes:** `*bool` 
+
+Whether the response includes each entry's attribute map and attribute revision. The default
+is `false`, because a page can have many entries and each map can be up to 64 KiB.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**recursive:** `*bool` 
+
+Whether the listing includes the directory's whole subtree, depth first, with each
+directory's entry before its descendants. The default is `false`, which lists the
+directory's children only.
     
 </dd>
 </dl>
@@ -811,6 +1372,30 @@ client.Files.List(
 <dd>
 
 **snapshotID:** `*loonfs.PinID` — The snapshot whose captured directory state to read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
     
 </dd>
 </dl>
@@ -834,7 +1419,7 @@ client.Files.List(
 <dl>
 <dd>
 
-Returns path metadata from the current state or a live snapshot.
+Returns path metadata from the current state or an unexpired snapshot.
 </dd>
 </dl>
 </dd>
@@ -890,7 +1475,10 @@ client.Files.Retrieve(
 <dl>
 <dd>
 
-**includeAttributes:** `*bool` — Whether the response includes the inode's attribute map and attribute revision. The default is `true`, because a stat reads one path and a map is at most 64 KiB.
+**includeAttributes:** `*bool` 
+
+Whether the response includes the inode's attribute map and attribute revision. The default
+is `true`, because a stat reads one path and a map is at most 64 KiB.
     
 </dd>
 </dl>
@@ -899,6 +1487,30 @@ client.Files.Retrieve(
 <dd>
 
 **snapshotID:** `*loonfs.PinID` — The snapshot whose captured path state to read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
     
 </dd>
 </dl>
@@ -987,6 +1599,30 @@ client.Files.ListRevisions(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -1007,7 +1643,7 @@ client.Files.ListRevisions(
 <dl>
 <dd>
 
-Searches file content with a regular expression, using the namespace's grep index to narrow the candidates. The server checks each candidate against the full pattern and returns matches in ascending `(inode_id, byte_offset)` order. It scans every revision committed after the index watermark, unless `allow_stale` skips them. The deployment must serve grep, and the namespace must have a materialized, active grep index.
+Searches file content with a regular expression, using the namespace's grep index to narrow the candidates. The server checks each candidate against the full pattern and returns matches ordered by the content value of each file's revision, then by `inode_id`, and then by `byte_offset`. It scans every revision committed after the index watermark, unless `allow_stale` skips them. A first page reads the namespace at its head, and a later page reads at the first page's head. The deployment must serve grep, and the namespace must have a materialized, active grep index.
 </dd>
 </dl>
 </dd>
@@ -1026,7 +1662,7 @@ request := &loonfs.GrepRequest{
     NamespaceID: "namespace_id",
     Pattern: "pattern",
     InodeID: loonfs.String(
-        "ino_123",
+        "ino_000000r0000013kje0d47gc8kw",
     ),
 }
 client.Files.Grep(
@@ -1055,7 +1691,10 @@ client.Files.Grep(
 <dl>
 <dd>
 
-**pattern:** `string` — The search pattern, in the Rust `regex` crate's syntax. Its UTF-8 encoding must be at most 1024 bytes.
+**pattern:** `string` 
+
+The search pattern, in the Rust `regex` crate's syntax. Its UTF-8 encoding must be at most
+1024 bytes.
     
 </dd>
 </dl>
@@ -1071,7 +1710,10 @@ client.Files.Grep(
 <dl>
 <dd>
 
-**pathPrefix:** `*string` — A complete absolute path that limits matches to its descendants. It can't be combined with `inode_id`.
+**pathPrefix:** `*string` 
+
+A complete absolute path that limits matches to its descendants. It can't be combined with
+`inode_id`.
     
 </dd>
 </dl>
@@ -1087,7 +1729,10 @@ client.Files.Grep(
 <dl>
 <dd>
 
-**allowScan:** `*bool` — Whether a pattern with no required literal bytes can use a capped exhaustive scan. The default is `false`.
+**allowScan:** `*bool` 
+
+Whether a pattern with no required literal bytes can use a capped exhaustive scan. The
+default is `false`.
     
 </dd>
 </dl>
@@ -1095,7 +1740,10 @@ client.Files.Grep(
 <dl>
 <dd>
 
-**allowStale:** `*bool` — Whether the server returns results from the index alone when the unindexed tail exceeds the scan budget. The default is `false`.
+**allowStale:** `*bool` 
+
+Whether the server returns results from the index alone when the unindexed tail exceeds the
+scan budget. The default is `false`.
     
 </dd>
 </dl>
@@ -1136,7 +1784,7 @@ client.Files.Grep(
 <dl>
 <dd>
 
-Returns the namespace's recoverable deletions, oldest first. Advancing the retention floor doesn't remove entries. Each entry includes the inode ID and deletion sequence that an undelete needs, and the deleted name when the delete recorded one.
+Returns the namespace's recoverable deletions, oldest first. A deletion leaves the list when it's undeleted, or when the namespace's retention floor reaches its `deletion_seq`. Each entry includes the inode ID and deletion sequence that an undelete needs, and the directory binding that the delete removed.
 </dd>
 </dl>
 </dd>
@@ -1192,6 +1840,30 @@ client.Trash.List(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -1213,7 +1885,7 @@ client.Trash.List(
 <dl>
 <dd>
 
-Returns the path entry for a visible inode, from the current state or a live snapshot. An unknown or hidden inode returns `inode_not_found`.
+Returns the path entry for a visible inode, from the current state or an unexpired snapshot. An unknown or hidden inode returns `inode_not_found`.
 </dd>
 </dl>
 </dd>
@@ -1230,7 +1902,7 @@ Returns the path entry for a visible inode, from the current state or a live sna
 ```go
 request := &loonfs.GetInodeRequest{
     NamespaceID: "namespace_id",
-    InodeID: "ino_123",
+    InodeID: "ino_000000r0000013kje0d47gc8kw",
     SnapshotID: loonfs.String(
         "pin_00000000000000000001-0000000000000002",
     ),
@@ -1269,7 +1941,10 @@ client.Inodes.Retrieve(
 <dl>
 <dd>
 
-**includeAttributes:** `*bool` — Whether the response includes the inode's attribute map and attribute revision. The default is `true`, because a stat reads one path and a map is at most 64 KiB.
+**includeAttributes:** `*bool` 
+
+Whether the response includes the inode's attribute map and attribute revision. The default
+is `true`, because a stat reads one path and a map is at most 64 KiB.
     
 </dd>
 </dl>
@@ -1278,6 +1953,30 @@ client.Inodes.Retrieve(
 <dd>
 
 **snapshotID:** `*loonfs.PinID` — The snapshot whose captured path state to read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
     
 </dd>
 </dl>
@@ -1301,7 +2000,7 @@ client.Inodes.Retrieve(
 <dl>
 <dd>
 
-Lists one page of a directory's children, in canonical name key order, from the current state or a live snapshot. The request identifies the directory by its inode ID, so a listing and its later pages stay on the same directory even if the directory is renamed or moved at the same time.
+Lists one page of a directory's children, in canonical name key order, from the current state or an unexpired snapshot. The request identifies the directory by its inode ID, so a listing and its later pages stay on the same directory even if the directory is renamed or moved at the same time.
 </dd>
 </dl>
 </dd>
@@ -1318,7 +2017,7 @@ Lists one page of a directory's children, in canonical name key order, from the 
 ```go
 request := &loonfs.ListInodeChildrenRequest{
     NamespaceID: "namespace_id",
-    InodeID: "ino_123",
+    InodeID: "ino_000000r0000013kje0d47gc8kw",
     SnapshotID: loonfs.String(
         "pin_00000000000000000001-0000000000000002",
     ),
@@ -1373,7 +2072,22 @@ client.Inodes.ListChildren(
 <dl>
 <dd>
 
-**includeAttributes:** `*bool` — Whether the response includes each entry's attribute map and attribute revision. The default is `false`, because a page can have many entries and each map can be up to 64 KiB.
+**includeAttributes:** `*bool` 
+
+Whether the response includes each entry's attribute map and attribute revision. The default
+is `false`, because a page can have many entries and each map can be up to 64 KiB.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**recursive:** `*bool` 
+
+Whether the listing includes the directory's whole subtree, depth first, with each
+directory's entry before its descendants. The default is `false`, which lists the
+directory's children only.
     
 </dd>
 </dl>
@@ -1382,6 +2096,30 @@ client.Inodes.ListChildren(
 <dd>
 
 **snapshotID:** `*loonfs.PinID` — The snapshot whose captured directory state to read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
     
 </dd>
 </dl>
@@ -1405,7 +2143,7 @@ client.Inodes.ListChildren(
 <dl>
 <dd>
 
-Reads and verifies the current revision of a visible file inode, wherever the inode is bound, or the revision that a live snapshot captured. An unknown or hidden inode returns `inode_not_found`.
+Reads and verifies the current revision of a visible file inode, wherever the inode is bound, or the revision that an unexpired snapshot captured. A `Range` header asks for one byte range of the file instead. An unknown or hidden inode returns `inode_not_found`.
 </dd>
 </dl>
 </dd>
@@ -1462,6 +2200,38 @@ client.Inodes.Content(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**range_:** `*string` — One byte range of the file to read instead of the whole file, as `bytes=start-end`, where `end` is the offset of the last byte, or as `bytes=start-`. An `end` past the last byte reads to the end of the file. Any other value, including a suffix range or several ranges, returns 400 `invalid_request`.
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -1482,7 +2252,7 @@ client.Inodes.Content(
 <dl>
 <dd>
 
-Authorizes a direct read of the current revision of a visible file inode, wherever the inode is bound, or of the revision that a live snapshot captured. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response doesn't include a path.
+Authorizes a direct read of the current revision of a visible file inode, wherever the inode is bound, or of the revision that an unexpired snapshot captured. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response doesn't include a path.
 </dd>
 </dl>
 </dd>
@@ -1499,7 +2269,7 @@ Authorizes a direct read of the current revision of a visible file inode, wherev
 ```go
 request := &loonfs.CreateDownloadByInodeRequest{
     NamespaceID: "namespace_id",
-    InodeID: "ino_123",
+    InodeID: "ino_000000r0000013kje0d47gc8kw",
 }
 client.Inodes.CreateDownload(
     context.TODO(),
@@ -1528,6 +2298,30 @@ client.Inodes.CreateDownload(
 <dd>
 
 **inodeID:** `string` — The file's inode ID.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency` set to `eventual`, how old the server's last confirmation of the head can
+be, in milliseconds. The default is the server's `max_staleness_ms`.
     
 </dd>
 </dl>
@@ -1590,7 +2384,7 @@ Returns the retained revisions of a file inode. The file doesn't need a current 
 ```go
 request := &loonfs.ListFileRevisionsByInodeRequest{
     NamespaceID: "namespace_id",
-    InodeID: "ino_123",
+    InodeID: "ino_000000r0000013kje0d47gc8kw",
 }
 client.Inodes.ListRevisions(
     context.TODO(),
@@ -1638,6 +2432,30 @@ client.Inodes.ListRevisions(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head. `eventual` (the default, unless the
+server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+while that confirmation is younger than the maximum staleness, and `strong` confirms the
+head before the read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -1658,7 +2476,7 @@ client.Inodes.ListRevisions(
 <dl>
 <dd>
 
-Reads and verifies one retained file revision by inode ID and revision number.
+Reads and verifies one retained file revision by inode ID and revision number, at the live head or in the state that a snapshot or a fork pin keeps. A `Range` header asks for one byte range of the revision instead.
 </dd>
 </dl>
 </dd>
@@ -1716,6 +2534,49 @@ client.Inodes.RevisionContent(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**snapshotID:** `*loonfs.PinID` 
+
+A snapshot, or one of the namespace's fork pins, whose pinned state to find the revision
+in. The pinned manifest keeps the revision after the namespace's retention floor passes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head that it finds the revision in. `eventual`
+(the default, unless the server's `consistency` setting is `strong`) reads at the head that
+the server confirmed last while that confirmation is younger than the maximum staleness, and
+`strong` confirms the head before the read. It can't be combined with `snapshot_id`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+milliseconds. The default is the server's `max_staleness_ms`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**range_:** `*string` — One byte range of the file to read instead of the whole file, as `bytes=start-end`, where `end` is the offset of the last byte, or as `bytes=start-`. An `end` past the last byte reads to the end of the file. Any other value, including a suffix range or several ranges, returns 400 `invalid_request`.
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -1753,7 +2614,7 @@ Authorizes a direct read of one retained inode revision. The capability reads ex
 ```go
 request := &loonfs.CreateRevisionDownloadByInodeRequest{
     NamespaceID: "namespace_id",
-    InodeID: "ino_123",
+    InodeID: "ino_000000r0000013kje0d47gc8kw",
     RevisionNo: int64(1000000),
 }
 client.Inodes.CreateRevisionDownload(
@@ -1798,6 +2659,30 @@ client.Inodes.CreateRevisionDownload(
 <dl>
 <dd>
 
+**consistency:** `*loonfs.ReadConsistency` 
+
+How recently the read confirms the namespace head that it finds the revision in. `eventual`
+(the default, unless the server's `consistency` setting is `strong`) reads at the head that
+the server confirmed last while that confirmation is younger than the maximum staleness,
+and `strong` confirms the head before the read.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxStalenessMs:** `*int64` 
+
+With `consistency` set to `eventual`, how old the server's last confirmation of the head can
+be, in milliseconds. The default is the server's `max_staleness_ms`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **startOffset:** `*int64` 
 
 The first byte that the grant reads. It defaults to 0 and must be less than the revision's
@@ -1826,7 +2711,7 @@ size. For a revision of zero bytes, it must be 0.
 <dl>
 <dd>
 
-Lists live snapshots in snapshot ID order. The list leaves out deleted and expired snapshots.
+Lists snapshots in snapshot ID order. An expired snapshot stays in the list until garbage collection deletes it, after its expiry plus the grace window. The list leaves out fork pins, which the maintenance checkpoint inventory lists.
 </dd>
 </dl>
 </dd>
@@ -1902,7 +2787,7 @@ client.Snapshots.List(
 <dl>
 <dd>
 
-Creates a snapshot of the current namespace state. Every accepted call creates a new snapshot.
+Creates a snapshot of the current namespace state. The server first folds any WAL tail after the current manifest. Every accepted call creates a new snapshot with a new ID, and the name is a label, not a key. A snapshot with `ttl_ms` expires that many milliseconds from the server's current time, and a snapshot without it doesn't expire. The snapshot keeps its manifest until it's deleted, either explicitly or by garbage collection after it expires and its grace window passes.
 </dd>
 </dl>
 </dd>
@@ -1920,7 +2805,6 @@ Creates a snapshot of the current namespace state. Every accepted call creates a
 request := &loonfs.CreateSnapshotRequest{
     NamespaceID: "namespace_id",
     Name: "name",
-    TTLMs: int64(1000000),
 }
 client.Snapshots.Create(
     context.TODO(),
@@ -1956,7 +2840,10 @@ client.Snapshots.Create(
 <dl>
 <dd>
 
-**ttlMs:** `int64` — The snapshot's lifetime in milliseconds, counted from the server's current time.
+**ttlMs:** `*int64` 
+
+The snapshot's lifetime in milliseconds, counted from the server's current time. Omit it to
+keep the snapshot until it's deleted.
     
 </dd>
 </dl>
@@ -1980,7 +2867,7 @@ client.Snapshots.Create(
 <dl>
 <dd>
 
-Returns one live snapshot, as the snapshot listing returns it. A missing ID, or the ID of a pin that isn't a snapshot, returns `snapshot_not_found`, and an expired snapshot returns `snapshot_gone`.
+Returns one snapshot, as the snapshot listing returns it, including an expired snapshot that garbage collection hasn't deleted. A missing ID, or the ID of a fork pin, returns `snapshot_not_found`.
 </dd>
 </dl>
 </dd>
@@ -2049,7 +2936,7 @@ client.Snapshots.Retrieve(
 <dl>
 <dd>
 
-Deletes a snapshot pin. A missing ID returns `snapshot_not_found`.
+Deletes a snapshot. Garbage collection can then reclaim its unreferenced manifest and runs. Deleting a missing snapshot succeeds, so repeating the request has the same result. The ID of a fork pin returns `snapshot_not_found`. Deletion stays available after the namespace is deleted.
 </dd>
 </dl>
 </dd>
@@ -2118,7 +3005,7 @@ client.Snapshots.Delete(
 <dl>
 <dd>
 
-Extends a live snapshot without passing its lifetime limit. Repeating the request has the same result.
+Moves an unexpired snapshot's expiry to `ttl_ms` from the server's current time. The expiry never moves earlier, so a snapshot without an expiry is returned unchanged. A missing or expired snapshot returns `snapshot_not_found`. Repeating the request has the same result.
 </dd>
 </dl>
 </dd>
@@ -2591,7 +3478,7 @@ client.Uploads.SignParts(
 <dl>
 <dd>
 
-Lists existing pins in checkpoint ID order. An expired pin stays in the list until garbage collection deletes it, after its expiry plus the grace window. A cursor continues the listing against the current set of pins.
+Lists every pin, snapshots and fork pins, in checkpoint ID order. This is the inventory of what keeps manifests from garbage collection. An expired snapshot stays in the list until garbage collection deletes it, after its expiry plus the grace window. A cursor continues the listing against the current set of pins.
 </dd>
 </dl>
 </dd>
@@ -2655,86 +3542,6 @@ client.Maintenance.Checkpoints.List(
 </dl>
 </details>
 
-<details><summary><code>client.Maintenance.Checkpoints.Create(NamespaceID, request) -> *loonfs.Checkpoint</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Creates a user checkpoint record that pins the current namespace view. The server first folds any WAL tail after the current manifest. Every call creates a new record with a new ID, and the name is a label, not a key. The record keeps its manifest until the record is deleted, either explicitly or by garbage collection after the record expires and its grace window passes. Because of that, routine maintenance should fold the WAL instead of creating checkpoints. This is a maintenance operation, not a file change.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &maintenance.CreateCheckpointRequest{
-    NamespaceID: "namespace_id",
-    Name: "name",
-}
-client.Maintenance.Checkpoints.Create(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — The namespace ID.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**name:** `string` — A label to record on the checkpoint. Labels don't need to be unique.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**ttlMs:** `*int64` 
-
-The checkpoint's lifetime in milliseconds. Omit it to keep the checkpoint until it's
-deleted.
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
 <details><summary><code>client.Maintenance.Checkpoints.Retrieve(NamespaceID, CheckpointID) -> *loonfs.Checkpoint</code></summary>
 <dl>
 <dd>
@@ -2747,7 +3554,7 @@ deleted.
 <dl>
 <dd>
 
-Returns one existing pin, as the checkpoint listing returns it, including an expired pin that garbage collection hasn't deleted. A missing ID returns `checkpoint_not_found`.
+Returns one existing pin, as the checkpoint listing returns it, including an expired snapshot that garbage collection hasn't deleted. A missing ID returns `snapshot_not_found`.
 </dd>
 </dl>
 </dd>
@@ -2767,75 +3574,6 @@ request := &maintenance.GetCheckpointRequest{
     CheckpointID: "checkpoint_id",
 }
 client.Maintenance.Checkpoints.Retrieve(
-    context.TODO(),
-    request,
-)
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**namespaceID:** `string` — The namespace ID.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**checkpointID:** `string` — The checkpoint ID.
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
-<details><summary><code>client.Maintenance.Checkpoints.Delete(NamespaceID, CheckpointID) -> *loonfs.DeleteCheckpointResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Deletes a user checkpoint pin. A missing ID returns `checkpoint_not_found`. Garbage collection can then reclaim the pin's unreferenced manifest and runs.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &maintenance.DeleteCheckpointRequest{
-    NamespaceID: "namespace_id",
-    CheckpointID: "checkpoint_id",
-}
-client.Maintenance.Checkpoints.Delete(
     context.TODO(),
     request,
 )
@@ -3007,7 +3745,7 @@ client.Maintenance.GrepIndex.Retrieve(
 <dl>
 <dd>
 
-Disables the namespace's grep index by publishing a manifest with the next number and no segment references. Index maintenance stops when a step reads the disabled manifest, and an explicit grep garbage collection run reclaims the segments later. Repeating the request has the same result. A deployment that doesn't maintain the grep index returns `not_supported`.
+Disables the namespace's grep index by publishing a namespace manifest whose grep entry lists no segments. Index maintenance stops when a step reads the disabled entry, and garbage collection reclaims the segments later. Repeating the request has the same result. If the grep entry is corrupt, the request replaces it with a disabled entry, so the index can be enabled again. If the entry has another version of the grep format, the request returns `index_corrupt` and leaves the entry unchanged. A deployment that doesn't maintain the grep index returns `not_supported`.
 </dd>
 </dl>
 </dd>
@@ -3128,7 +3866,7 @@ client.Maintenance.GrepIndex.Enable(
 <dl>
 <dd>
 
-Runs one maintenance job for the namespace. The body's `kind` selects the job, which is one of `metadata`, `metadata_compaction`, `gc`, `grep_gc`, `retention`, or `recover_administrator`. The response includes the same `kind` and the job's result. A deleted namespace accepts only `gc` and `grep_gc`. A `grep_gc` job deletes aged, unreferenced grep index objects, and it requires `maintenance.grep.index`. A `gc` job reads the current manifest, lists the pins, and then sweeps every object family to the end. Each listing starts at the beginning, and the job doesn't keep a position to continue from. A `retention` job advances the retention floor to the folded manifest head, or to the one target that `to_seq` or `cutoff_at_ms` sets.
+Runs one maintenance job for the namespace. The body's `kind` selects the job, which is one of `metadata`, `gc`, `retention`, `retention_window`, or `recover_administrator`. The response includes the same `kind` and the job's result. A deleted namespace accepts only `gc`. A `metadata` job folds the WAL tail and compacts metadata until nothing is due, or until it publishes 16 compaction units. A compaction unit can take minutes, so the call can too. When the result's `outcome` is `due`, another `metadata` run continues the work. A `gc` job reads the current manifest, lists the pins, and then sweeps every object family to the end, including the segments of extensions such as the grep index. Each listing starts at the beginning, and the job doesn't keep a position to continue from. A `retention` job advances the retention floor to the folded manifest head, or to the one target that `to_seq` or `cutoff_at_ms` sets. A `retention_window` job sets the namespace's retention window to `retention_window_ms`, or clears it when the body doesn't include that field.
 </dd>
 </dl>
 </dd>

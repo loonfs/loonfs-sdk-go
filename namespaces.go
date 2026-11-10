@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	createNamespaceRequestFieldAccess      = big.NewInt(1 << 0)
-	createNamespaceRequestFieldNamespaceID = big.NewInt(1 << 1)
-	createNamespaceRequestFieldNaming      = big.NewInt(1 << 2)
+	createNamespaceRequestFieldAccess            = big.NewInt(1 << 0)
+	createNamespaceRequestFieldNamespaceID       = big.NewInt(1 << 1)
+	createNamespaceRequestFieldRetentionWindowMs = big.NewInt(1 << 2)
 )
 
 type CreateNamespaceRequest struct {
@@ -21,9 +21,11 @@ type CreateNamespaceRequest struct {
 	Access *NamespaceAccess `json:"access,omitempty" url:"-"`
 	// The durable ID of the new namespace.
 	NamespaceID NamespaceID `json:"namespace_id" url:"-"`
-	// How the namespace compares sibling names. The mode can't be changed after the namespace is
-	// created, and it defaults to `case_insensitive`.
-	Naming *NamespaceNaming `json:"naming,omitempty" url:"-"`
+	// The namespace's retention window, in milliseconds, which must be positive. The reference
+	// server's maintenance sweep uses this window for the namespace. Without this field, the
+	// namespace's window is the server's `retention_window_ms` setting, if the server has that
+	// setting. A `retention_window` maintenance run can change or clear the window later.
+	RetentionWindowMs *int64 `json:"retention_window_ms,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -50,11 +52,11 @@ func (c *CreateNamespaceRequest) SetNamespaceID(namespaceID NamespaceID) {
 	c.require(createNamespaceRequestFieldNamespaceID)
 }
 
-// SetNaming sets the Naming field and marks it as non-optional;
+// SetRetentionWindowMs sets the RetentionWindowMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateNamespaceRequest) SetNaming(naming *NamespaceNaming) {
-	c.Naming = naming
-	c.require(createNamespaceRequestFieldNaming)
+func (c *CreateNamespaceRequest) SetRetentionWindowMs(retentionWindowMs *int64) {
+	c.RetentionWindowMs = retentionWindowMs
+	c.require(createNamespaceRequestFieldRetentionWindowMs)
 }
 
 func (c *CreateNamespaceRequest) UnmarshalJSON(data []byte) error {
@@ -125,7 +127,7 @@ type ForkNamespaceRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// The durable ID of the new namespace that the fork creates.
 	NewNamespaceID NamespaceID `json:"new_namespace_id" url:"-"`
-	// A live snapshot to fork from. Without it, the fork starts from the current head.
+	// An unexpired snapshot to fork from. Without it, the fork starts from the current head.
 	SnapshotID *PinID `json:"snapshot_id,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -178,6 +180,232 @@ func (f *ForkNamespaceRequest) MarshalJSON() ([]byte, error) {
 		embed: embed(*f),
 	}
 	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
+	mergeForkRequestFieldNamespaceID       = big.NewInt(1 << 0)
+	mergeForkRequestFieldCommitID          = big.NewInt(1 << 1)
+	mergeForkRequestFieldMessage           = big.NewInt(1 << 2)
+	mergeForkRequestFieldSourceNamespaceID = big.NewInt(1 << 3)
+	mergeForkRequestFieldThroughSeq        = big.NewInt(1 << 4)
+)
+
+type MergeForkRequest struct {
+	// The namespace that the merge commits into.
+	NamespaceID string `json:"-" url:"-"`
+	// The caller's idempotency key for the merge.
+	CommitID CommitID `json:"commit_id" url:"-"`
+	// An annotation from the caller. The message is part of the merge's identity.
+	Message *string `json:"message,omitempty" url:"-"`
+	// The fork whose commits the merge applies. It has to be a fork of the namespace that the
+	// request merges into.
+	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"-"`
+	// The fork sequence that the merge applies the fork's commits through. Without it, the merge
+	// applies them through the fork's head.
+	ThroughSeq *ChangeSeq `json:"through_seq,omitempty" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (m *MergeForkRequest) require(field *big.Int) {
+	if m.explicitFields == nil {
+		m.explicitFields = big.NewInt(0)
+	}
+	m.explicitFields.Or(m.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeForkRequest) SetNamespaceID(namespaceID string) {
+	m.NamespaceID = namespaceID
+	m.require(mergeForkRequestFieldNamespaceID)
+}
+
+// SetCommitID sets the CommitID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeForkRequest) SetCommitID(commitID CommitID) {
+	m.CommitID = commitID
+	m.require(mergeForkRequestFieldCommitID)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeForkRequest) SetMessage(message *string) {
+	m.Message = message
+	m.require(mergeForkRequestFieldMessage)
+}
+
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeForkRequest) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
+	m.SourceNamespaceID = sourceNamespaceID
+	m.require(mergeForkRequestFieldSourceNamespaceID)
+}
+
+// SetThroughSeq sets the ThroughSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeForkRequest) SetThroughSeq(throughSeq *ChangeSeq) {
+	m.ThroughSeq = throughSeq
+	m.require(mergeForkRequestFieldThroughSeq)
+}
+
+func (m *MergeForkRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler MergeForkRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*m = MergeForkRequest(body)
+	return nil
+}
+
+func (m *MergeForkRequest) MarshalJSON() ([]byte, error) {
+	type embed MergeForkRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
+	getNextMergeRangeRequestFieldNamespaceID = big.NewInt(1 << 0)
+	getNextMergeRangeRequestFieldSource      = big.NewInt(1 << 1)
+)
+
+type GetNextMergeRangeRequest struct {
+	// The namespace that the fork merges into.
+	NamespaceID string `json:"-" url:"-"`
+	// The fork whose next merge into the namespace the query reads. It has to be a fork of the
+	// namespace, or the fork that a rebase replays into the namespace.
+	Source NamespaceID `json:"-" url:"source"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (g *GetNextMergeRangeRequest) require(field *big.Int) {
+	if g.explicitFields == nil {
+		g.explicitFields = big.NewInt(0)
+	}
+	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetNextMergeRangeRequest) SetNamespaceID(namespaceID string) {
+	g.NamespaceID = namespaceID
+	g.require(getNextMergeRangeRequestFieldNamespaceID)
+}
+
+// SetSource sets the Source field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetNextMergeRangeRequest) SetSource(source NamespaceID) {
+	g.Source = source
+	g.require(getNextMergeRangeRequestFieldSource)
+}
+
+var (
+	rebaseForkRequestFieldNamespaceID       = big.NewInt(1 << 0)
+	rebaseForkRequestFieldCommitID          = big.NewInt(1 << 1)
+	rebaseForkRequestFieldMessage           = big.NewInt(1 << 2)
+	rebaseForkRequestFieldNewNamespaceID    = big.NewInt(1 << 3)
+	rebaseForkRequestFieldSourceNamespaceID = big.NewInt(1 << 4)
+	rebaseForkRequestFieldThroughSeq        = big.NewInt(1 << 5)
+)
+
+type RebaseForkRequest struct {
+	// The namespace that the fork was forked from.
+	NamespaceID string `json:"-" url:"-"`
+	// The caller's idempotency key for the replay commit.
+	CommitID CommitID `json:"commit_id" url:"-"`
+	// An annotation from the caller. The message is part of the replay commit's identity.
+	Message *string `json:"message,omitempty" url:"-"`
+	// The new fork that the replay commit commits into. The first rebase of the fork creates it
+	// from the namespace's head, and a later rebase continues into it.
+	NewNamespaceID NamespaceID `json:"new_namespace_id" url:"-"`
+	// The fork whose unmerged commits the rebase replays. It has to be a fork of the namespace
+	// that the request names in its path.
+	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"-"`
+	// The fork sequence that the replay commit replays the fork's commits through. Without it,
+	// the replay commit replays them through the fork's head.
+	ThroughSeq *ChangeSeq `json:"through_seq,omitempty" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (r *RebaseForkRequest) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RebaseForkRequest) SetNamespaceID(namespaceID string) {
+	r.NamespaceID = namespaceID
+	r.require(rebaseForkRequestFieldNamespaceID)
+}
+
+// SetCommitID sets the CommitID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RebaseForkRequest) SetCommitID(commitID CommitID) {
+	r.CommitID = commitID
+	r.require(rebaseForkRequestFieldCommitID)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RebaseForkRequest) SetMessage(message *string) {
+	r.Message = message
+	r.require(rebaseForkRequestFieldMessage)
+}
+
+// SetNewNamespaceID sets the NewNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RebaseForkRequest) SetNewNamespaceID(newNamespaceID NamespaceID) {
+	r.NewNamespaceID = newNamespaceID
+	r.require(rebaseForkRequestFieldNewNamespaceID)
+}
+
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RebaseForkRequest) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
+	r.SourceNamespaceID = sourceNamespaceID
+	r.require(rebaseForkRequestFieldSourceNamespaceID)
+}
+
+// SetThroughSeq sets the ThroughSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RebaseForkRequest) SetThroughSeq(throughSeq *ChangeSeq) {
+	r.ThroughSeq = throughSeq
+	r.require(rebaseForkRequestFieldThroughSeq)
+}
+
+func (r *RebaseForkRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler RebaseForkRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*r = RebaseForkRequest(body)
+	return nil
+}
+
+func (r *RebaseForkRequest) MarshalJSON() ([]byte, error) {
+	type embed RebaseForkRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
 	return json.Marshal(explicitMarshaler)
 }
 
@@ -308,6 +536,330 @@ func (d *DeleteNamespaceResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", d)
+}
+
+// One inode whose change a merge can't apply, because the namespace being merged into changed
+// the inode after the fork point, hides it, or has the name that the change needs.
+var (
+	mergeConflictFieldBase    = big.NewInt(1 << 0)
+	mergeConflictFieldInodeID = big.NewInt(1 << 1)
+	mergeConflictFieldKind    = big.NewInt(1 << 2)
+	mergeConflictFieldOurs    = big.NewInt(1 << 3)
+	mergeConflictFieldTheirs  = big.NewInt(1 << 4)
+)
+
+type MergeConflict struct {
+	// The version that the fork started from, which is the merged-into namespace's version at
+	// the fork point. It's absent for an inode that the fork created.
+	Base *MergeConflictVersion `json:"base,omitempty" url:"base,omitempty"`
+	// The inode. It has the same ID in the fork and in the namespace being merged into.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+	// Which check failed.
+	Kind MergeConflictKind `json:"kind" url:"kind"`
+	// The fork's version at the end of the merge's range. It's absent for an inode that the fork
+	// deleted.
+	Ours *MergeConflictVersion `json:"ours,omitempty" url:"ours,omitempty"`
+	// The merged-into namespace's current version. It's absent when that namespace deleted or
+	// hides the inode. For a `name` conflict, it's the inode that has the name there. For a
+	// `dependency` conflict, it's the fork's version of the inode whose change was skipped (the
+	// directory, or the moved inode), so its path is the `ours` path of that inode's own entry.
+	Theirs *MergeConflictVersion `json:"theirs,omitempty" url:"theirs,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MergeConflict) GetBase() *MergeConflictVersion {
+	if m == nil {
+		return nil
+	}
+	return m.Base
+}
+
+func (m *MergeConflict) GetInodeID() InodeID {
+	if m == nil {
+		return ""
+	}
+	return m.InodeID
+}
+
+func (m *MergeConflict) GetKind() MergeConflictKind {
+	if m == nil {
+		return ""
+	}
+	return m.Kind
+}
+
+func (m *MergeConflict) GetOurs() *MergeConflictVersion {
+	if m == nil {
+		return nil
+	}
+	return m.Ours
+}
+
+func (m *MergeConflict) GetTheirs() *MergeConflictVersion {
+	if m == nil {
+		return nil
+	}
+	return m.Theirs
+}
+
+func (m *MergeConflict) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MergeConflict) require(field *big.Int) {
+	if m.explicitFields == nil {
+		m.explicitFields = big.NewInt(0)
+	}
+	m.explicitFields.Or(m.explicitFields, field)
+}
+
+// SetBase sets the Base field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeConflict) SetBase(base *MergeConflictVersion) {
+	m.Base = base
+	m.require(mergeConflictFieldBase)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeConflict) SetInodeID(inodeID InodeID) {
+	m.InodeID = inodeID
+	m.require(mergeConflictFieldInodeID)
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeConflict) SetKind(kind MergeConflictKind) {
+	m.Kind = kind
+	m.require(mergeConflictFieldKind)
+}
+
+// SetOurs sets the Ours field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeConflict) SetOurs(ours *MergeConflictVersion) {
+	m.Ours = ours
+	m.require(mergeConflictFieldOurs)
+}
+
+// SetTheirs sets the Theirs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeConflict) SetTheirs(theirs *MergeConflictVersion) {
+	m.Theirs = theirs
+	m.require(mergeConflictFieldTheirs)
+}
+
+func (m *MergeConflict) UnmarshalJSON(data []byte) error {
+	type unmarshaler MergeConflict
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MergeConflict(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MergeConflict) MarshalJSON() ([]byte, error) {
+	type embed MergeConflict
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MergeConflict) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+// Which check of the conflict rule a merge's change failed.
+//
+// A newer server can return a kind that isn't listed here.
+type MergeConflictKind string
+
+const (
+	MergeConflictKindContent    MergeConflictKind = "content"
+	MergeConflictKindBinding    MergeConflictKind = "binding"
+	MergeConflictKindAttributes MergeConflictKind = "attributes"
+	MergeConflictKindAccess     MergeConflictKind = "access"
+	MergeConflictKindVisibility MergeConflictKind = "visibility"
+	MergeConflictKindName       MergeConflictKind = "name"
+	MergeConflictKindSubtree    MergeConflictKind = "subtree"
+	MergeConflictKindDependency MergeConflictKind = "dependency"
+)
+
+func NewMergeConflictKindFromString(s string) (MergeConflictKind, error) {
+	switch s {
+	case "content":
+		return MergeConflictKindContent, nil
+	case "binding":
+		return MergeConflictKindBinding, nil
+	case "attributes":
+		return MergeConflictKindAttributes, nil
+	case "access":
+		return MergeConflictKindAccess, nil
+	case "visibility":
+		return MergeConflictKindVisibility, nil
+	case "name":
+		return MergeConflictKindName, nil
+	case "subtree":
+		return MergeConflictKindSubtree, nil
+	case "dependency":
+		return MergeConflictKindDependency, nil
+	}
+	var t MergeConflictKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (m MergeConflictKind) Ptr() *MergeConflictKind {
+	return &m
+}
+
+// One version of an inode in a merge conflict.
+var (
+	mergeConflictVersionFieldContentRef = big.NewInt(1 << 0)
+	mergeConflictVersionFieldPath       = big.NewInt(1 << 1)
+	mergeConflictVersionFieldRevisionNo = big.NewInt(1 << 2)
+)
+
+type MergeConflictVersion struct {
+	// The file's content in that version. This field is present exactly when `revision_no` is
+	// present.
+	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
+	// The inode's path in that version, built from the stored display names.
+	Path AbsolutePath `json:"path" url:"path"`
+	// The file's revision number in that version. A directory has none.
+	RevisionNo *RevisionNo `json:"revision_no,omitempty" url:"revision_no,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MergeConflictVersion) GetContentRef() *ContentRef {
+	if m == nil {
+		return nil
+	}
+	return m.ContentRef
+}
+
+func (m *MergeConflictVersion) GetPath() AbsolutePath {
+	if m == nil {
+		return ""
+	}
+	return m.Path
+}
+
+func (m *MergeConflictVersion) GetRevisionNo() *RevisionNo {
+	if m == nil {
+		return nil
+	}
+	return m.RevisionNo
+}
+
+func (m *MergeConflictVersion) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MergeConflictVersion) require(field *big.Int) {
+	if m.explicitFields == nil {
+		m.explicitFields = big.NewInt(0)
+	}
+	m.explicitFields.Or(m.explicitFields, field)
+}
+
+// SetContentRef sets the ContentRef field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeConflictVersion) SetContentRef(contentRef *ContentRef) {
+	m.ContentRef = contentRef
+	m.require(mergeConflictVersionFieldContentRef)
+}
+
+// SetPath sets the Path field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeConflictVersion) SetPath(path AbsolutePath) {
+	m.Path = path
+	m.require(mergeConflictVersionFieldPath)
+}
+
+// SetRevisionNo sets the RevisionNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MergeConflictVersion) SetRevisionNo(revisionNo *RevisionNo) {
+	m.RevisionNo = revisionNo
+	m.require(mergeConflictVersionFieldRevisionNo)
+}
+
+func (m *MergeConflictVersion) UnmarshalJSON(data []byte) error {
+	type unmarshaler MergeConflictVersion
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MergeConflictVersion(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MergeConflictVersion) MarshalJSON() ([]byte, error) {
+	type embed MergeConflictVersion
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MergeConflictVersion) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
 }
 
 // A namespace's access mode, which can't be changed after the namespace is created.
@@ -891,11 +1443,12 @@ var (
 	namespaceMetadataFieldAccess            = big.NewInt(1 << 0)
 	namespaceMetadataFieldCreatedAtMs       = big.NewInt(1 << 1)
 	namespaceMetadataFieldCreatedBy         = big.NewInt(1 << 2)
-	namespaceMetadataFieldForkBasis         = big.NewInt(1 << 3)
-	namespaceMetadataFieldHeadSeq           = big.NewInt(1 << 4)
-	namespaceMetadataFieldNamespaceID       = big.NewInt(1 << 5)
-	namespaceMetadataFieldNaming            = big.NewInt(1 << 6)
+	namespaceMetadataFieldFamilyRootID      = big.NewInt(1 << 3)
+	namespaceMetadataFieldForkBasis         = big.NewInt(1 << 4)
+	namespaceMetadataFieldHeadSeq           = big.NewInt(1 << 5)
+	namespaceMetadataFieldNamespaceID       = big.NewInt(1 << 6)
 	namespaceMetadataFieldRetentionFloorSeq = big.NewInt(1 << 7)
+	namespaceMetadataFieldRetentionWindowMs = big.NewInt(1 << 8)
 )
 
 type NamespaceMetadata struct {
@@ -905,6 +1458,10 @@ type NamespaceMetadata struct {
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
 	// The actor that created the namespace, as the application supplied it.
 	CreatedBy ActorID `json:"created_by" url:"created_by"`
+	// The namespace whose prefix stores the content of this namespace's fork family. For a
+	// namespace that wasn't created by a fork, this is the namespace itself. A fork has the same
+	// family root as its source.
+	FamilyRootID NamespaceID `json:"family_root_id" url:"family_root_id"`
 	// The namespace and sequence this namespace was forked from. Only a forked namespace has this
 	// field.
 	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
@@ -912,11 +1469,13 @@ type NamespaceMetadata struct {
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// The namespace ID.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// How the namespace compares sibling names.
-	Naming NamespaceNaming `json:"naming" url:"naming"`
 	// The namespace's retention floor. A change feed request can set `after_seq` to this sequence
 	// or any later one, and the feed returns the changes committed after it.
 	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
+	// The namespace's retention window, in milliseconds. Only a namespace with a window has this
+	// field. The reference server's maintenance sweep doesn't advance the floor of a namespace
+	// without a window.
+	RetentionWindowMs *int64 `json:"retention_window_ms,omitempty" url:"retention_window_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -946,6 +1505,13 @@ func (n *NamespaceMetadata) GetCreatedBy() ActorID {
 	return n.CreatedBy
 }
 
+func (n *NamespaceMetadata) GetFamilyRootID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.FamilyRootID
+}
+
 func (n *NamespaceMetadata) GetForkBasis() *NamespaceForkBasis {
 	if n == nil {
 		return nil
@@ -967,18 +1533,18 @@ func (n *NamespaceMetadata) GetNamespaceID() NamespaceID {
 	return n.NamespaceID
 }
 
-func (n *NamespaceMetadata) GetNaming() NamespaceNaming {
-	if n == nil {
-		return ""
-	}
-	return n.Naming
-}
-
 func (n *NamespaceMetadata) GetRetentionFloorSeq() ChangeSeq {
 	if n == nil {
 		return 0
 	}
 	return n.RetentionFloorSeq
+}
+
+func (n *NamespaceMetadata) GetRetentionWindowMs() *int64 {
+	if n == nil {
+		return nil
+	}
+	return n.RetentionWindowMs
 }
 
 func (n *NamespaceMetadata) GetExtraProperties() map[string]interface{} {
@@ -1016,6 +1582,13 @@ func (n *NamespaceMetadata) SetCreatedBy(createdBy ActorID) {
 	n.require(namespaceMetadataFieldCreatedBy)
 }
 
+// SetFamilyRootID sets the FamilyRootID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetFamilyRootID(familyRootID NamespaceID) {
+	n.FamilyRootID = familyRootID
+	n.require(namespaceMetadataFieldFamilyRootID)
+}
+
 // SetForkBasis sets the ForkBasis field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NamespaceMetadata) SetForkBasis(forkBasis *NamespaceForkBasis) {
@@ -1037,18 +1610,18 @@ func (n *NamespaceMetadata) SetNamespaceID(namespaceID NamespaceID) {
 	n.require(namespaceMetadataFieldNamespaceID)
 }
 
-// SetNaming sets the Naming field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceMetadata) SetNaming(naming NamespaceNaming) {
-	n.Naming = naming
-	n.require(namespaceMetadataFieldNaming)
-}
-
 // SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NamespaceMetadata) SetRetentionFloorSeq(retentionFloorSeq ChangeSeq) {
 	n.RetentionFloorSeq = retentionFloorSeq
 	n.require(namespaceMetadataFieldRetentionFloorSeq)
+}
+
+// SetRetentionWindowMs sets the RetentionWindowMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetRetentionWindowMs(retentionWindowMs *int64) {
+	n.RetentionWindowMs = retentionWindowMs
+	n.require(namespaceMetadataFieldRetentionWindowMs)
 }
 
 func (n *NamespaceMetadata) UnmarshalJSON(data []byte) error {
@@ -1093,31 +1666,686 @@ func (n *NamespaceMetadata) String() string {
 	return fmt.Sprintf("%#v", n)
 }
 
-// How a namespace compares sibling names, for example whether Report.txt and report.txt are the
-// same name.
-//
-// The mode is set when the namespace is created and can't be changed.
-type NamespaceNaming string
-
-const (
-	NamespaceNamingCaseInsensitive NamespaceNaming = "case_insensitive"
-	NamespaceNamingCaseSensitive   NamespaceNaming = "case_sensitive"
+// The fork point is below the namespace's retention floor, so a merge of the fork returns
+// `rebootstrap_required`. The outcome doesn't say where the next merge would start, because
+// a compaction might have removed the fork's newest merge from the namespace's merge index.
+var (
+	nextMergeRangeOutcomeForkPointBelowFloorFieldForkPointSeq      = big.NewInt(1 << 0)
+	nextMergeRangeOutcomeForkPointBelowFloorFieldRetentionFloorSeq = big.NewInt(1 << 1)
+	nextMergeRangeOutcomeForkPointBelowFloorFieldSourceHeadSeq     = big.NewInt(1 << 2)
 )
 
-func NewNamespaceNamingFromString(s string) (NamespaceNaming, error) {
-	switch s {
-	case "case_insensitive":
-		return NamespaceNamingCaseInsensitive, nil
-	case "case_sensitive":
-		return NamespaceNamingCaseSensitive, nil
-	}
-	var t NamespaceNaming
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
+type NextMergeRangeOutcomeForkPointBelowFloor struct {
+	// The sequence that the fork was made at, of the namespace or, for a rebase's new fork, of
+	// the namespace that the rebase forked.
+	ForkPointSeq ChangeSeq `json:"fork_point_seq" url:"fork_point_seq"`
+	// The namespace's retention floor, which is above the fork point (for a rebase's new
+	// fork, above the new fork's own fork point).
+	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
+	// The fork's head sequence when the server read it.
+	SourceHeadSeq ChangeSeq `json:"source_head_seq" url:"source_head_seq"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (n NamespaceNaming) Ptr() *NamespaceNaming {
-	return &n
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetForkPointSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.ForkPointSeq
+}
+
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetRetentionFloorSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.RetentionFloorSeq
+}
+
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetSourceHeadSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.SourceHeadSeq
+}
+
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) require(field *big.Int) {
+	if n.explicitFields == nil {
+		n.explicitFields = big.NewInt(0)
+	}
+	n.explicitFields.Or(n.explicitFields, field)
+}
+
+// SetForkPointSeq sets the ForkPointSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) SetForkPointSeq(forkPointSeq ChangeSeq) {
+	n.ForkPointSeq = forkPointSeq
+	n.require(nextMergeRangeOutcomeForkPointBelowFloorFieldForkPointSeq)
+}
+
+// SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) SetRetentionFloorSeq(retentionFloorSeq ChangeSeq) {
+	n.RetentionFloorSeq = retentionFloorSeq
+	n.require(nextMergeRangeOutcomeForkPointBelowFloorFieldRetentionFloorSeq)
+}
+
+// SetSourceHeadSeq sets the SourceHeadSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) SetSourceHeadSeq(sourceHeadSeq ChangeSeq) {
+	n.SourceHeadSeq = sourceHeadSeq
+	n.require(nextMergeRangeOutcomeForkPointBelowFloorFieldSourceHeadSeq)
+}
+
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) UnmarshalJSON(data []byte) error {
+	type unmarshaler NextMergeRangeOutcomeForkPointBelowFloor
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NextMergeRangeOutcomeForkPointBelowFloor(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) MarshalJSON() ([]byte, error) {
+	type embed NextMergeRangeOutcomeForkPointBelowFloor
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+// The floors allow the next merge.
+var (
+	nextMergeRangeOutcomeOpenFieldForkPointSeq  = big.NewInt(1 << 0)
+	nextMergeRangeOutcomeOpenFieldMerge         = big.NewInt(1 << 1)
+	nextMergeRangeOutcomeOpenFieldNextAfterSeq  = big.NewInt(1 << 2)
+	nextMergeRangeOutcomeOpenFieldSourceHeadSeq = big.NewInt(1 << 3)
+)
+
+type NextMergeRangeOutcomeOpen struct {
+	// The sequence that the fork was made at, of the namespace or, for a rebase's new fork, of
+	// the namespace that the rebase forked.
+	ForkPointSeq ChangeSeq `json:"fork_point_seq" url:"fork_point_seq"`
+	// The fork's newest merge into the namespace, which the next merge continues. It's
+	// absent before the fork's first merge. In a rebase's new fork, it's the fork's newest
+	// replay commit, never a merge that the new fork inherited.
+	Merge *Merge `json:"merge,omitempty" url:"merge,omitempty"`
+	// The fork sequence that the next merge starts after: the newest merge's
+	// `source_through_seq`, or the fork point before the fork's first merge. In a rebase's
+	// new fork, it's the new fork's `resume_after_seq` before the first replay commit.
+	NextAfterSeq ChangeSeq `json:"next_after_seq" url:"next_after_seq"`
+	// The fork's head sequence when the server read it.
+	SourceHeadSeq ChangeSeq `json:"source_head_seq" url:"source_head_seq"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NextMergeRangeOutcomeOpen) GetForkPointSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.ForkPointSeq
+}
+
+func (n *NextMergeRangeOutcomeOpen) GetMerge() *Merge {
+	if n == nil {
+		return nil
+	}
+	return n.Merge
+}
+
+func (n *NextMergeRangeOutcomeOpen) GetNextAfterSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.NextAfterSeq
+}
+
+func (n *NextMergeRangeOutcomeOpen) GetSourceHeadSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.SourceHeadSeq
+}
+
+func (n *NextMergeRangeOutcomeOpen) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NextMergeRangeOutcomeOpen) require(field *big.Int) {
+	if n.explicitFields == nil {
+		n.explicitFields = big.NewInt(0)
+	}
+	n.explicitFields.Or(n.explicitFields, field)
+}
+
+// SetForkPointSeq sets the ForkPointSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeOpen) SetForkPointSeq(forkPointSeq ChangeSeq) {
+	n.ForkPointSeq = forkPointSeq
+	n.require(nextMergeRangeOutcomeOpenFieldForkPointSeq)
+}
+
+// SetMerge sets the Merge field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeOpen) SetMerge(merge *Merge) {
+	n.Merge = merge
+	n.require(nextMergeRangeOutcomeOpenFieldMerge)
+}
+
+// SetNextAfterSeq sets the NextAfterSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeOpen) SetNextAfterSeq(nextAfterSeq ChangeSeq) {
+	n.NextAfterSeq = nextAfterSeq
+	n.require(nextMergeRangeOutcomeOpenFieldNextAfterSeq)
+}
+
+// SetSourceHeadSeq sets the SourceHeadSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeOpen) SetSourceHeadSeq(sourceHeadSeq ChangeSeq) {
+	n.SourceHeadSeq = sourceHeadSeq
+	n.require(nextMergeRangeOutcomeOpenFieldSourceHeadSeq)
+}
+
+func (n *NextMergeRangeOutcomeOpen) UnmarshalJSON(data []byte) error {
+	type unmarshaler NextMergeRangeOutcomeOpen
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NextMergeRangeOutcomeOpen(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NextMergeRangeOutcomeOpen) MarshalJSON() ([]byte, error) {
+	type embed NextMergeRangeOutcomeOpen
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NextMergeRangeOutcomeOpen) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+// The range starts below the fork's own retention floor, so a merge of the fork returns
+// `rebootstrap_required`, because the fork no longer keeps the history that the merge's net
+// change needs.
+var (
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldForkPointSeq      = big.NewInt(1 << 0)
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldMerge             = big.NewInt(1 << 1)
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldNextAfterSeq      = big.NewInt(1 << 2)
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldRetentionFloorSeq = big.NewInt(1 << 3)
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldSourceHeadSeq     = big.NewInt(1 << 4)
+)
+
+type NextMergeRangeOutcomeRangeStartBelowFloor struct {
+	// The sequence that the fork was made at, of the namespace or, for a rebase's new fork, of
+	// the namespace that the rebase forked.
+	ForkPointSeq ChangeSeq `json:"fork_point_seq" url:"fork_point_seq"`
+	// The fork's newest merge into the namespace, as for `open`. It's absent before the
+	// fork's first merge.
+	Merge *Merge `json:"merge,omitempty" url:"merge,omitempty"`
+	// The fork sequence that the next merge would start after, as for `open`.
+	NextAfterSeq ChangeSeq `json:"next_after_seq" url:"next_after_seq"`
+	// The fork's retention floor, which is above `next_after_seq`.
+	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
+	// The fork's head sequence when the server read it.
+	SourceHeadSeq ChangeSeq `json:"source_head_seq" url:"source_head_seq"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetForkPointSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.ForkPointSeq
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetMerge() *Merge {
+	if n == nil {
+		return nil
+	}
+	return n.Merge
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetNextAfterSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.NextAfterSeq
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetRetentionFloorSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.RetentionFloorSeq
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetSourceHeadSeq() ChangeSeq {
+	if n == nil {
+		return 0
+	}
+	return n.SourceHeadSeq
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) require(field *big.Int) {
+	if n.explicitFields == nil {
+		n.explicitFields = big.NewInt(0)
+	}
+	n.explicitFields.Or(n.explicitFields, field)
+}
+
+// SetForkPointSeq sets the ForkPointSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetForkPointSeq(forkPointSeq ChangeSeq) {
+	n.ForkPointSeq = forkPointSeq
+	n.require(nextMergeRangeOutcomeRangeStartBelowFloorFieldForkPointSeq)
+}
+
+// SetMerge sets the Merge field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetMerge(merge *Merge) {
+	n.Merge = merge
+	n.require(nextMergeRangeOutcomeRangeStartBelowFloorFieldMerge)
+}
+
+// SetNextAfterSeq sets the NextAfterSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetNextAfterSeq(nextAfterSeq ChangeSeq) {
+	n.NextAfterSeq = nextAfterSeq
+	n.require(nextMergeRangeOutcomeRangeStartBelowFloorFieldNextAfterSeq)
+}
+
+// SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetRetentionFloorSeq(retentionFloorSeq ChangeSeq) {
+	n.RetentionFloorSeq = retentionFloorSeq
+	n.require(nextMergeRangeOutcomeRangeStartBelowFloorFieldRetentionFloorSeq)
+}
+
+// SetSourceHeadSeq sets the SourceHeadSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetSourceHeadSeq(sourceHeadSeq ChangeSeq) {
+	n.SourceHeadSeq = sourceHeadSeq
+	n.require(nextMergeRangeOutcomeRangeStartBelowFloorFieldSourceHeadSeq)
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) UnmarshalJSON(data []byte) error {
+	type unmarshaler NextMergeRangeOutcomeRangeStartBelowFloor
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NextMergeRangeOutcomeRangeStartBelowFloor(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) MarshalJSON() ([]byte, error) {
+	type embed NextMergeRangeOutcomeRangeStartBelowFloor
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+// Where a fork's next merge into a namespace starts.
+type NextMergeRangeResponse struct {
+	Outcome              string
+	ForkPointBelowFloor  *NextMergeRangeOutcomeForkPointBelowFloor
+	Open                 *NextMergeRangeOutcomeOpen
+	RangeStartBelowFloor *NextMergeRangeOutcomeRangeStartBelowFloor
+
+	rawJSON json.RawMessage
+}
+
+func (n *NextMergeRangeResponse) GetOutcome() string {
+	if n == nil {
+		return ""
+	}
+	return n.Outcome
+}
+
+func (n *NextMergeRangeResponse) GetForkPointBelowFloor() *NextMergeRangeOutcomeForkPointBelowFloor {
+	if n == nil {
+		return nil
+	}
+	return n.ForkPointBelowFloor
+}
+
+func (n *NextMergeRangeResponse) GetOpen() *NextMergeRangeOutcomeOpen {
+	if n == nil {
+		return nil
+	}
+	return n.Open
+}
+
+func (n *NextMergeRangeResponse) GetRangeStartBelowFloor() *NextMergeRangeOutcomeRangeStartBelowFloor {
+	if n == nil {
+		return nil
+	}
+	return n.RangeStartBelowFloor
+}
+
+func (n *NextMergeRangeResponse) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Outcome string `json:"outcome"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	n.Outcome = unmarshaler.Outcome
+	if unmarshaler.Outcome == "" {
+		return fmt.Errorf("%T did not include discriminant outcome", n)
+	}
+	switch unmarshaler.Outcome {
+	case "fork_point_below_floor":
+		value := new(NextMergeRangeOutcomeForkPointBelowFloor)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.ForkPointBelowFloor = value
+	case "open":
+		value := new(NextMergeRangeOutcomeOpen)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.Open = value
+	case "range_start_below_floor":
+		value := new(NextMergeRangeOutcomeRangeStartBelowFloor)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.RangeStartBelowFloor = value
+	}
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n NextMergeRangeResponse) MarshalJSON() ([]byte, error) {
+	if err := n.validate(); err != nil {
+		return nil, err
+	}
+	if n.ForkPointBelowFloor != nil {
+		return internal.MarshalJSONWithExtraProperty(n.ForkPointBelowFloor, "outcome", "fork_point_below_floor")
+	}
+	if n.Open != nil {
+		return internal.MarshalJSONWithExtraProperty(n.Open, "outcome", "open")
+	}
+	if n.RangeStartBelowFloor != nil {
+		return internal.MarshalJSONWithExtraProperty(n.RangeStartBelowFloor, "outcome", "range_start_below_floor")
+	}
+	if len(n.rawJSON) > 0 {
+		return n.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", n)
+}
+
+type NextMergeRangeResponseVisitor interface {
+	VisitForkPointBelowFloor(*NextMergeRangeOutcomeForkPointBelowFloor) error
+	VisitOpen(*NextMergeRangeOutcomeOpen) error
+	VisitRangeStartBelowFloor(*NextMergeRangeOutcomeRangeStartBelowFloor) error
+}
+
+func (n *NextMergeRangeResponse) Accept(visitor NextMergeRangeResponseVisitor) error {
+	if n.ForkPointBelowFloor != nil {
+		return visitor.VisitForkPointBelowFloor(n.ForkPointBelowFloor)
+	}
+	if n.Open != nil {
+		return visitor.VisitOpen(n.Open)
+	}
+	if n.RangeStartBelowFloor != nil {
+		return visitor.VisitRangeStartBelowFloor(n.RangeStartBelowFloor)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", n)
+}
+
+func (n *NextMergeRangeResponse) validate() error {
+	if n == nil {
+		return fmt.Errorf("type %T is nil", n)
+	}
+	var fields []string
+	if n.ForkPointBelowFloor != nil {
+		fields = append(fields, "fork_point_below_floor")
+	}
+	if n.Open != nil {
+		fields = append(fields, "open")
+	}
+	if n.RangeStartBelowFloor != nil {
+		fields = append(fields, "range_start_below_floor")
+	}
+	if len(fields) == 0 {
+		if n.Outcome != "" {
+			if len(n.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", n, n.Outcome)
+		}
+		return fmt.Errorf("type %T is empty", n)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", n, fields)
+	}
+	if n.Outcome != "" {
+		field := fields[0]
+		if n.Outcome != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				n,
+				n.Outcome,
+				n,
+			)
+		}
+	}
+	return nil
 }
 
 // An opaque identity domain ID of 1 to 256 visible ASCII characters other than the comma.
 type PrincipalScope = string
+
+// The result of a rebase: the new fork, and the changes that the replay commit left out.
+var (
+	rebaseForkResponseFieldConflicts = big.NewInt(1 << 0)
+	rebaseForkResponseFieldNamespace = big.NewInt(1 << 1)
+)
+
+type RebaseForkResponse struct {
+	// The replay commit's conflict report, with one entry for each inode whose change the replay
+	// commit didn't apply. It's absent when the request's commit ID identifies a replay commit
+	// that an earlier request committed, because only the response that committed the replay
+	// commit has its report.
+	Conflicts []*MergeConflict `json:"conflicts,omitempty" url:"conflicts,omitempty"`
+	// The new fork after the replay commit.
+	Namespace *NamespaceMetadata `json:"namespace" url:"namespace"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RebaseForkResponse) GetConflicts() []*MergeConflict {
+	if r == nil {
+		return nil
+	}
+	return r.Conflicts
+}
+
+func (r *RebaseForkResponse) GetNamespace() *NamespaceMetadata {
+	if r == nil {
+		return nil
+	}
+	return r.Namespace
+}
+
+func (r *RebaseForkResponse) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RebaseForkResponse) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetConflicts sets the Conflicts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RebaseForkResponse) SetConflicts(conflicts []*MergeConflict) {
+	r.Conflicts = conflicts
+	r.require(rebaseForkResponseFieldConflicts)
+}
+
+// SetNamespace sets the Namespace field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RebaseForkResponse) SetNamespace(namespace *NamespaceMetadata) {
+	r.Namespace = namespace
+	r.require(rebaseForkResponseFieldNamespace)
+}
+
+func (r *RebaseForkResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler RebaseForkResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RebaseForkResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RebaseForkResponse) MarshalJSON() ([]byte, error) {
+	type embed RebaseForkResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RebaseForkResponse) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}

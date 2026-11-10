@@ -36,7 +36,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Returns the current file bytes, a retained revision, or the revision captured by a live snapshot.
+// Returns the current file bytes, a retained revision, or the revision captured by an unexpired snapshot. A `Range` header asks for one byte range of the file instead.
 //
 // Example:
 //
@@ -92,7 +92,7 @@ func (c *Client) CreateDownload(
 	return response.Body, nil
 }
 
-// Lists a directory from the current state or a live snapshot.
+// Lists a directory from the current state or an unexpired snapshot.
 //
 // Example:
 //
@@ -170,7 +170,7 @@ func (c *Client) List(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Returns path metadata from the current state or a live snapshot.
+// Returns path metadata from the current state or an unexpired snapshot.
 //
 // Example:
 //
@@ -276,7 +276,7 @@ func (c *Client) ListRevisions(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Searches file content with a regular expression, using the namespace's grep index to narrow the candidates. The server checks each candidate against the full pattern and returns matches in ascending `(inode_id, byte_offset)` order. It scans every revision committed after the index watermark, unless `allow_stale` skips them. The deployment must serve grep, and the namespace must have a materialized, active grep index.
+// Searches file content with a regular expression, using the namespace's grep index to narrow the candidates. The server checks each candidate against the full pattern and returns matches ordered by the content value of each file's revision, then by `inode_id`, and then by `byte_offset`. It scans every revision committed after the index watermark, unless `allow_stale` skips them. A first page reads the namespace at its head, and a later page reads at the first page's head. The deployment must serve grep, and the namespace must have a materialized, active grep index.
 //
 // Example:
 //
@@ -284,7 +284,7 @@ func (c *Client) ListRevisions(
 //	    NamespaceID: "namespace_id",
 //	    Pattern: "pattern",
 //	    InodeID: loonfs.String(
-//	        "ino_123",
+//	        "ino_000000r0000013kje0d47gc8kw",
 //	    ),
 //	}
 //	client.Files.Grep(
