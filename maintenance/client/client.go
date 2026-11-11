@@ -8,6 +8,7 @@ import (
 	checkpoints "github.com/loonfs/loonfs-sdk-go/maintenance/checkpoints"
 	diagnostics "github.com/loonfs/loonfs-sdk-go/maintenance/diagnostics"
 	grepindex "github.com/loonfs/loonfs-sdk-go/maintenance/grepindex"
+	client "github.com/loonfs/loonfs-sdk-go/maintenance/pools/client"
 	runs "github.com/loonfs/loonfs-sdk-go/maintenance/runs"
 	store "github.com/loonfs/loonfs-sdk-go/maintenance/store"
 )
@@ -18,6 +19,7 @@ type Client struct {
 	GrepIndex   *grepindex.Client
 	Runs        *runs.Client
 	Store       *store.Client
+	Pools       *client.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -31,6 +33,7 @@ func NewClient(options *core.RequestOptions) *Client {
 		GrepIndex:   grepindex.NewClient(options),
 		Runs:        runs.NewClient(options),
 		Store:       store.NewClient(options),
+		Pools:       client.NewClient(options),
 		options:     options,
 		baseURL:     options.BaseURL,
 		caller: internal.NewCaller(

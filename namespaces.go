@@ -1443,10 +1443,10 @@ var (
 	namespaceMetadataFieldAccess            = big.NewInt(1 << 0)
 	namespaceMetadataFieldCreatedAtMs       = big.NewInt(1 << 1)
 	namespaceMetadataFieldCreatedBy         = big.NewInt(1 << 2)
-	namespaceMetadataFieldFamilyRootID      = big.NewInt(1 << 3)
-	namespaceMetadataFieldForkBasis         = big.NewInt(1 << 4)
-	namespaceMetadataFieldHeadSeq           = big.NewInt(1 << 5)
-	namespaceMetadataFieldNamespaceID       = big.NewInt(1 << 6)
+	namespaceMetadataFieldForkBasis         = big.NewInt(1 << 3)
+	namespaceMetadataFieldHeadSeq           = big.NewInt(1 << 4)
+	namespaceMetadataFieldNamespaceID       = big.NewInt(1 << 5)
+	namespaceMetadataFieldPoolID            = big.NewInt(1 << 6)
 	namespaceMetadataFieldRetentionFloorSeq = big.NewInt(1 << 7)
 	namespaceMetadataFieldRetentionWindowMs = big.NewInt(1 << 8)
 )
@@ -1458,10 +1458,6 @@ type NamespaceMetadata struct {
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
 	// The actor that created the namespace, as the application supplied it.
 	CreatedBy ActorID `json:"created_by" url:"created_by"`
-	// The namespace whose prefix stores the content of this namespace's fork family. For a
-	// namespace that wasn't created by a fork, this is the namespace itself. A fork has the same
-	// family root as its source.
-	FamilyRootID NamespaceID `json:"family_root_id" url:"family_root_id"`
 	// The namespace and sequence this namespace was forked from. Only a forked namespace has this
 	// field.
 	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
@@ -1469,6 +1465,9 @@ type NamespaceMetadata struct {
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// The namespace ID.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// The pool that stores the namespace's content objects and upload records. A fork has the
+	// same pool as its source.
+	PoolID PoolID `json:"pool_id" url:"pool_id"`
 	// The namespace's retention floor. A change feed request can set `after_seq` to this sequence
 	// or any later one, and the feed returns the changes committed after it.
 	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
@@ -1505,13 +1504,6 @@ func (n *NamespaceMetadata) GetCreatedBy() ActorID {
 	return n.CreatedBy
 }
 
-func (n *NamespaceMetadata) GetFamilyRootID() NamespaceID {
-	if n == nil {
-		return ""
-	}
-	return n.FamilyRootID
-}
-
 func (n *NamespaceMetadata) GetForkBasis() *NamespaceForkBasis {
 	if n == nil {
 		return nil
@@ -1531,6 +1523,13 @@ func (n *NamespaceMetadata) GetNamespaceID() NamespaceID {
 		return ""
 	}
 	return n.NamespaceID
+}
+
+func (n *NamespaceMetadata) GetPoolID() PoolID {
+	if n == nil {
+		return ""
+	}
+	return n.PoolID
 }
 
 func (n *NamespaceMetadata) GetRetentionFloorSeq() ChangeSeq {
@@ -1582,13 +1581,6 @@ func (n *NamespaceMetadata) SetCreatedBy(createdBy ActorID) {
 	n.require(namespaceMetadataFieldCreatedBy)
 }
 
-// SetFamilyRootID sets the FamilyRootID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceMetadata) SetFamilyRootID(familyRootID NamespaceID) {
-	n.FamilyRootID = familyRootID
-	n.require(namespaceMetadataFieldFamilyRootID)
-}
-
 // SetForkBasis sets the ForkBasis field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NamespaceMetadata) SetForkBasis(forkBasis *NamespaceForkBasis) {
@@ -1608,6 +1600,13 @@ func (n *NamespaceMetadata) SetHeadSeq(headSeq ChangeSeq) {
 func (n *NamespaceMetadata) SetNamespaceID(namespaceID NamespaceID) {
 	n.NamespaceID = namespaceID
 	n.require(namespaceMetadataFieldNamespaceID)
+}
+
+// SetPoolID sets the PoolID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceMetadata) SetPoolID(poolID PoolID) {
+	n.PoolID = poolID
+	n.require(namespaceMetadataFieldPoolID)
 }
 
 // SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;

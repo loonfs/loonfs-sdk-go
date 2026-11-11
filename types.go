@@ -1291,22 +1291,16 @@ func (d *DeletedCheckpointsByOwner) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// The number of objects that one garbage collection pass deleted, grouped by object family.
+// The number of objects that one garbage collection pass of a namespace deleted, grouped by
+// object family.
 var (
-	deletedObjectCountsFieldContentObjects        = big.NewInt(1 << 0)
-	deletedObjectCountsFieldExtensionSegments     = big.NewInt(1 << 1)
-	deletedObjectCountsFieldManifests             = big.NewInt(1 << 2)
-	deletedObjectCountsFieldMetadataSegments      = big.NewInt(1 << 3)
-	deletedObjectCountsFieldRetiredContentObjects = big.NewInt(1 << 4)
-	deletedObjectCountsFieldTemporaryObjects      = big.NewInt(1 << 5)
-	deletedObjectCountsFieldUploadSessions        = big.NewInt(1 << 6)
-	deletedObjectCountsFieldWalObjects            = big.NewInt(1 << 7)
+	deletedObjectCountsFieldExtensionSegments = big.NewInt(1 << 0)
+	deletedObjectCountsFieldManifests         = big.NewInt(1 << 1)
+	deletedObjectCountsFieldMetadataSegments  = big.NewInt(1 << 2)
+	deletedObjectCountsFieldWalObjects        = big.NewInt(1 << 3)
 )
 
 type DeletedObjectCounts struct {
-	// The content objects the pass deleted because no retained view referenced them and they were
-	// older than the grace window.
-	ContentObjects int64 `json:"content_objects" url:"content_objects"`
 	// The unreferenced extension segments, such as the grep index's segments, that the pass
 	// deleted.
 	ExtensionSegments int64 `json:"extension_segments" url:"extension_segments"`
@@ -1314,13 +1308,6 @@ type DeletedObjectCounts struct {
 	Manifests int64 `json:"manifests" url:"manifests"`
 	// The unreferenced metadata segments that the pass deleted.
 	MetadataSegments int64 `json:"metadata_segments" url:"metadata_segments"`
-	// The content objects that the pass listed under a retired namespace and deleted.
-	RetiredContentObjects int64 `json:"retired_content_objects" url:"retired_content_objects"`
-	// The store's temporary objects that the pass deleted because they were older than the grace
-	// window.
-	TemporaryObjects int64 `json:"temporary_objects" url:"temporary_objects"`
-	// The upload session records that the pass deleted after their grace windows passed.
-	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
 	// The unreferenced WAL objects that the pass deleted.
 	WalObjects int64 `json:"wal_objects" url:"wal_objects"`
 
@@ -1329,13 +1316,6 @@ type DeletedObjectCounts struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (d *DeletedObjectCounts) GetContentObjects() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.ContentObjects
 }
 
 func (d *DeletedObjectCounts) GetExtensionSegments() int64 {
@@ -1359,27 +1339,6 @@ func (d *DeletedObjectCounts) GetMetadataSegments() int64 {
 	return d.MetadataSegments
 }
 
-func (d *DeletedObjectCounts) GetRetiredContentObjects() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.RetiredContentObjects
-}
-
-func (d *DeletedObjectCounts) GetTemporaryObjects() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.TemporaryObjects
-}
-
-func (d *DeletedObjectCounts) GetUploadSessions() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.UploadSessions
-}
-
 func (d *DeletedObjectCounts) GetWalObjects() int64 {
 	if d == nil {
 		return 0
@@ -1401,13 +1360,6 @@ func (d *DeletedObjectCounts) require(field *big.Int) {
 	d.explicitFields.Or(d.explicitFields, field)
 }
 
-// SetContentObjects sets the ContentObjects field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedObjectCounts) SetContentObjects(contentObjects int64) {
-	d.ContentObjects = contentObjects
-	d.require(deletedObjectCountsFieldContentObjects)
-}
-
 // SetExtensionSegments sets the ExtensionSegments field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (d *DeletedObjectCounts) SetExtensionSegments(extensionSegments int64) {
@@ -1427,27 +1379,6 @@ func (d *DeletedObjectCounts) SetManifests(manifests int64) {
 func (d *DeletedObjectCounts) SetMetadataSegments(metadataSegments int64) {
 	d.MetadataSegments = metadataSegments
 	d.require(deletedObjectCountsFieldMetadataSegments)
-}
-
-// SetRetiredContentObjects sets the RetiredContentObjects field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedObjectCounts) SetRetiredContentObjects(retiredContentObjects int64) {
-	d.RetiredContentObjects = retiredContentObjects
-	d.require(deletedObjectCountsFieldRetiredContentObjects)
-}
-
-// SetTemporaryObjects sets the TemporaryObjects field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedObjectCounts) SetTemporaryObjects(temporaryObjects int64) {
-	d.TemporaryObjects = temporaryObjects
-	d.require(deletedObjectCountsFieldTemporaryObjects)
-}
-
-// SetUploadSessions sets the UploadSessions field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedObjectCounts) SetUploadSessions(uploadSessions int64) {
-	d.UploadSessions = uploadSessions
-	d.require(deletedObjectCountsFieldUploadSessions)
 }
 
 // SetWalObjects sets the WalObjects field and marks it as non-optional;
@@ -4230,18 +4161,18 @@ func (f *FilesystemChangeUndeleted) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// A part of a garbage collection pass that the pass skipped.
+// A part of a garbage collection pass of a pool that the pass skipped.
 type GcSkippedWork string
 
 const (
-	GcSkippedWorkContentSweepFamilyBudget     GcSkippedWork = "content_sweep_family_budget"
+	GcSkippedWorkContentSweepPoolBudget       GcSkippedWork = "content_sweep_pool_budget"
 	GcSkippedWorkContentSweepUnreadableMember GcSkippedWork = "content_sweep_unreadable_member"
 )
 
 func NewGcSkippedWorkFromString(s string) (GcSkippedWork, error) {
 	switch s {
-	case "content_sweep_family_budget":
-		return GcSkippedWorkContentSweepFamilyBudget, nil
+	case "content_sweep_pool_budget":
+		return GcSkippedWorkContentSweepPoolBudget, nil
 	case "content_sweep_unreadable_member":
 		return GcSkippedWorkContentSweepUnreadableMember, nil
 	}
@@ -6827,6 +6758,308 @@ func (p *PathEntryFile) String() string {
 // The manifest number in the ID determines which namespace manifest the pin protects.
 type PinID = string
 
+// The number of objects that one garbage collection pass of a pool deleted, grouped by object
+// family.
+var (
+	poolDeletedObjectCountsFieldContentObjects   = big.NewInt(1 << 0)
+	poolDeletedObjectCountsFieldTemporaryObjects = big.NewInt(1 << 1)
+	poolDeletedObjectCountsFieldUploadSessions   = big.NewInt(1 << 2)
+)
+
+type PoolDeletedObjectCounts struct {
+	// The content objects the pass deleted because no member's retained view referenced them and
+	// they were older than the grace window.
+	ContentObjects int64 `json:"content_objects" url:"content_objects"`
+	// The temporary objects that the pass deleted because they were older than the grace window.
+	TemporaryObjects int64 `json:"temporary_objects" url:"temporary_objects"`
+	// The upload sessions whose records the pass deleted after their grace windows passed.
+	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PoolDeletedObjectCounts) GetContentObjects() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.ContentObjects
+}
+
+func (p *PoolDeletedObjectCounts) GetTemporaryObjects() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.TemporaryObjects
+}
+
+func (p *PoolDeletedObjectCounts) GetUploadSessions() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.UploadSessions
+}
+
+func (p *PoolDeletedObjectCounts) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PoolDeletedObjectCounts) require(field *big.Int) {
+	if p.explicitFields == nil {
+		p.explicitFields = big.NewInt(0)
+	}
+	p.explicitFields.Or(p.explicitFields, field)
+}
+
+// SetContentObjects sets the ContentObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolDeletedObjectCounts) SetContentObjects(contentObjects int64) {
+	p.ContentObjects = contentObjects
+	p.require(poolDeletedObjectCountsFieldContentObjects)
+}
+
+// SetTemporaryObjects sets the TemporaryObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolDeletedObjectCounts) SetTemporaryObjects(temporaryObjects int64) {
+	p.TemporaryObjects = temporaryObjects
+	p.require(poolDeletedObjectCountsFieldTemporaryObjects)
+}
+
+// SetUploadSessions sets the UploadSessions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolDeletedObjectCounts) SetUploadSessions(uploadSessions int64) {
+	p.UploadSessions = uploadSessions
+	p.require(poolDeletedObjectCountsFieldUploadSessions)
+}
+
+func (p *PoolDeletedObjectCounts) UnmarshalJSON(data []byte) error {
+	type unmarshaler PoolDeletedObjectCounts
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PoolDeletedObjectCounts(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PoolDeletedObjectCounts) MarshalJSON() ([]byte, error) {
+	type embed PoolDeletedObjectCounts
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PoolDeletedObjectCounts) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+// The ID of one pool, the set of namespaces that share one set of content objects. See
+// [Pools](https://github.com/loonfs/loonfs/blob/main/docs/design/pools.md).
+type PoolID = string
+
+// The candidates that one garbage collection pass of a pool inspected but didn't delete, counted
+// by reason.
+var (
+	poolRetainedCandidatesFieldNoProviderTimestamp    = big.NewInt(1 << 0)
+	poolRetainedCandidatesFieldReferenced             = big.NewInt(1 << 1)
+	poolRetainedCandidatesFieldUnrecognizedKey        = big.NewInt(1 << 2)
+	poolRetainedCandidatesFieldUploadSessionUndecided = big.NewInt(1 << 3)
+	poolRetainedCandidatesFieldUploadSessionWindow    = big.NewInt(1 << 4)
+	poolRetainedCandidatesFieldWithinGraceWindow      = big.NewInt(1 << 5)
+)
+
+type PoolRetainedCandidates struct {
+	// The unreferenced candidates that had no provider timestamp, so their age was unknown.
+	NoProviderTimestamp int64 `json:"no_provider_timestamp" url:"no_provider_timestamp"`
+	// The content objects that the roots of a pool member protected. A content object is
+	// protected when an extent filter of a rooted layout segment matches it, and a false match
+	// keeps the object until no rooted view lists that segment.
+	Referenced int64 `json:"referenced" url:"referenced"`
+	// The keys that garbage collection didn't recognize in the object families it scanned. The
+	// pass keeps these objects.
+	UnrecognizedKey int64 `json:"unrecognized_key" url:"unrecognized_key"`
+	// The upload sessions that the pass couldn't prove safe to delete.
+	UploadSessionUndecided int64 `json:"upload_session_undecided" url:"upload_session_undecided"`
+	// The upload sessions that a lease or grace window still protected.
+	UploadSessionWindow int64 `json:"upload_session_window" url:"upload_session_window"`
+	// The unreferenced candidates that were younger than the grace window, according to their
+	// provider timestamps.
+	WithinGraceWindow int64 `json:"within_grace_window" url:"within_grace_window"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PoolRetainedCandidates) GetNoProviderTimestamp() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.NoProviderTimestamp
+}
+
+func (p *PoolRetainedCandidates) GetReferenced() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.Referenced
+}
+
+func (p *PoolRetainedCandidates) GetUnrecognizedKey() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.UnrecognizedKey
+}
+
+func (p *PoolRetainedCandidates) GetUploadSessionUndecided() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.UploadSessionUndecided
+}
+
+func (p *PoolRetainedCandidates) GetUploadSessionWindow() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.UploadSessionWindow
+}
+
+func (p *PoolRetainedCandidates) GetWithinGraceWindow() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.WithinGraceWindow
+}
+
+func (p *PoolRetainedCandidates) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PoolRetainedCandidates) require(field *big.Int) {
+	if p.explicitFields == nil {
+		p.explicitFields = big.NewInt(0)
+	}
+	p.explicitFields.Or(p.explicitFields, field)
+}
+
+// SetNoProviderTimestamp sets the NoProviderTimestamp field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetNoProviderTimestamp(noProviderTimestamp int64) {
+	p.NoProviderTimestamp = noProviderTimestamp
+	p.require(poolRetainedCandidatesFieldNoProviderTimestamp)
+}
+
+// SetReferenced sets the Referenced field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetReferenced(referenced int64) {
+	p.Referenced = referenced
+	p.require(poolRetainedCandidatesFieldReferenced)
+}
+
+// SetUnrecognizedKey sets the UnrecognizedKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetUnrecognizedKey(unrecognizedKey int64) {
+	p.UnrecognizedKey = unrecognizedKey
+	p.require(poolRetainedCandidatesFieldUnrecognizedKey)
+}
+
+// SetUploadSessionUndecided sets the UploadSessionUndecided field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetUploadSessionUndecided(uploadSessionUndecided int64) {
+	p.UploadSessionUndecided = uploadSessionUndecided
+	p.require(poolRetainedCandidatesFieldUploadSessionUndecided)
+}
+
+// SetUploadSessionWindow sets the UploadSessionWindow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetUploadSessionWindow(uploadSessionWindow int64) {
+	p.UploadSessionWindow = uploadSessionWindow
+	p.require(poolRetainedCandidatesFieldUploadSessionWindow)
+}
+
+// SetWithinGraceWindow sets the WithinGraceWindow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetWithinGraceWindow(withinGraceWindow int64) {
+	p.WithinGraceWindow = withinGraceWindow
+	p.require(poolRetainedCandidatesFieldWithinGraceWindow)
+}
+
+func (p *PoolRetainedCandidates) UnmarshalJSON(data []byte) error {
+	type unmarshaler PoolRetainedCandidates
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PoolRetainedCandidates(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PoolRetainedCandidates) MarshalJSON() ([]byte, error) {
+	type embed PoolRetainedCandidates
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PoolRetainedCandidates) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
 // A stable, opaque principal ID of 1 to 256 visible ASCII characters other than the comma.
 type PrincipalID = string
 
@@ -6864,15 +7097,14 @@ func (r ReadConsistency) Ptr() *ReadConsistency {
 	return &r
 }
 
-// The candidates that one garbage collection pass inspected but didn't delete, counted by reason.
+// The candidates that one garbage collection pass of a namespace inspected but didn't delete,
+// counted by reason.
 var (
 	retainedCandidatesFieldCheckpointNotDeletable = big.NewInt(1 << 0)
 	retainedCandidatesFieldNoProviderTimestamp    = big.NewInt(1 << 1)
 	retainedCandidatesFieldReferenced             = big.NewInt(1 << 2)
 	retainedCandidatesFieldUnrecognizedKey        = big.NewInt(1 << 3)
-	retainedCandidatesFieldUploadSessionUndecided = big.NewInt(1 << 4)
-	retainedCandidatesFieldUploadSessionWindow    = big.NewInt(1 << 5)
-	retainedCandidatesFieldWithinGraceWindow      = big.NewInt(1 << 6)
+	retainedCandidatesFieldWithinGraceWindow      = big.NewInt(1 << 4)
 )
 
 type RetainedCandidates struct {
@@ -6881,17 +7113,11 @@ type RetainedCandidates struct {
 	CheckpointNotDeletable int64 `json:"checkpoint_not_deletable" url:"checkpoint_not_deletable"`
 	// The unreferenced candidates that had no provider timestamp, so their age was unknown.
 	NoProviderTimestamp int64 `json:"no_provider_timestamp" url:"no_provider_timestamp"`
-	// The candidates that a current root protected, or that manifest discovery needed. A content
-	// object is protected when an extent filter of a rooted layout segment matches it, and a false
-	// match keeps the object until no rooted view lists that segment.
+	// The candidates that a current root protected, or that manifest discovery needed.
 	Referenced int64 `json:"referenced" url:"referenced"`
 	// The keys that garbage collection didn't recognize in the object families it scanned. The
 	// pass keeps these objects.
 	UnrecognizedKey int64 `json:"unrecognized_key" url:"unrecognized_key"`
-	// The upload sessions that the pass couldn't prove safe to delete.
-	UploadSessionUndecided int64 `json:"upload_session_undecided" url:"upload_session_undecided"`
-	// The upload sessions that a lease or grace window still protected.
-	UploadSessionWindow int64 `json:"upload_session_window" url:"upload_session_window"`
 	// The unreferenced candidates that were younger than the grace window, according to their
 	// provider timestamps.
 	WithinGraceWindow int64 `json:"within_grace_window" url:"within_grace_window"`
@@ -6929,20 +7155,6 @@ func (r *RetainedCandidates) GetUnrecognizedKey() int64 {
 		return 0
 	}
 	return r.UnrecognizedKey
-}
-
-func (r *RetainedCandidates) GetUploadSessionUndecided() int64 {
-	if r == nil {
-		return 0
-	}
-	return r.UploadSessionUndecided
-}
-
-func (r *RetainedCandidates) GetUploadSessionWindow() int64 {
-	if r == nil {
-		return 0
-	}
-	return r.UploadSessionWindow
 }
 
 func (r *RetainedCandidates) GetWithinGraceWindow() int64 {
@@ -6992,20 +7204,6 @@ func (r *RetainedCandidates) SetReferenced(referenced int64) {
 func (r *RetainedCandidates) SetUnrecognizedKey(unrecognizedKey int64) {
 	r.UnrecognizedKey = unrecognizedKey
 	r.require(retainedCandidatesFieldUnrecognizedKey)
-}
-
-// SetUploadSessionUndecided sets the UploadSessionUndecided field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RetainedCandidates) SetUploadSessionUndecided(uploadSessionUndecided int64) {
-	r.UploadSessionUndecided = uploadSessionUndecided
-	r.require(retainedCandidatesFieldUploadSessionUndecided)
-}
-
-// SetUploadSessionWindow sets the UploadSessionWindow field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RetainedCandidates) SetUploadSessionWindow(uploadSessionWindow int64) {
-	r.UploadSessionWindow = uploadSessionWindow
-	r.require(retainedCandidatesFieldUploadSessionWindow)
 }
 
 // SetWithinGraceWindow sets the WithinGraceWindow field and marks it as non-optional;
@@ -7929,7 +8127,6 @@ var (
 	runMaintenanceResponseGcFieldNextReclamationAtMs       = big.NewInt(1 << 4)
 	runMaintenanceResponseGcFieldReclaimableAtMs           = big.NewInt(1 << 5)
 	runMaintenanceResponseGcFieldRetained                  = big.NewInt(1 << 6)
-	runMaintenanceResponseGcFieldSkipped                   = big.NewInt(1 << 7)
 )
 
 type RunMaintenanceResponseGc struct {
@@ -7942,14 +8139,12 @@ type RunMaintenanceResponseGc struct {
 	ListedBytes int64 `json:"listed_bytes" url:"listed_bytes"`
 	// The namespace that the pass ran against.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The earliest future retirement deadline, pin deletion time, or upload cleanup time.
+	// The earliest future retirement deadline or pin deletion time.
 	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
 	// The deletion time of the current tombstone plus the configured retirement grace.
 	ReclaimableAtMs *int64 `json:"reclaimable_at_ms,omitempty" url:"reclaimable_at_ms,omitempty"`
 	// The candidates that the pass kept at deletion time, counted by reason.
 	Retained *RetainedCandidates `json:"retained" url:"retained"`
-	// The work that this pass skipped at a limit, by reason. Empty when the pass skipped nothing.
-	Skipped []GcSkippedWork `json:"skipped,omitempty" url:"skipped,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -8005,13 +8200,6 @@ func (r *RunMaintenanceResponseGc) GetRetained() *RetainedCandidates {
 		return nil
 	}
 	return r.Retained
-}
-
-func (r *RunMaintenanceResponseGc) GetSkipped() []GcSkippedWork {
-	if r == nil {
-		return nil
-	}
-	return r.Skipped
 }
 
 func (r *RunMaintenanceResponseGc) GetExtraProperties() map[string]interface{} {
@@ -8075,13 +8263,6 @@ func (r *RunMaintenanceResponseGc) SetReclaimableAtMs(reclaimableAtMs *int64) {
 func (r *RunMaintenanceResponseGc) SetRetained(retained *RetainedCandidates) {
 	r.Retained = retained
 	r.require(runMaintenanceResponseGcFieldRetained)
-}
-
-// SetSkipped sets the Skipped field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetSkipped(skipped []GcSkippedWork) {
-	r.Skipped = skipped
-	r.require(runMaintenanceResponseGcFieldSkipped)
 }
 
 func (r *RunMaintenanceResponseGc) UnmarshalJSON(data []byte) error {
@@ -8595,6 +8776,475 @@ func (r *RunMaintenanceResponseRetentionWindow) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RunMaintenanceResponseRetentionWindow) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// One maintenance job for one pool.
+type RunPoolMaintenanceRequest struct {
+	Kind string
+	Gc   *RunPoolMaintenanceRequestGc
+
+	rawJSON json.RawMessage
+}
+
+func (r *RunPoolMaintenanceRequest) GetKind() string {
+	if r == nil {
+		return ""
+	}
+	return r.Kind
+}
+
+func (r *RunPoolMaintenanceRequest) GetGc() *RunPoolMaintenanceRequestGc {
+	if r == nil {
+		return nil
+	}
+	return r.Gc
+}
+
+func (r *RunPoolMaintenanceRequest) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Kind string `json:"kind"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	r.Kind = unmarshaler.Kind
+	if unmarshaler.Kind == "" {
+		return fmt.Errorf("%T did not include discriminant kind", r)
+	}
+	switch unmarshaler.Kind {
+	case "gc":
+		value := new(RunPoolMaintenanceRequestGc)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.Gc = value
+	}
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r RunPoolMaintenanceRequest) MarshalJSON() ([]byte, error) {
+	if err := r.validate(); err != nil {
+		return nil, err
+	}
+	if r.Gc != nil {
+		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
+	}
+	if len(r.rawJSON) > 0 {
+		return r.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", r)
+}
+
+type RunPoolMaintenanceRequestVisitor interface {
+	VisitGc(*RunPoolMaintenanceRequestGc) error
+}
+
+func (r *RunPoolMaintenanceRequest) Accept(visitor RunPoolMaintenanceRequestVisitor) error {
+	if r.Gc != nil {
+		return visitor.VisitGc(r.Gc)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", r)
+}
+
+func (r *RunPoolMaintenanceRequest) validate() error {
+	if r == nil {
+		return fmt.Errorf("type %T is nil", r)
+	}
+	var fields []string
+	if r.Gc != nil {
+		fields = append(fields, "gc")
+	}
+	if len(fields) == 0 {
+		if r.Kind != "" {
+			if len(r.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", r, r.Kind)
+		}
+		return fmt.Errorf("type %T is empty", r)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", r, fields)
+	}
+	if r.Kind != "" {
+		field := fields[0]
+		if r.Kind != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				r,
+				r.Kind,
+				r,
+			)
+		}
+	}
+	return nil
+}
+
+// A garbage collection job for the pool's aged, unreferenced content objects, upload records,
+// and temporary objects.
+var (
+	runPoolMaintenanceRequestGcFieldGraceWindowMs = big.NewInt(1 << 0)
+)
+
+type RunPoolMaintenanceRequestGc struct {
+	// The minimum age, in milliseconds, that an object must reach before the pass can delete it.
+	// The value must be at least the server's advertised safety floor. The grep index's collector
+	// keeps its own age rules, so this value doesn't change them.
+	GraceWindowMs *int64 `json:"grace_window_ms,omitempty" url:"grace_window_ms,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunPoolMaintenanceRequestGc) GetGraceWindowMs() *int64 {
+	if r == nil {
+		return nil
+	}
+	return r.GraceWindowMs
+}
+
+func (r *RunPoolMaintenanceRequestGc) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunPoolMaintenanceRequestGc) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetGraceWindowMs sets the GraceWindowMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceRequestGc) SetGraceWindowMs(graceWindowMs *int64) {
+	r.GraceWindowMs = graceWindowMs
+	r.require(runPoolMaintenanceRequestGcFieldGraceWindowMs)
+}
+
+func (r *RunPoolMaintenanceRequestGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunPoolMaintenanceRequestGc
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunPoolMaintenanceRequestGc(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunPoolMaintenanceRequestGc) MarshalJSON() ([]byte, error) {
+	type embed RunPoolMaintenanceRequestGc
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunPoolMaintenanceRequestGc) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// The result of one maintenance job on a pool.
+//
+// The `kind` matches the request.
+type RunPoolMaintenanceResponse struct {
+	Kind string
+	Gc   *RunPoolMaintenanceResponseGc
+
+	rawJSON json.RawMessage
+}
+
+func (r *RunPoolMaintenanceResponse) GetKind() string {
+	if r == nil {
+		return ""
+	}
+	return r.Kind
+}
+
+func (r *RunPoolMaintenanceResponse) GetGc() *RunPoolMaintenanceResponseGc {
+	if r == nil {
+		return nil
+	}
+	return r.Gc
+}
+
+func (r *RunPoolMaintenanceResponse) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Kind string `json:"kind"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	r.Kind = unmarshaler.Kind
+	if unmarshaler.Kind == "" {
+		return fmt.Errorf("%T did not include discriminant kind", r)
+	}
+	switch unmarshaler.Kind {
+	case "gc":
+		value := new(RunPoolMaintenanceResponseGc)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.Gc = value
+	}
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r RunPoolMaintenanceResponse) MarshalJSON() ([]byte, error) {
+	if err := r.validate(); err != nil {
+		return nil, err
+	}
+	if r.Gc != nil {
+		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
+	}
+	if len(r.rawJSON) > 0 {
+		return r.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", r)
+}
+
+type RunPoolMaintenanceResponseVisitor interface {
+	VisitGc(*RunPoolMaintenanceResponseGc) error
+}
+
+func (r *RunPoolMaintenanceResponse) Accept(visitor RunPoolMaintenanceResponseVisitor) error {
+	if r.Gc != nil {
+		return visitor.VisitGc(r.Gc)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", r)
+}
+
+func (r *RunPoolMaintenanceResponse) validate() error {
+	if r == nil {
+		return fmt.Errorf("type %T is nil", r)
+	}
+	var fields []string
+	if r.Gc != nil {
+		fields = append(fields, "gc")
+	}
+	if len(fields) == 0 {
+		if r.Kind != "" {
+			if len(r.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", r, r.Kind)
+		}
+		return fmt.Errorf("type %T is empty", r)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", r, fields)
+	}
+	if r.Kind != "" {
+		field := fields[0]
+		if r.Kind != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				r,
+				r.Kind,
+				r,
+			)
+		}
+	}
+	return nil
+}
+
+// The counts and deadlines from one garbage collection call on the pool.
+var (
+	runPoolMaintenanceResponseGcFieldDeleted             = big.NewInt(1 << 0)
+	runPoolMaintenanceResponseGcFieldListedBytes         = big.NewInt(1 << 1)
+	runPoolMaintenanceResponseGcFieldNextReclamationAtMs = big.NewInt(1 << 2)
+	runPoolMaintenanceResponseGcFieldPoolID              = big.NewInt(1 << 3)
+	runPoolMaintenanceResponseGcFieldRetained            = big.NewInt(1 << 4)
+	runPoolMaintenanceResponseGcFieldSkipped             = big.NewInt(1 << 5)
+)
+
+type RunPoolMaintenanceResponseGc struct {
+	// The objects that the pass deleted, counted by object family.
+	Deleted *PoolDeletedObjectCounts `json:"deleted" url:"deleted"`
+	// The bytes of every object that the pass listed under the pool, each object once, before the
+	// pass's deletes.
+	ListedBytes int64 `json:"listed_bytes" url:"listed_bytes"`
+	// The earliest future upload cleanup time, or the end of the pool record's creation grace.
+	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
+	// The pool that the pass ran against.
+	PoolID PoolID `json:"pool_id" url:"pool_id"`
+	// The candidates that the pass kept at deletion time, counted by reason.
+	Retained *PoolRetainedCandidates `json:"retained" url:"retained"`
+	// The work that this pass skipped at a limit, by reason. Empty when the pass skipped nothing.
+	Skipped []GcSkippedWork `json:"skipped,omitempty" url:"skipped,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunPoolMaintenanceResponseGc) GetDeleted() *PoolDeletedObjectCounts {
+	if r == nil {
+		return nil
+	}
+	return r.Deleted
+}
+
+func (r *RunPoolMaintenanceResponseGc) GetListedBytes() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.ListedBytes
+}
+
+func (r *RunPoolMaintenanceResponseGc) GetNextReclamationAtMs() *int64 {
+	if r == nil {
+		return nil
+	}
+	return r.NextReclamationAtMs
+}
+
+func (r *RunPoolMaintenanceResponseGc) GetPoolID() PoolID {
+	if r == nil {
+		return ""
+	}
+	return r.PoolID
+}
+
+func (r *RunPoolMaintenanceResponseGc) GetRetained() *PoolRetainedCandidates {
+	if r == nil {
+		return nil
+	}
+	return r.Retained
+}
+
+func (r *RunPoolMaintenanceResponseGc) GetSkipped() []GcSkippedWork {
+	if r == nil {
+		return nil
+	}
+	return r.Skipped
+}
+
+func (r *RunPoolMaintenanceResponseGc) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunPoolMaintenanceResponseGc) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetDeleted sets the Deleted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceResponseGc) SetDeleted(deleted *PoolDeletedObjectCounts) {
+	r.Deleted = deleted
+	r.require(runPoolMaintenanceResponseGcFieldDeleted)
+}
+
+// SetListedBytes sets the ListedBytes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceResponseGc) SetListedBytes(listedBytes int64) {
+	r.ListedBytes = listedBytes
+	r.require(runPoolMaintenanceResponseGcFieldListedBytes)
+}
+
+// SetNextReclamationAtMs sets the NextReclamationAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceResponseGc) SetNextReclamationAtMs(nextReclamationAtMs *int64) {
+	r.NextReclamationAtMs = nextReclamationAtMs
+	r.require(runPoolMaintenanceResponseGcFieldNextReclamationAtMs)
+}
+
+// SetPoolID sets the PoolID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceResponseGc) SetPoolID(poolID PoolID) {
+	r.PoolID = poolID
+	r.require(runPoolMaintenanceResponseGcFieldPoolID)
+}
+
+// SetRetained sets the Retained field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceResponseGc) SetRetained(retained *PoolRetainedCandidates) {
+	r.Retained = retained
+	r.require(runPoolMaintenanceResponseGcFieldRetained)
+}
+
+// SetSkipped sets the Skipped field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceResponseGc) SetSkipped(skipped []GcSkippedWork) {
+	r.Skipped = skipped
+	r.require(runPoolMaintenanceResponseGcFieldSkipped)
+}
+
+func (r *RunPoolMaintenanceResponseGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunPoolMaintenanceResponseGc
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunPoolMaintenanceResponseGc(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunPoolMaintenanceResponseGc) MarshalJSON() ([]byte, error) {
+	type embed RunPoolMaintenanceResponseGc
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunPoolMaintenanceResponseGc) String() string {
 	if r == nil {
 		return "<nil>"
 	}

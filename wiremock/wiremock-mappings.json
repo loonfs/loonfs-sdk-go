@@ -46,7 +46,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"family_root_id\": \"demo\",\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -82,7 +82,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"family_root_id\": \"demo\",\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -154,7 +154,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"family_root_id\": \"demo\",\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -267,7 +267,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"conflicts\": [\n    {\n      \"base\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"kind\": \"content\",\n      \"ours\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"theirs\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      }\n    }\n  ],\n  \"namespace\": {\n    \"access\": {\n      \"principal_scope\": \"org_acme\",\n      \"kind\": \"acl\"\n    },\n    \"created_at_ms\": 1000000,\n    \"created_by\": \"usr_8f3c\",\n    \"family_root_id\": \"demo\",\n    \"fork_basis\": {\n      \"rebased_from\": {\n        \"resume_after_seq\": 1000000,\n        \"source_namespace_id\": \"demo\"\n      },\n      \"source_head_seq\": 1000000,\n      \"source_namespace_id\": \"demo\",\n      \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n    },\n    \"head_seq\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"retention_floor_seq\": 1000000,\n    \"retention_window_ms\": 1000000\n  }\n}",
+        "body": "{\n  \"conflicts\": [\n    {\n      \"base\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"kind\": \"content\",\n      \"ours\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"theirs\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      }\n    }\n  ],\n  \"namespace\": {\n    \"access\": {\n      \"principal_scope\": \"org_acme\",\n      \"kind\": \"acl\"\n    },\n    \"created_at_ms\": 1000000,\n    \"created_by\": \"usr_8f3c\",\n    \"fork_basis\": {\n      \"rebased_from\": {\n        \"resume_after_seq\": 1000000,\n        \"source_namespace_id\": \"demo\"\n      },\n      \"source_head_seq\": 1000000,\n      \"source_namespace_id\": \"demo\",\n      \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n    },\n    \"head_seq\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n    \"retention_floor_seq\": 1000000,\n    \"retention_window_ms\": 1000000\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1599,7 +1599,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"extension_segments\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"temporary_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_objects\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"fork\": 1000000,\n    \"user\": 1000000\n  },\n  \"listed_bytes\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaimable_at_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"skipped\": [\n    \"content_sweep_family_budget\"\n  ],\n  \"kind\": \"gc\"\n}",
+        "body": "{\n  \"deleted\": {\n    \"extension_segments\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"wal_objects\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"fork\": 1000000,\n    \"user\": 1000000\n  },\n  \"listed_bytes\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaimable_at_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"kind\": \"gc\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1646,9 +1646,45 @@
           }
         }
       }
+    },
+    {
+      "id": "fbe4e94a-332c-4749-a3d3-6e136526444a",
+      "name": "Run one maintenance job on a pool - default",
+      "request": {
+        "urlPathTemplate": "/v0/maintenance/pools/{pool_id}/runs",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "pool_id": {
+            "equalTo": "pool_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"temporary_objects\": 1000000,\n    \"upload_sessions\": 1000000\n  },\n  \"listed_bytes\": 1000000,\n  \"next_reclamation_at_ms\": 1000000,\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retained\": {\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"skipped\": [\n    \"content_sweep_pool_budget\"\n  ],\n  \"kind\": \"gc\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "fbe4e94a-332c-4749-a3d3-6e136526444a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
     }
   ],
   "meta": {
-    "total": 43
+    "total": 44
   }
 }
