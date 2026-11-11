@@ -10,21 +10,41 @@ import (
 )
 
 var (
-	listChangesRequestFieldNamespaceID = big.NewInt(1 << 0)
-	listChangesRequestFieldAfterSeq    = big.NewInt(1 << 1)
-	listChangesRequestFieldLimit       = big.NewInt(1 << 2)
-	listChangesRequestFieldSnapshotID  = big.NewInt(1 << 3)
+	listChangesRequestFieldNamespaceID    = big.NewInt(1 << 0)
+	listChangesRequestFieldAfterSeq       = big.NewInt(1 << 1)
+	listChangesRequestFieldSplitCommits   = big.NewInt(1 << 2)
+	listChangesRequestFieldEventIndex     = big.NewInt(1 << 3)
+	listChangesRequestFieldLimit          = big.NewInt(1 << 4)
+	listChangesRequestFieldSnapshotID     = big.NewInt(1 << 5)
+	listChangesRequestFieldConsistency    = big.NewInt(1 << 6)
+	listChangesRequestFieldMaxStalenessMs = big.NewInt(1 << 7)
 )
 
 type ListChangesRequest struct {
 	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
-	// The sequence after which to return committed changes.
+	// The sequence after which to return committed changes. With `event_index`, the commit at
+	// this sequence that the page resumes.
 	AfterSeq ChangeSeq `json:"-" url:"after_seq"`
+	// Whether a page can end inside a commit that alone exceeds the page's budget. The default is
+	// `false`, which returns every commit whole.
+	SplitCommits *bool `json:"-" url:"split_commits,omitempty"`
+	// The `next_event_index` that the previous page returned, which resumes the commit at
+	// `after_seq` at that event. It requires `split_commits=true`. The default is 0, which starts
+	// after the commit at `after_seq`.
+	EventIndex *int `json:"-" url:"event_index,omitempty"`
 	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// A snapshot to read the feed from. The feed ends at the sequence that the snapshot captured.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -51,6 +71,20 @@ func (l *ListChangesRequest) SetAfterSeq(afterSeq ChangeSeq) {
 	l.require(listChangesRequestFieldAfterSeq)
 }
 
+// SetSplitCommits sets the SplitCommits field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesRequest) SetSplitCommits(splitCommits *bool) {
+	l.SplitCommits = splitCommits
+	l.require(listChangesRequestFieldSplitCommits)
+}
+
+// SetEventIndex sets the EventIndex field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesRequest) SetEventIndex(eventIndex *int) {
+	l.EventIndex = eventIndex
+	l.require(listChangesRequestFieldEventIndex)
+}
+
 // SetLimit sets the Limit field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (l *ListChangesRequest) SetLimit(limit *int) {
@@ -65,28 +99,49 @@ func (l *ListChangesRequest) SetSnapshotID(snapshotID *PinID) {
 	l.require(listChangesRequestFieldSnapshotID)
 }
 
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesRequest) SetConsistency(consistency *ReadConsistency) {
+	l.Consistency = consistency
+	l.require(listChangesRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	l.MaxStalenessMs = maxStalenessMs
+	l.require(listChangesRequestFieldMaxStalenessMs)
+}
+
 // The commits after a change feed cursor.
 var (
-	listChangesResponseFieldAfterSeq     = big.NewInt(1 << 0)
-	listChangesResponseFieldChanges      = big.NewInt(1 << 1)
-	listChangesResponseFieldHeadSeq      = big.NewInt(1 << 2)
-	listChangesResponseFieldNamespaceID  = big.NewInt(1 << 3)
-	listChangesResponseFieldNextAfterSeq = big.NewInt(1 << 4)
+	listChangesResponseFieldAfterSeq       = big.NewInt(1 << 0)
+	listChangesResponseFieldChanges        = big.NewInt(1 << 1)
+	listChangesResponseFieldHeadSeq        = big.NewInt(1 << 2)
+	listChangesResponseFieldNamespaceID    = big.NewInt(1 << 3)
+	listChangesResponseFieldNextAfterSeq   = big.NewInt(1 << 4)
+	listChangesResponseFieldNextEventIndex = big.NewInt(1 << 5)
 )
 
 type ListChangesResponse struct {
 	// The exclusive cursor that this page starts after. It's the cursor that the caller supplied,
 	// or the endpoint's initial position.
 	AfterSeq ChangeSeq `json:"after_seq" url:"after_seq"`
-	// The logical commits after `after_seq`, in ascending namespace sequence order.
+	// The logical commits after `after_seq`, in ascending namespace sequence order. A commit that
+	// the page returns in part lists only the page's events.
 	Changes []*Commit `json:"changes" url:"changes"`
 	// The namespace head sequence that this page was read at.
 	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
 	// The namespace whose change feed was read.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// The cursor for the next page, when another page remains. It's absent on the page that
-	// reaches `head_seq`.
+	// reaches `head_seq`. When the page ends inside a commit, it's that commit's sequence.
 	NextAfterSeq *ChangeSeq `json:"next_after_seq,omitempty" url:"next_after_seq,omitempty"`
+	// The index of the first event of the commit at `next_after_seq` that the page didn't
+	// return, when the request set `split_commits` and the page ended inside that commit. The
+	// next request passes it as `event_index`. It's absent when the page ended at a commit
+	// boundary.
+	NextEventIndex *int `json:"next_event_index,omitempty" url:"next_event_index,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -128,6 +183,13 @@ func (l *ListChangesResponse) GetNextAfterSeq() *ChangeSeq {
 		return nil
 	}
 	return l.NextAfterSeq
+}
+
+func (l *ListChangesResponse) GetNextEventIndex() *int {
+	if l == nil {
+		return nil
+	}
+	return l.NextEventIndex
 }
 
 func (l *ListChangesResponse) GetExtraProperties() map[string]interface{} {
@@ -177,6 +239,13 @@ func (l *ListChangesResponse) SetNamespaceID(namespaceID NamespaceID) {
 func (l *ListChangesResponse) SetNextAfterSeq(nextAfterSeq *ChangeSeq) {
 	l.NextAfterSeq = nextAfterSeq
 	l.require(listChangesResponseFieldNextAfterSeq)
+}
+
+// SetNextEventIndex sets the NextEventIndex field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListChangesResponse) SetNextEventIndex(nextEventIndex *int) {
+	l.NextEventIndex = nextEventIndex
+	l.require(listChangesResponseFieldNextEventIndex)
 }
 
 func (l *ListChangesResponse) UnmarshalJSON(data []byte) error {

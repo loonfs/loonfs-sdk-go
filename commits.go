@@ -2606,8 +2606,7 @@ var (
 )
 
 type FilesystemOperationCreateFileByInode struct {
-	// The uploaded content, which a content token must cover. Set this field or
-	// `inline_content`, but not both.
+	// The content reference. Set this field or `inline_content`, but not both.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The name of the new file.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
@@ -3336,8 +3335,7 @@ var (
 type FilesystemOperationPutFile struct {
 	// Whether the operation adds a new revision to an existing file or fails with a conflict.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// The uploaded content, which a content token must cover. Set this field or
-	// `inline_content`, but not both.
+	// The content reference. Set this field or `inline_content`, but not both.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The inode that the path must contain. It applies only with `replace` behavior.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
@@ -3508,8 +3506,7 @@ var (
 )
 
 type FilesystemOperationPutFileRevisionByInode struct {
-	// The uploaded content, which a content token must cover. Set this field or
-	// `inline_content`, but not both.
+	// The content reference. Set this field or `inline_content`, but not both.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The revision that must be the file's current revision for the write to succeed.
 	ExpectedRevisionNo RevisionNo `json:"expected_revision_no" url:"expected_revision_no"`

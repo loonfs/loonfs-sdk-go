@@ -46,7 +46,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"naming\": \"case_insensitive\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -82,7 +82,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"naming\": \"case_insensitive\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -154,12 +154,125 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"naming\": \"case_insensitive\",\n  \"retention_floor_seq\": 1000000\n}",
+        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
       "uuid": "9f1e0b87-2f2e-408e-8d4d-952f6278d629",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "acc35d49-57a8-46f6-a4d3-fb6ecbbc187a",
+      "name": "Get a fork's next merge range - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/merges",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "source": {
+            "equalTo": "demo"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"fork_point_seq\": 1000000,\n  \"retention_floor_seq\": 1000000,\n  \"source_head_seq\": 1000000,\n  \"outcome\": \"fork_point_below_floor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "acc35d49-57a8-46f6-a4d3-fb6ecbbc187a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ae28dd9e-fe20-41ef-a0fb-6ce57cd8122b",
+      "name": "Merge a fork - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/merges",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"commit_id\": \"c_7kn71d9dq885x91hejz3gvf9p0\",\n  \"committed_at_ms\": 1000000,\n  \"committed_by\": \"usr_8f3c\",\n  \"committed_seq\": 1000000,\n  \"events\": [\n    {\n      \"access_revision_no\": 1000000,\n      \"boundary\": true,\n      \"grants\": {\n        \"key\": [\n          \"read\"\n        ]\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"kind\": \"access_changed\"\n    }\n  ],\n  \"merge\": {\n    \"source_after_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_through_seq\": 1000000\n  },\n  \"message\": \"message\",\n  \"namespace_id\": \"demo\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ae28dd9e-fe20-41ef-a0fb-6ce57cd8122b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c1c512c4-645c-46a7-ac19-3fbe135bf2b1",
+      "name": "Rebase a fork - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/rebases",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"conflicts\": [\n    {\n      \"base\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"kind\": \"content\",\n      \"ours\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"theirs\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      }\n    }\n  ],\n  \"namespace\": {\n    \"access\": {\n      \"principal_scope\": \"org_acme\",\n      \"kind\": \"acl\"\n    },\n    \"created_at_ms\": 1000000,\n    \"created_by\": \"usr_8f3c\",\n    \"fork_basis\": {\n      \"rebased_from\": {\n        \"resume_after_seq\": 1000000,\n        \"source_namespace_id\": \"demo\"\n      },\n      \"source_head_seq\": 1000000,\n      \"source_namespace_id\": \"demo\",\n      \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n    },\n    \"head_seq\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n    \"retention_floor_seq\": 1000000,\n    \"retention_window_ms\": 1000000\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c1c512c4-645c-46a7-ac19-3fbe135bf2b1",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -198,7 +311,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"access_revision_no\": 1000000,\n          \"boundary\": true,\n          \"grants\": {\n            \"key\": [\n              \"read\"\n            ]\n          },\n          \"inode_id\": \"ino_123\",\n          \"kind\": \"access_changed\"\n        }\n      ],\n      \"message\": \"message\",\n      \"namespace_id\": \"demo\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000\n}",
+        "body": "{\n  \"after_seq\": 1000000,\n  \"changes\": [\n    {\n      \"commit_id\": \"c_7kn71d9dq885x91hejz3gvf9p0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"events\": [\n        {\n          \"access_revision_no\": 1000000,\n          \"boundary\": true,\n          \"grants\": {\n            \"key\": [\n              \"read\"\n            ]\n          },\n          \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n          \"kind\": \"access_changed\"\n        }\n      ],\n      \"merge\": {\n        \"source_after_seq\": 1000000,\n        \"source_namespace_id\": \"demo\",\n        \"source_through_seq\": 1000000\n      },\n      \"message\": \"message\",\n      \"namespace_id\": \"demo\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"next_event_index\": 1\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -234,12 +347,53 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n  \"committed_at_ms\": 1000000,\n  \"committed_by\": \"usr_8f3c\",\n  \"committed_seq\": 1000000,\n  \"events\": [\n    {\n      \"access_revision_no\": 1000000,\n      \"boundary\": true,\n      \"grants\": {\n        \"key\": [\n          \"read\"\n        ]\n      },\n      \"inode_id\": \"ino_123\",\n      \"kind\": \"access_changed\"\n    }\n  ],\n  \"message\": \"message\",\n  \"namespace_id\": \"demo\"\n}",
+        "body": "{\n  \"commit_id\": \"c_7kn71d9dq885x91hejz3gvf9p0\",\n  \"committed_at_ms\": 1000000,\n  \"committed_by\": \"usr_8f3c\",\n  \"committed_seq\": 1000000,\n  \"events\": [\n    {\n      \"access_revision_no\": 1000000,\n      \"boundary\": true,\n      \"grants\": {\n        \"key\": [\n          \"read\"\n        ]\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"kind\": \"access_changed\"\n    }\n  ],\n  \"merge\": {\n    \"source_after_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_through_seq\": 1000000\n  },\n  \"message\": \"message\",\n  \"namespace_id\": \"demo\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
       "uuid": "e29cdb45-d445-448b-a75f-e2cb54da52e6",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "5bcc1923-ce5f-4c0b-b1c6-3dece0067c02",
+      "name": "List the differences between two sequences - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces/{namespace_id}/diff",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "namespace_id": {
+            "equalTo": "namespace_id"
+          }
+        },
+        "queryParameters": {
+          "from_seq": {
+            "equalTo": "1000000"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"after_seq\": 1000000,\n  \"entries\": [\n    {\n      \"access_revision_no\": 1000000,\n      \"attributes_revision_no\": 1000000,\n      \"binding_version\": \"binding_version\",\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"inode_kind\": \"file\",\n      \"kind\": \"created\",\n      \"path\": \"/docs/report.txt\",\n      \"previous_path\": \"/docs/report.txt\",\n      \"revision_no\": 1000000\n    }\n  ],\n  \"from_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_after_seq\": 1000000,\n  \"next_event_index\": 1,\n  \"retention_floor_seq\": 1000000,\n  \"to_seq\": 1000000\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "5bcc1923-ce5f-4c0b-b1c6-3dece0067c02",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -311,7 +465,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"content_ref\": {\n    \"checksum\": {\n      \"algorithm\": \"crc64nvme\",\n      \"value\": \"value\"\n    },\n    \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n    \"kind\": \"blob_v1\",\n    \"owner_namespace_id\": \"demo\",\n    \"size_bytes\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"path\": \"/docs/report.txt\",\n  \"ranges\": [\n    {\n      \"access\": {\n        \"expires_at_ms\": 1000000,\n        \"headers\": {\n          \"key\": \"value\"\n        },\n        \"method\": \"method\",\n        \"url\": \"url\",\n        \"kind\": \"presigned_url\"\n      },\n      \"length\": 1000000,\n      \"start_offset\": 1000000\n    }\n  ],\n  \"revision_no\": 1000000\n}",
+        "body": "{\n  \"content_ref\": {\n    \"checksum\": {\n      \"algorithm\": \"crc64nvme\",\n      \"value\": \"value\"\n    },\n    \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n    \"kind\": \"blob_v1\",\n    \"size_bytes\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"path\": \"/docs/report.txt\",\n  \"ranges\": [\n    {\n      \"access\": {\n        \"expires_at_ms\": 1000000,\n        \"headers\": {\n          \"key\": \"value\"\n        },\n        \"method\": \"method\",\n        \"url\": \"url\",\n        \"kind\": \"presigned_url\"\n      },\n      \"length\": 1000000,\n      \"start_offset\": 1000000\n    }\n  ],\n  \"revision_no\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -355,7 +509,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_version\": \"binding_version\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"path\": \"/docs/report.txt\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_version\": \"binding_version\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"path\": \"/docs/report.txt\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -399,7 +553,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_version\": \"binding_version\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_version\": \"binding_version\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -440,7 +594,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"crc64nvme\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n        \"kind\": \"blob_v1\",\n        \"owner_namespace_id\": \"demo\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_123\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
+        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_7kn71d9dq885x91hejz3gvf9p0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"crc64nvme\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n        \"kind\": \"blob_v1\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -478,13 +632,13 @@
             "equalTo": "pattern"
           },
           "inode_id": {
-            "equalTo": "ino_123"
+            "equalTo": "ino_000000r0000013kje0d47gc8kw"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"built_through_seq\": 1000000,\n  \"head_seq\": 1000000,\n  \"matches\": [\n    {\n      \"byte_offset\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"line\": \"line\",\n      \"line_number\": 1000000,\n      \"line_truncated\": true,\n      \"path\": \"/docs/report.txt\",\n      \"revision_no\": 1000000\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"tail_scanned\": true\n}",
+        "body": "{\n  \"built_through_seq\": 1000000,\n  \"head_seq\": 1000000,\n  \"matches\": [\n    {\n      \"byte_offset\": 1000000,\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"line\": \"line\",\n      \"line_number\": 1000000,\n      \"line_truncated\": true,\n      \"path\": \"/docs/report.txt\",\n      \"revision_no\": 1000000\n    }\n  ],\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"tail_scanned\": true\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -520,7 +674,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_binding\": {\n        \"display_name\": \"report.txt\",\n        \"name_key\": \"report.txt\",\n        \"parent_inode_id\": \"ino_123\"\n      },\n      \"deleted_by\": \"usr_8f3c\",\n      \"deletion_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"inode_kind\": \"file\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"deleted_at_ms\": 1000000,\n      \"deleted_binding\": {\n        \"display_name\": \"report.txt\",\n        \"name_key\": \"report.txt\",\n        \"parent_inode_id\": \"ino_000000r0000013kje0d47gc8kw\"\n      },\n      \"deleted_by\": \"usr_8f3c\",\n      \"deletion_seq\": 1000000,\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"inode_kind\": \"file\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -553,7 +707,7 @@
             "equalTo": "namespace_id"
           },
           "inode_id": {
-            "equalTo": "ino_123"
+            "equalTo": "ino_000000r0000013kje0d47gc8kw"
           }
         },
         "queryParameters": {
@@ -564,7 +718,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_version\": \"binding_version\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_123\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
+        "body": "{\n  \"attributes\": {\n    \"key\": \"platform\"\n  },\n  \"attributes_revision_no\": 1000000,\n  \"attributes_updated_at_ms\": 1000000,\n  \"attributes_updated_by\": \"usr_8f3c\",\n  \"binding_version\": \"binding_version\",\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"display_name\": \"report.txt\",\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n  \"namespace_id\": \"demo\",\n  \"parent_inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n  \"path\": \"/docs/report.txt\",\n  \"inode_kind\": \"dir\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -597,7 +751,7 @@
             "equalTo": "namespace_id"
           },
           "inode_id": {
-            "equalTo": "ino_123"
+            "equalTo": "ino_000000r0000013kje0d47gc8kw"
           }
         },
         "queryParameters": {
@@ -608,7 +762,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_version\": \"binding_version\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_123\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_123\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"parent_inode_id\": \"ino_123\"\n}",
+        "body": "{\n  \"entries\": [\n    {\n      \"attributes\": {\n        \"key\": \"platform\"\n      },\n      \"attributes_revision_no\": 1000000,\n      \"attributes_updated_at_ms\": 1000000,\n      \"attributes_updated_by\": \"usr_8f3c\",\n      \"binding_version\": \"binding_version\",\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"display_name\": \"report.txt\",\n      \"head_seq\": 1000000,\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"namespace_id\": \"demo\",\n      \"parent_inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"path\": \"/docs/report.txt\",\n      \"inode_kind\": \"dir\"\n    }\n  ],\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"parent_inode_id\": \"ino_000000r0000013kje0d47gc8kw\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -680,13 +834,13 @@
             "equalTo": "namespace_id"
           },
           "inode_id": {
-            "equalTo": "ino_123"
+            "equalTo": "ino_000000r0000013kje0d47gc8kw"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"content_ref\": {\n    \"checksum\": {\n      \"algorithm\": \"crc64nvme\",\n      \"value\": \"value\"\n    },\n    \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n    \"kind\": \"blob_v1\",\n    \"owner_namespace_id\": \"demo\",\n    \"size_bytes\": 1000000\n  },\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"ranges\": [\n    {\n      \"access\": {\n        \"expires_at_ms\": 1000000,\n        \"headers\": {\n          \"key\": \"value\"\n        },\n        \"method\": \"method\",\n        \"url\": \"url\",\n        \"kind\": \"presigned_url\"\n      },\n      \"length\": 1000000,\n      \"start_offset\": 1000000\n    }\n  ],\n  \"revision_no\": 1000000\n}",
+        "body": "{\n  \"content_ref\": {\n    \"checksum\": {\n      \"algorithm\": \"crc64nvme\",\n      \"value\": \"value\"\n    },\n    \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n    \"kind\": \"blob_v1\",\n    \"size_bytes\": 1000000\n  },\n  \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n  \"namespace_id\": \"demo\",\n  \"ranges\": [\n    {\n      \"access\": {\n        \"expires_at_ms\": 1000000,\n        \"headers\": {\n          \"key\": \"value\"\n        },\n        \"method\": \"method\",\n        \"url\": \"url\",\n        \"kind\": \"presigned_url\"\n      },\n      \"length\": 1000000,\n      \"start_offset\": 1000000\n    }\n  ],\n  \"revision_no\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -719,13 +873,13 @@
             "equalTo": "namespace_id"
           },
           "inode_id": {
-            "equalTo": "ino_123"
+            "equalTo": "ino_000000r0000013kje0d47gc8kw"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"crc64nvme\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n        \"kind\": \"blob_v1\",\n        \"owner_namespace_id\": \"demo\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_123\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
+        "body": "{\n  \"head_seq\": 1000000,\n  \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"revisions\": [\n    {\n      \"commit_id\": \"c_7kn71d9dq885x91hejz3gvf9p0\",\n      \"committed_at_ms\": 1000000,\n      \"committed_by\": \"usr_8f3c\",\n      \"committed_seq\": 1000000,\n      \"content_ref\": {\n        \"checksum\": {\n          \"algorithm\": \"crc64nvme\",\n          \"value\": \"value\"\n        },\n        \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n        \"kind\": \"blob_v1\",\n        \"size_bytes\": 1000000\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"revision_no\": 1000000\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -800,7 +954,7 @@
             "equalTo": "namespace_id"
           },
           "inode_id": {
-            "equalTo": "ino_123"
+            "equalTo": "ino_000000r0000013kje0d47gc8kw"
           },
           "revision_no": {
             "equalTo": "1000000"
@@ -809,7 +963,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"content_ref\": {\n    \"checksum\": {\n      \"algorithm\": \"crc64nvme\",\n      \"value\": \"value\"\n    },\n    \"content_id\": \"con_9f2a6c0e4b7d4a90b13f0d8c5e6a2b41\",\n    \"kind\": \"blob_v1\",\n    \"owner_namespace_id\": \"demo\",\n    \"size_bytes\": 1000000\n  },\n  \"inode_id\": \"ino_123\",\n  \"namespace_id\": \"demo\",\n  \"ranges\": [\n    {\n      \"access\": {\n        \"expires_at_ms\": 1000000,\n        \"headers\": {\n          \"key\": \"value\"\n        },\n        \"method\": \"method\",\n        \"url\": \"url\",\n        \"kind\": \"presigned_url\"\n      },\n      \"length\": 1000000,\n      \"start_offset\": 1000000\n    }\n  ],\n  \"revision_no\": 1000000\n}",
+        "body": "{\n  \"content_ref\": {\n    \"checksum\": {\n      \"algorithm\": \"crc64nvme\",\n      \"value\": \"value\"\n    },\n    \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n    \"kind\": \"blob_v1\",\n    \"size_bytes\": 1000000\n  },\n  \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n  \"namespace_id\": \"demo\",\n  \"ranges\": [\n    {\n      \"access\": {\n        \"expires_at_ms\": 1000000,\n        \"headers\": {\n          \"key\": \"value\"\n        },\n        \"method\": \"method\",\n        \"url\": \"url\",\n        \"kind\": \"presigned_url\"\n      },\n      \"length\": 1000000,\n      \"start_offset\": 1000000\n    }\n  ],\n  \"revision_no\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1034,7 +1188,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"aborted_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"status\": \"aborted\"\n}",
+        "body": "{\n  \"aborted_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_2dhwp939xk9r7srv8t5cz5yw4c\",\n  \"status\": \"aborted\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1073,7 +1227,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"aborted_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"status\": \"aborted\"\n}",
+        "body": "{\n  \"aborted_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_2dhwp939xk9r7srv8t5cz5yw4c\",\n  \"status\": \"aborted\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1112,7 +1266,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"aborted_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"status\": \"aborted\"\n}",
+        "body": "{\n  \"aborted_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_2dhwp939xk9r7srv8t5cz5yw4c\",\n  \"status\": \"aborted\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1151,7 +1305,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"aborted_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\",\n  \"status\": \"aborted\"\n}",
+        "body": "{\n  \"aborted_at_ms\": 1000000,\n  \"mode\": \"service_proxied\",\n  \"namespace_id\": \"demo\",\n  \"upload_id\": \"upl_2dhwp939xk9r7srv8t5cz5yw4c\",\n  \"status\": \"aborted\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1190,7 +1344,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"parts\": [\n    {\n      \"access\": {\n        \"expires_at_ms\": 1000000,\n        \"headers\": {\n          \"key\": \"value\"\n        },\n        \"method\": \"method\",\n        \"url\": \"url\",\n        \"kind\": \"presigned_url\"\n      },\n      \"part_number\": 1\n    }\n  ],\n  \"upload_id\": \"upl_4d8f2c91a7b34e0f9c6d1a2b3e5f708c\"\n}",
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"parts\": [\n    {\n      \"access\": {\n        \"expires_at_ms\": 1000000,\n        \"headers\": {\n          \"key\": \"value\"\n        },\n        \"method\": \"method\",\n        \"url\": \"url\",\n        \"kind\": \"presigned_url\"\n      },\n      \"part_number\": 1\n    }\n  ],\n  \"upload_id\": \"upl_2dhwp939xk9r7srv8t5cz5yw4c\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1244,42 +1398,6 @@
       }
     },
     {
-      "id": "374bcf96-7e4b-49eb-9926-202b133ff674",
-      "name": "Create checkpoint - default",
-      "request": {
-        "urlPathTemplate": "/v0/maintenance/namespaces/{namespace_id}/checkpoints",
-        "method": "POST",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"captured_seq\": 1000000,\n  \"checkpoint_id\": \"pin_00000000000000000001-0000000000000002\",\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_no\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"owner\": {\n    \"target_namespace_id\": \"demo\",\n    \"kind\": \"fork\"\n  }\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "374bcf96-7e4b-49eb-9926-202b133ff674",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
       "id": "49df2660-42be-470f-b1f0-0fc4acd53790",
       "name": "Retrieve checkpoint - default",
       "request": {
@@ -1319,45 +1437,6 @@
       }
     },
     {
-      "id": "d6740e8b-ed75-4e20-a95d-929cad20d2e9",
-      "name": "Delete checkpoint - default",
-      "request": {
-        "urlPathTemplate": "/v0/maintenance/namespaces/{namespace_id}/checkpoints/{checkpoint_id}",
-        "method": "DELETE",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "namespace_id": {
-            "equalTo": "namespace_id"
-          },
-          "checkpoint_id": {
-            "equalTo": "checkpoint_id"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"checkpoint_id\": \"pin_00000000000000000001-0000000000000002\",\n  \"namespace_id\": \"demo\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "d6740e8b-ed75-4e20-a95d-929cad20d2e9",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
       "id": "4267a160-fb9f-4fde-8047-1ee329738357",
       "name": "Get namespace diagnostics - default",
       "request": {
@@ -1376,7 +1455,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"current_manifest_no\": 1000000,\n  \"fork_basis\": {\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"live_checkpoints\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_objects\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"current_manifest_no\": 1000000,\n  \"fork_basis\": {\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_head_seq\": 1000000,\n    \"source_namespace_id\": \"demo\",\n    \"source_pin_id\": \"pin_00000000000000000001-0000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_objects\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1412,7 +1491,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"built_through_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_event_index\": 1,\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"active\"\n}",
+        "body": "{\n  \"built_through_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_event_index\": 1,\n  \"reorganize_pending\": true,\n  \"status\": \"active\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1448,7 +1527,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"built_through_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_event_index\": 1,\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"active\"\n}",
+        "body": "{\n  \"built_through_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_event_index\": 1,\n  \"reorganize_pending\": true,\n  \"status\": \"active\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1484,7 +1563,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"built_through_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_event_index\": 1,\n  \"next_run_no\": 1000000,\n  \"reorganize_pending\": true,\n  \"status\": \"active\"\n}",
+        "body": "{\n  \"built_through_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_event_index\": 1,\n  \"reorganize_pending\": true,\n  \"status\": \"active\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1520,7 +1599,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"retired_content_objects\": 1000000,\n    \"temporary_objects\": 1000000,\n    \"upload_sessions\": 1000000,\n    \"wal_objects\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"fork\": 1000000,\n    \"snapshot\": 1000000,\n    \"user\": 1000000\n  },\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaimable_at_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"kind\": \"gc\"\n}",
+        "body": "{\n  \"deleted\": {\n    \"extension_segments\": 1000000,\n    \"manifests\": 1000000,\n    \"metadata_segments\": 1000000,\n    \"wal_objects\": 1000000\n  },\n  \"deleted_checkpoints_by_owner\": {\n    \"fork\": 1000000,\n    \"user\": 1000000\n  },\n  \"listed_bytes\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"next_reclamation_at_ms\": 1000000,\n  \"reclaimable_at_ms\": 1000000,\n  \"retained\": {\n    \"checkpoint_not_deletable\": 1000000,\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"kind\": \"gc\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1551,7 +1630,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"checks\": [\n    {\n      \"message\": \"message\",\n      \"name\": \"name\",\n      \"outcome\": \"passed\"\n    }\n  ],\n  \"run_id\": \"probe_7c3e9a1f5b2d4c6e8a0f1b3d5e7c9a2b\"\n}",
+        "body": "{\n  \"checks\": [\n    {\n      \"message\": \"message\",\n      \"name\": \"name\",\n      \"outcome\": \"failed\"\n    }\n  ],\n  \"run_id\": \"probe_3w7td1ypsd9hq8m3rv7nf7s6hb\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1567,9 +1646,45 @@
           }
         }
       }
+    },
+    {
+      "id": "fbe4e94a-332c-4749-a3d3-6e136526444a",
+      "name": "Run one maintenance job on a pool - default",
+      "request": {
+        "urlPathTemplate": "/v0/maintenance/pools/{pool_id}/runs",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "pool_id": {
+            "equalTo": "pool_id"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"deleted\": {\n    \"content_objects\": 1000000,\n    \"temporary_objects\": 1000000,\n    \"upload_sessions\": 1000000\n  },\n  \"listed_bytes\": 1000000,\n  \"next_reclamation_at_ms\": 1000000,\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retained\": {\n    \"no_provider_timestamp\": 1000000,\n    \"referenced\": 1000000,\n    \"unrecognized_key\": 1000000,\n    \"upload_session_undecided\": 1000000,\n    \"upload_session_window\": 1000000,\n    \"within_grace_window\": 1000000\n  },\n  \"skipped\": [\n    \"content_sweep_pool_budget\"\n  ],\n  \"kind\": \"gc\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "fbe4e94a-332c-4749-a3d3-6e136526444a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
     }
   ],
   "meta": {
-    "total": 41
+    "total": 44
   }
 }

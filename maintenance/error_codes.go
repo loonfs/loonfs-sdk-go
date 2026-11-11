@@ -34,11 +34,6 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
-	413: func(apiError *core.APIError) error {
-		return &loonfs.ContentTooLargeError{
-			APIError: apiError,
-		}
-	},
 	500: func(apiError *core.APIError) error {
 		return &loonfs.InternalServerError{
 			APIError: apiError,
@@ -51,6 +46,11 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 	},
 	409: func(apiError *core.APIError) error {
 		return &loonfs.ConflictError{
+			APIError: apiError,
+		}
+	},
+	413: func(apiError *core.APIError) error {
+		return &loonfs.ContentTooLargeError{
 			APIError: apiError,
 		}
 	},

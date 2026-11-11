@@ -10,18 +10,31 @@ import (
 )
 
 var (
-	getFileContentByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
-	getFileContentByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
-	getFileContentByInodeRequestFieldSnapshotID  = big.NewInt(1 << 2)
+	getFileContentByInodeRequestFieldRange          = big.NewInt(1 << 0)
+	getFileContentByInodeRequestFieldNamespaceID    = big.NewInt(1 << 1)
+	getFileContentByInodeRequestFieldInodeID        = big.NewInt(1 << 2)
+	getFileContentByInodeRequestFieldSnapshotID     = big.NewInt(1 << 3)
+	getFileContentByInodeRequestFieldConsistency    = big.NewInt(1 << 4)
+	getFileContentByInodeRequestFieldMaxStalenessMs = big.NewInt(1 << 5)
 )
 
 type GetFileContentByInodeRequest struct {
+	// One byte range of the file to read instead of the whole file, as `bytes=start-end`, where `end` is the offset of the last byte, or as `bytes=start-`. An `end` past the last byte reads to the end of the file. Any other value, including a suffix range or several ranges, returns 400 `invalid_request`.
+	Range *string `json:"-" url:"-"`
 	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
 	// The file's inode ID.
 	InodeID string `json:"-" url:"-"`
 	// The snapshot whose captured file revision to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -32,6 +45,13 @@ func (g *GetFileContentByInodeRequest) require(field *big.Int) {
 		g.explicitFields = big.NewInt(0)
 	}
 	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetRange sets the Range field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileContentByInodeRequest) SetRange(range_ *string) {
+	g.Range = range_
+	g.require(getFileContentByInodeRequestFieldRange)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
@@ -55,11 +75,27 @@ func (g *GetFileContentByInodeRequest) SetSnapshotID(snapshotID *PinID) {
 	g.require(getFileContentByInodeRequestFieldSnapshotID)
 }
 
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileContentByInodeRequest) SetConsistency(consistency *ReadConsistency) {
+	g.Consistency = consistency
+	g.require(getFileContentByInodeRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileContentByInodeRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	g.MaxStalenessMs = maxStalenessMs
+	g.require(getFileContentByInodeRequestFieldMaxStalenessMs)
+}
+
 var (
-	createDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
-	createDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
-	createDownloadByInodeRequestFieldSnapshotID  = big.NewInt(1 << 2)
-	createDownloadByInodeRequestFieldStartOffset = big.NewInt(1 << 3)
+	createDownloadByInodeRequestFieldNamespaceID    = big.NewInt(1 << 0)
+	createDownloadByInodeRequestFieldInodeID        = big.NewInt(1 << 1)
+	createDownloadByInodeRequestFieldConsistency    = big.NewInt(1 << 2)
+	createDownloadByInodeRequestFieldMaxStalenessMs = big.NewInt(1 << 3)
+	createDownloadByInodeRequestFieldSnapshotID     = big.NewInt(1 << 4)
+	createDownloadByInodeRequestFieldStartOffset    = big.NewInt(1 << 5)
 )
 
 type CreateDownloadByInodeRequest struct {
@@ -67,6 +103,14 @@ type CreateDownloadByInodeRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// The file's inode ID.
 	InodeID string `json:"-" url:"-"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"consistency,omitempty" url:"-"`
+	// With `consistency` set to `eventual`, how old the server's last confirmation of the head can
+	// be, in milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"max_staleness_ms,omitempty" url:"-"`
 	// A snapshot to read the file from. The download reads the revision that the snapshot
 	// captured.
 	SnapshotID *PinID `json:"snapshot_id,omitempty" url:"-"`
@@ -97,6 +141,20 @@ func (c *CreateDownloadByInodeRequest) SetNamespaceID(namespaceID string) {
 func (c *CreateDownloadByInodeRequest) SetInodeID(inodeID string) {
 	c.InodeID = inodeID
 	c.require(createDownloadByInodeRequestFieldInodeID)
+}
+
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadByInodeRequest) SetConsistency(consistency *ReadConsistency) {
+	c.Consistency = consistency
+	c.require(createDownloadByInodeRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateDownloadByInodeRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	c.MaxStalenessMs = maxStalenessMs
+	c.require(createDownloadByInodeRequestFieldMaxStalenessMs)
 }
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
@@ -135,10 +193,12 @@ func (c *CreateDownloadByInodeRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	createRevisionDownloadByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
-	createRevisionDownloadByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
-	createRevisionDownloadByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
-	createRevisionDownloadByInodeRequestFieldStartOffset = big.NewInt(1 << 3)
+	createRevisionDownloadByInodeRequestFieldNamespaceID    = big.NewInt(1 << 0)
+	createRevisionDownloadByInodeRequestFieldInodeID        = big.NewInt(1 << 1)
+	createRevisionDownloadByInodeRequestFieldRevisionNo     = big.NewInt(1 << 2)
+	createRevisionDownloadByInodeRequestFieldConsistency    = big.NewInt(1 << 3)
+	createRevisionDownloadByInodeRequestFieldMaxStalenessMs = big.NewInt(1 << 4)
+	createRevisionDownloadByInodeRequestFieldStartOffset    = big.NewInt(1 << 5)
 )
 
 type CreateRevisionDownloadByInodeRequest struct {
@@ -148,6 +208,14 @@ type CreateRevisionDownloadByInodeRequest struct {
 	InodeID string `json:"-" url:"-"`
 	// The revision number.
 	RevisionNo RevisionNo `json:"-" url:"-"`
+	// How recently the read confirms the namespace head that it finds the revision in. `eventual`
+	// (the default, unless the server's `consistency` setting is `strong`) reads at the head that
+	// the server confirmed last while that confirmation is younger than the maximum staleness,
+	// and `strong` confirms the head before the read.
+	Consistency *ReadConsistency `json:"consistency,omitempty" url:"-"`
+	// With `consistency` set to `eventual`, how old the server's last confirmation of the head can
+	// be, in milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"max_staleness_ms,omitempty" url:"-"`
 	// The first byte that the grant reads. It defaults to 0 and must be less than the revision's
 	// size. For a revision of zero bytes, it must be 0.
 	StartOffset *int64 `json:"start_offset,omitempty" url:"-"`
@@ -184,6 +252,20 @@ func (c *CreateRevisionDownloadByInodeRequest) SetRevisionNo(revisionNo Revision
 	c.require(createRevisionDownloadByInodeRequestFieldRevisionNo)
 }
 
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateRevisionDownloadByInodeRequest) SetConsistency(consistency *ReadConsistency) {
+	c.Consistency = consistency
+	c.require(createRevisionDownloadByInodeRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateRevisionDownloadByInodeRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	c.MaxStalenessMs = maxStalenessMs
+	c.require(createRevisionDownloadByInodeRequestFieldMaxStalenessMs)
+}
+
 // SetStartOffset sets the StartOffset field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *CreateRevisionDownloadByInodeRequest) SetStartOffset(startOffset *int64) {
@@ -218,7 +300,10 @@ var (
 	listInodeChildrenRequestFieldLimit             = big.NewInt(1 << 2)
 	listInodeChildrenRequestFieldCursor            = big.NewInt(1 << 3)
 	listInodeChildrenRequestFieldIncludeAttributes = big.NewInt(1 << 4)
-	listInodeChildrenRequestFieldSnapshotID        = big.NewInt(1 << 5)
+	listInodeChildrenRequestFieldRecursive         = big.NewInt(1 << 5)
+	listInodeChildrenRequestFieldSnapshotID        = big.NewInt(1 << 6)
+	listInodeChildrenRequestFieldConsistency       = big.NewInt(1 << 7)
+	listInodeChildrenRequestFieldMaxStalenessMs    = big.NewInt(1 << 8)
 )
 
 type ListInodeChildrenRequest struct {
@@ -230,10 +315,23 @@ type ListInodeChildrenRequest struct {
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
-	// Whether the response includes each entry's attribute map and attribute revision. The default is `false`, because a page can have many entries and each map can be up to 64 KiB.
+	// Whether the response includes each entry's attribute map and attribute revision. The default
+	// is `false`, because a page can have many entries and each map can be up to 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
+	// Whether the listing includes the directory's whole subtree, depth first, with each
+	// directory's entry before its descendants. The default is `false`, which lists the
+	// directory's children only.
+	Recursive *bool `json:"-" url:"recursive,omitempty"`
 	// The snapshot whose captured directory state to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -281,6 +379,13 @@ func (l *ListInodeChildrenRequest) SetIncludeAttributes(includeAttributes *bool)
 	l.require(listInodeChildrenRequestFieldIncludeAttributes)
 }
 
+// SetRecursive sets the Recursive field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenRequest) SetRecursive(recursive *bool) {
+	l.Recursive = recursive
+	l.require(listInodeChildrenRequestFieldRecursive)
+}
+
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (l *ListInodeChildrenRequest) SetSnapshotID(snapshotID *PinID) {
@@ -288,11 +393,27 @@ func (l *ListInodeChildrenRequest) SetSnapshotID(snapshotID *PinID) {
 	l.require(listInodeChildrenRequestFieldSnapshotID)
 }
 
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenRequest) SetConsistency(consistency *ReadConsistency) {
+	l.Consistency = consistency
+	l.require(listInodeChildrenRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListInodeChildrenRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	l.MaxStalenessMs = maxStalenessMs
+	l.require(listInodeChildrenRequestFieldMaxStalenessMs)
+}
+
 var (
-	listFileRevisionsByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
-	listFileRevisionsByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
-	listFileRevisionsByInodeRequestFieldLimit       = big.NewInt(1 << 2)
-	listFileRevisionsByInodeRequestFieldCursor      = big.NewInt(1 << 3)
+	listFileRevisionsByInodeRequestFieldNamespaceID    = big.NewInt(1 << 0)
+	listFileRevisionsByInodeRequestFieldInodeID        = big.NewInt(1 << 1)
+	listFileRevisionsByInodeRequestFieldLimit          = big.NewInt(1 << 2)
+	listFileRevisionsByInodeRequestFieldCursor         = big.NewInt(1 << 3)
+	listFileRevisionsByInodeRequestFieldConsistency    = big.NewInt(1 << 4)
+	listFileRevisionsByInodeRequestFieldMaxStalenessMs = big.NewInt(1 << 5)
 )
 
 type ListFileRevisionsByInodeRequest struct {
@@ -304,6 +425,14 @@ type ListFileRevisionsByInodeRequest struct {
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -344,11 +473,27 @@ func (l *ListFileRevisionsByInodeRequest) SetCursor(cursor *string) {
 	l.require(listFileRevisionsByInodeRequestFieldCursor)
 }
 
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFileRevisionsByInodeRequest) SetConsistency(consistency *ReadConsistency) {
+	l.Consistency = consistency
+	l.require(listFileRevisionsByInodeRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFileRevisionsByInodeRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	l.MaxStalenessMs = maxStalenessMs
+	l.require(listFileRevisionsByInodeRequestFieldMaxStalenessMs)
+}
+
 var (
 	getInodeRequestFieldNamespaceID       = big.NewInt(1 << 0)
 	getInodeRequestFieldInodeID           = big.NewInt(1 << 1)
 	getInodeRequestFieldIncludeAttributes = big.NewInt(1 << 2)
 	getInodeRequestFieldSnapshotID        = big.NewInt(1 << 3)
+	getInodeRequestFieldConsistency       = big.NewInt(1 << 4)
+	getInodeRequestFieldMaxStalenessMs    = big.NewInt(1 << 5)
 )
 
 type GetInodeRequest struct {
@@ -356,10 +501,19 @@ type GetInodeRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// The inode ID.
 	InodeID string `json:"-" url:"-"`
-	// Whether the response includes the inode's attribute map and attribute revision. The default is `true`, because a stat reads one path and a map is at most 64 KiB.
+	// Whether the response includes the inode's attribute map and attribute revision. The default
+	// is `true`, because a stat reads one path and a map is at most 64 KiB.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// The snapshot whose captured path state to read.
 	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -400,19 +554,50 @@ func (g *GetInodeRequest) SetSnapshotID(snapshotID *PinID) {
 	g.require(getInodeRequestFieldSnapshotID)
 }
 
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetInodeRequest) SetConsistency(consistency *ReadConsistency) {
+	g.Consistency = consistency
+	g.require(getInodeRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetInodeRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	g.MaxStalenessMs = maxStalenessMs
+	g.require(getInodeRequestFieldMaxStalenessMs)
+}
+
 var (
-	getFileRevisionContentByInodeRequestFieldNamespaceID = big.NewInt(1 << 0)
-	getFileRevisionContentByInodeRequestFieldInodeID     = big.NewInt(1 << 1)
-	getFileRevisionContentByInodeRequestFieldRevisionNo  = big.NewInt(1 << 2)
+	getFileRevisionContentByInodeRequestFieldRange          = big.NewInt(1 << 0)
+	getFileRevisionContentByInodeRequestFieldNamespaceID    = big.NewInt(1 << 1)
+	getFileRevisionContentByInodeRequestFieldInodeID        = big.NewInt(1 << 2)
+	getFileRevisionContentByInodeRequestFieldRevisionNo     = big.NewInt(1 << 3)
+	getFileRevisionContentByInodeRequestFieldSnapshotID     = big.NewInt(1 << 4)
+	getFileRevisionContentByInodeRequestFieldConsistency    = big.NewInt(1 << 5)
+	getFileRevisionContentByInodeRequestFieldMaxStalenessMs = big.NewInt(1 << 6)
 )
 
 type GetFileRevisionContentByInodeRequest struct {
+	// One byte range of the file to read instead of the whole file, as `bytes=start-end`, where `end` is the offset of the last byte, or as `bytes=start-`. An `end` past the last byte reads to the end of the file. Any other value, including a suffix range or several ranges, returns 400 `invalid_request`.
+	Range *string `json:"-" url:"-"`
 	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
 	// The file's inode ID.
 	InodeID string `json:"-" url:"-"`
 	// The revision number.
 	RevisionNo RevisionNo `json:"-" url:"-"`
+	// A snapshot, or one of the namespace's fork pins, whose pinned state to find the revision
+	// in. The pinned manifest keeps the revision after the namespace's retention floor passes it.
+	SnapshotID *PinID `json:"-" url:"snapshot_id,omitempty"`
+	// How recently the read confirms the namespace head that it finds the revision in. `eventual`
+	// (the default, unless the server's `consistency` setting is `strong`) reads at the head that
+	// the server confirmed last while that confirmation is younger than the maximum staleness, and
+	// `strong` confirms the head before the read. It can't be combined with `snapshot_id`.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -423,6 +608,13 @@ func (g *GetFileRevisionContentByInodeRequest) require(field *big.Int) {
 		g.explicitFields = big.NewInt(0)
 	}
 	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetRange sets the Range field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileRevisionContentByInodeRequest) SetRange(range_ *string) {
+	g.Range = range_
+	g.require(getFileRevisionContentByInodeRequestFieldRange)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
@@ -444,6 +636,27 @@ func (g *GetFileRevisionContentByInodeRequest) SetInodeID(inodeID string) {
 func (g *GetFileRevisionContentByInodeRequest) SetRevisionNo(revisionNo RevisionNo) {
 	g.RevisionNo = revisionNo
 	g.require(getFileRevisionContentByInodeRequestFieldRevisionNo)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileRevisionContentByInodeRequest) SetSnapshotID(snapshotID *PinID) {
+	g.SnapshotID = snapshotID
+	g.require(getFileRevisionContentByInodeRequestFieldSnapshotID)
+}
+
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileRevisionContentByInodeRequest) SetConsistency(consistency *ReadConsistency) {
+	g.Consistency = consistency
+	g.require(getFileRevisionContentByInodeRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetFileRevisionContentByInodeRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	g.MaxStalenessMs = maxStalenessMs
+	g.require(getFileRevisionContentByInodeRequestFieldMaxStalenessMs)
 }
 
 // A short-lived capability to read one revision of an inode.

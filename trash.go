@@ -10,9 +10,11 @@ import (
 )
 
 var (
-	listTrashRequestFieldNamespaceID = big.NewInt(1 << 0)
-	listTrashRequestFieldLimit       = big.NewInt(1 << 1)
-	listTrashRequestFieldCursor      = big.NewInt(1 << 2)
+	listTrashRequestFieldNamespaceID    = big.NewInt(1 << 0)
+	listTrashRequestFieldLimit          = big.NewInt(1 << 1)
+	listTrashRequestFieldCursor         = big.NewInt(1 << 2)
+	listTrashRequestFieldConsistency    = big.NewInt(1 << 3)
+	listTrashRequestFieldMaxStalenessMs = big.NewInt(1 << 4)
 )
 
 type ListTrashRequest struct {
@@ -22,6 +24,14 @@ type ListTrashRequest struct {
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -55,27 +65,18 @@ func (l *ListTrashRequest) SetCursor(cursor *string) {
 	l.require(listTrashRequestFieldCursor)
 }
 
-// The kind of a filesystem item, which is a file or a directory.
-type InodeKind string
-
-const (
-	InodeKindFile InodeKind = "file"
-	InodeKindDir  InodeKind = "dir"
-)
-
-func NewInodeKindFromString(s string) (InodeKind, error) {
-	switch s {
-	case "file":
-		return InodeKindFile, nil
-	case "dir":
-		return InodeKindDir, nil
-	}
-	var t InodeKind
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListTrashRequest) SetConsistency(consistency *ReadConsistency) {
+	l.Consistency = consistency
+	l.require(listTrashRequestFieldConsistency)
 }
 
-func (i InodeKind) Ptr() *InodeKind {
-	return &i
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListTrashRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	l.MaxStalenessMs = maxStalenessMs
+	l.require(listTrashRequestFieldMaxStalenessMs)
 }
 
 // One page of the namespace's recoverable deletions.

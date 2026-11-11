@@ -40,7 +40,7 @@ func NewClient(options *core.RequestOptions) *Client {
 //
 //	request := &loonfs.CommitRequest{
 //	    NamespaceID: "namespace_id",
-//	    CommitID: "c_f3a9c2d4b6e8417a90c5d2f8e1b7a6c0",
+//	    CommitID: "c_7kn71d9dq885x91hejz3gvf9p0",
 //	    Operations: []*loonfs.FilesystemOperation{
 //	        &loonfs.FilesystemOperation{
 //	            AppendFile: &loonfs.FilesystemOperationAppendFile{

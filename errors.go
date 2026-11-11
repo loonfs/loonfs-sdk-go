@@ -31,7 +31,7 @@ func (b *BadRequestError) Unwrap() error {
 	return b.APIError
 }
 
-// Another publisher changed the grep manifest first. Retry the request.
+// Another publication changed the namespace manifest first. Retry the request.
 type ConflictError struct {
 	*core.APIError
 	Body *ErrorResponse
@@ -77,6 +77,30 @@ func (c *ContentTooLargeError) MarshalJSON() ([]byte, error) {
 
 func (c *ContentTooLargeError) Unwrap() error {
 	return c.APIError
+}
+
+// Forbidden
+type ForbiddenError struct {
+	*core.APIError
+	Body *ErrorResponse
+}
+
+func (f *ForbiddenError) UnmarshalJSON(data []byte) error {
+	var body *ErrorResponse
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	f.StatusCode = 403
+	f.Body = body
+	return nil
+}
+
+func (f *ForbiddenError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(f.Body)
+}
+
+func (f *ForbiddenError) Unwrap() error {
+	return f.APIError
 }
 
 // Namespace deleted
@@ -173,6 +197,30 @@ func (n *NotImplementedError) MarshalJSON() ([]byte, error) {
 
 func (n *NotImplementedError) Unwrap() error {
 	return n.APIError
+}
+
+// The `Range` header starts at or past the end of the file. The error's `details.size_bytes` and the response's `Content-Range: bytes * /size` header give the file's size.
+type RangeNotSatisfiableError struct {
+	*core.APIError
+	Body *ErrorResponse
+}
+
+func (r *RangeNotSatisfiableError) UnmarshalJSON(data []byte) error {
+	var body *ErrorResponse
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	r.StatusCode = 416
+	r.Body = body
+	return nil
+}
+
+func (r *RangeNotSatisfiableError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.Body)
+}
+
+func (r *RangeNotSatisfiableError) Unwrap() error {
+	return r.APIError
 }
 
 // The server can't complete the request now. Check `code` to find whether the cause is a deadline, shutdown, load, writer session admission, required maintenance, or invalid storage credentials. When its request cap is full, the reference server returns `server_busy` with `Retry-After: 1` before it reads the body. Health and readiness probes are exempt from the cap. A mutation might still complete after a deadline or a lost acknowledgment, so check its outcome before retrying.
