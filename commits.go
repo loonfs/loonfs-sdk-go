@@ -910,7 +910,7 @@ var (
 
 type CommitPreconditionNamespaceHead struct {
 	// The head sequence that the caller observed when it read its inputs.
-	ExpectedHeadSeq ChangeSeq `json:"expected_head_seq" url:"expected_head_seq"`
+	ExpectedHeadSeq CommitSeq `json:"expected_head_seq" url:"expected_head_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -919,7 +919,7 @@ type CommitPreconditionNamespaceHead struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *CommitPreconditionNamespaceHead) GetExpectedHeadSeq() ChangeSeq {
+func (c *CommitPreconditionNamespaceHead) GetExpectedHeadSeq() CommitSeq {
 	if c == nil {
 		return 0
 	}
@@ -942,7 +942,7 @@ func (c *CommitPreconditionNamespaceHead) require(field *big.Int) {
 
 // SetExpectedHeadSeq sets the ExpectedHeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitPreconditionNamespaceHead) SetExpectedHeadSeq(expectedHeadSeq ChangeSeq) {
+func (c *CommitPreconditionNamespaceHead) SetExpectedHeadSeq(expectedHeadSeq CommitSeq) {
 	c.ExpectedHeadSeq = expectedHeadSeq
 	c.require(commitPreconditionNamespaceHeadFieldExpectedHeadSeq)
 }
@@ -1260,9 +1260,9 @@ type FilesystemOperation struct {
 	MovePath                *FilesystemOperationMovePath
 	PutFile                 *FilesystemOperationPutFile
 	PutFileRevisionByInode  *FilesystemOperationPutFileRevisionByInode
+	RestoreDeleted          *FilesystemOperationRestoreDeleted
 	RestoreRevision         *FilesystemOperationRestoreRevision
 	RestoreRevisionByInode  *FilesystemOperationRestoreRevisionByInode
-	Undelete                *FilesystemOperationUndelete
 	UpdateAccess            *FilesystemOperationUpdateAccess
 	UpdateAccessByInode     *FilesystemOperationUpdateAccessByInode
 	UpdateAttributes        *FilesystemOperationUpdateAttributes
@@ -1369,6 +1369,13 @@ func (f *FilesystemOperation) GetPutFileRevisionByInode() *FilesystemOperationPu
 	return f.PutFileRevisionByInode
 }
 
+func (f *FilesystemOperation) GetRestoreDeleted() *FilesystemOperationRestoreDeleted {
+	if f == nil {
+		return nil
+	}
+	return f.RestoreDeleted
+}
+
 func (f *FilesystemOperation) GetRestoreRevision() *FilesystemOperationRestoreRevision {
 	if f == nil {
 		return nil
@@ -1381,13 +1388,6 @@ func (f *FilesystemOperation) GetRestoreRevisionByInode() *FilesystemOperationRe
 		return nil
 	}
 	return f.RestoreRevisionByInode
-}
-
-func (f *FilesystemOperation) GetUndelete() *FilesystemOperationUndelete {
-	if f == nil {
-		return nil
-	}
-	return f.Undelete
 }
 
 func (f *FilesystemOperation) GetUpdateAccess() *FilesystemOperationUpdateAccess {
@@ -1508,6 +1508,12 @@ func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		f.PutFileRevisionByInode = value
+	case "restore_deleted":
+		value := new(FilesystemOperationRestoreDeleted)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.RestoreDeleted = value
 	case "restore_revision":
 		value := new(FilesystemOperationRestoreRevision)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -1520,12 +1526,6 @@ func (f *FilesystemOperation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		f.RestoreRevisionByInode = value
-	case "undelete":
-		value := new(FilesystemOperationUndelete)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		f.Undelete = value
 	case "update_access":
 		value := new(FilesystemOperationUpdateAccess)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -1598,14 +1598,14 @@ func (f FilesystemOperation) MarshalJSON() ([]byte, error) {
 	if f.PutFileRevisionByInode != nil {
 		return internal.MarshalJSONWithExtraProperty(f.PutFileRevisionByInode, "kind", "put_file_revision_by_inode")
 	}
+	if f.RestoreDeleted != nil {
+		return internal.MarshalJSONWithExtraProperty(f.RestoreDeleted, "kind", "restore_deleted")
+	}
 	if f.RestoreRevision != nil {
 		return internal.MarshalJSONWithExtraProperty(f.RestoreRevision, "kind", "restore_revision")
 	}
 	if f.RestoreRevisionByInode != nil {
 		return internal.MarshalJSONWithExtraProperty(f.RestoreRevisionByInode, "kind", "restore_revision_by_inode")
-	}
-	if f.Undelete != nil {
-		return internal.MarshalJSONWithExtraProperty(f.Undelete, "kind", "undelete")
 	}
 	if f.UpdateAccess != nil {
 		return internal.MarshalJSONWithExtraProperty(f.UpdateAccess, "kind", "update_access")
@@ -1639,9 +1639,9 @@ type FilesystemOperationVisitor interface {
 	VisitMovePath(*FilesystemOperationMovePath) error
 	VisitPutFile(*FilesystemOperationPutFile) error
 	VisitPutFileRevisionByInode(*FilesystemOperationPutFileRevisionByInode) error
+	VisitRestoreDeleted(*FilesystemOperationRestoreDeleted) error
 	VisitRestoreRevision(*FilesystemOperationRestoreRevision) error
 	VisitRestoreRevisionByInode(*FilesystemOperationRestoreRevisionByInode) error
-	VisitUndelete(*FilesystemOperationUndelete) error
 	VisitUpdateAccess(*FilesystemOperationUpdateAccess) error
 	VisitUpdateAccessByInode(*FilesystemOperationUpdateAccessByInode) error
 	VisitUpdateAttributes(*FilesystemOperationUpdateAttributes) error
@@ -1688,14 +1688,14 @@ func (f *FilesystemOperation) Accept(visitor FilesystemOperationVisitor) error {
 	if f.PutFileRevisionByInode != nil {
 		return visitor.VisitPutFileRevisionByInode(f.PutFileRevisionByInode)
 	}
+	if f.RestoreDeleted != nil {
+		return visitor.VisitRestoreDeleted(f.RestoreDeleted)
+	}
 	if f.RestoreRevision != nil {
 		return visitor.VisitRestoreRevision(f.RestoreRevision)
 	}
 	if f.RestoreRevisionByInode != nil {
 		return visitor.VisitRestoreRevisionByInode(f.RestoreRevisionByInode)
-	}
-	if f.Undelete != nil {
-		return visitor.VisitUndelete(f.Undelete)
 	}
 	if f.UpdateAccess != nil {
 		return visitor.VisitUpdateAccess(f.UpdateAccess)
@@ -1756,14 +1756,14 @@ func (f *FilesystemOperation) validate() error {
 	if f.PutFileRevisionByInode != nil {
 		fields = append(fields, "put_file_revision_by_inode")
 	}
+	if f.RestoreDeleted != nil {
+		fields = append(fields, "restore_deleted")
+	}
 	if f.RestoreRevision != nil {
 		fields = append(fields, "restore_revision")
 	}
 	if f.RestoreRevisionByInode != nil {
 		fields = append(fields, "restore_revision_by_inode")
-	}
-	if f.Undelete != nil {
-		fields = append(fields, "undelete")
 	}
 	if f.UpdateAccess != nil {
 		fields = append(fields, "update_access")
@@ -2606,8 +2606,7 @@ var (
 )
 
 type FilesystemOperationCreateFileByInode struct {
-	// The uploaded content, which a content token must cover. Set this field or
-	// `inline_content`, but not both.
+	// The content reference. Set this field or `inline_content`, but not both.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The name of the new file.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
@@ -3336,8 +3335,7 @@ var (
 type FilesystemOperationPutFile struct {
 	// Whether the operation adds a new revision to an existing file or fails with a conflict.
 	Behavior *DestinationBehavior `json:"behavior,omitempty" url:"behavior,omitempty"`
-	// The uploaded content, which a content token must cover. Set this field or
-	// `inline_content`, but not both.
+	// The content reference. Set this field or `inline_content`, but not both.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The inode that the path must contain. It applies only with `replace` behavior.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
@@ -3508,8 +3506,7 @@ var (
 )
 
 type FilesystemOperationPutFileRevisionByInode struct {
-	// The uploaded content, which a content token must cover. Set this field or
-	// `inline_content`, but not both.
+	// The content reference. Set this field or `inline_content`, but not both.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The revision that must be the file's current revision for the write to succeed.
 	ExpectedRevisionNo RevisionNo `json:"expected_revision_no" url:"expected_revision_no"`
@@ -3623,6 +3620,166 @@ func (f *FilesystemOperationPutFileRevisionByInode) MarshalJSON() ([]byte, error
 }
 
 func (f *FilesystemOperationPutFileRevisionByInode) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// An operation that restores the deletion that `inode_id` and `deletion_seq` identify.
+//
+// To choose the destination, set `destination_path`, or set `destination_parent_inode_id` and
+// `destination_display_name`. If you set neither, the restore uses the parent and name
+// recorded with the deletion.
+var (
+	filesystemOperationRestoreDeletedFieldDeletionSeq              = big.NewInt(1 << 0)
+	filesystemOperationRestoreDeletedFieldDestinationDisplayName   = big.NewInt(1 << 1)
+	filesystemOperationRestoreDeletedFieldDestinationParentInodeID = big.NewInt(1 << 2)
+	filesystemOperationRestoreDeletedFieldDestinationPath          = big.NewInt(1 << 3)
+	filesystemOperationRestoreDeletedFieldInodeID                  = big.NewInt(1 << 4)
+)
+
+type FilesystemOperationRestoreDeleted struct {
+	// The deletion sequence that the caller observed. It prevents the restore from cancelling
+	// a newer deletion of the inode.
+	DeletionSeq CommitSeq `json:"deletion_seq" url:"deletion_seq"`
+	// The inode's name in `destination_parent_inode_id`.
+	DestinationDisplayName *DisplayName `json:"destination_display_name,omitempty" url:"destination_display_name,omitempty"`
+	// The directory to restore the inode into. It requires `destination_display_name`.
+	DestinationParentInodeID *InodeID `json:"destination_parent_inode_id,omitempty" url:"destination_parent_inode_id,omitempty"`
+	// The absolute path to restore the inode to. It can't be combined with
+	// `destination_parent_inode_id`.
+	DestinationPath *AbsolutePath `json:"destination_path,omitempty" url:"destination_path,omitempty"`
+	// The deleted inode to make reachable again.
+	InodeID InodeID `json:"inode_id" url:"inode_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FilesystemOperationRestoreDeleted) GetDeletionSeq() CommitSeq {
+	if f == nil {
+		return 0
+	}
+	return f.DeletionSeq
+}
+
+func (f *FilesystemOperationRestoreDeleted) GetDestinationDisplayName() *DisplayName {
+	if f == nil {
+		return nil
+	}
+	return f.DestinationDisplayName
+}
+
+func (f *FilesystemOperationRestoreDeleted) GetDestinationParentInodeID() *InodeID {
+	if f == nil {
+		return nil
+	}
+	return f.DestinationParentInodeID
+}
+
+func (f *FilesystemOperationRestoreDeleted) GetDestinationPath() *AbsolutePath {
+	if f == nil {
+		return nil
+	}
+	return f.DestinationPath
+}
+
+func (f *FilesystemOperationRestoreDeleted) GetInodeID() InodeID {
+	if f == nil {
+		return ""
+	}
+	return f.InodeID
+}
+
+func (f *FilesystemOperationRestoreDeleted) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FilesystemOperationRestoreDeleted) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetDeletionSeq sets the DeletionSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationRestoreDeleted) SetDeletionSeq(deletionSeq CommitSeq) {
+	f.DeletionSeq = deletionSeq
+	f.require(filesystemOperationRestoreDeletedFieldDeletionSeq)
+}
+
+// SetDestinationDisplayName sets the DestinationDisplayName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationRestoreDeleted) SetDestinationDisplayName(destinationDisplayName *DisplayName) {
+	f.DestinationDisplayName = destinationDisplayName
+	f.require(filesystemOperationRestoreDeletedFieldDestinationDisplayName)
+}
+
+// SetDestinationParentInodeID sets the DestinationParentInodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationRestoreDeleted) SetDestinationParentInodeID(destinationParentInodeID *InodeID) {
+	f.DestinationParentInodeID = destinationParentInodeID
+	f.require(filesystemOperationRestoreDeletedFieldDestinationParentInodeID)
+}
+
+// SetDestinationPath sets the DestinationPath field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationRestoreDeleted) SetDestinationPath(destinationPath *AbsolutePath) {
+	f.DestinationPath = destinationPath
+	f.require(filesystemOperationRestoreDeletedFieldDestinationPath)
+}
+
+// SetInodeID sets the InodeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemOperationRestoreDeleted) SetInodeID(inodeID InodeID) {
+	f.InodeID = inodeID
+	f.require(filesystemOperationRestoreDeletedFieldInodeID)
+}
+
+func (f *FilesystemOperationRestoreDeleted) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemOperationRestoreDeleted
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FilesystemOperationRestoreDeleted(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FilesystemOperationRestoreDeleted) MarshalJSON() ([]byte, error) {
+	type embed FilesystemOperationRestoreDeleted
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FilesystemOperationRestoreDeleted) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3831,166 +3988,6 @@ func (f *FilesystemOperationRestoreRevisionByInode) MarshalJSON() ([]byte, error
 }
 
 func (f *FilesystemOperationRestoreRevisionByInode) String() string {
-	if f == nil {
-		return "<nil>"
-	}
-	if len(f.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(f); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", f)
-}
-
-// An operation that restores the deletion that `inode_id` and `deletion_seq` identify.
-//
-// To choose the destination, set `destination_path`, or set `destination_parent_inode_id` and
-// `destination_display_name`. If you set neither, the undelete uses the parent and name
-// recorded with the deletion.
-var (
-	filesystemOperationUndeleteFieldDeletionSeq              = big.NewInt(1 << 0)
-	filesystemOperationUndeleteFieldDestinationDisplayName   = big.NewInt(1 << 1)
-	filesystemOperationUndeleteFieldDestinationParentInodeID = big.NewInt(1 << 2)
-	filesystemOperationUndeleteFieldDestinationPath          = big.NewInt(1 << 3)
-	filesystemOperationUndeleteFieldInodeID                  = big.NewInt(1 << 4)
-)
-
-type FilesystemOperationUndelete struct {
-	// The deletion sequence that the caller observed. It prevents the undelete from cancelling
-	// a newer deletion of the inode.
-	DeletionSeq ChangeSeq `json:"deletion_seq" url:"deletion_seq"`
-	// The inode's name in `destination_parent_inode_id`.
-	DestinationDisplayName *DisplayName `json:"destination_display_name,omitempty" url:"destination_display_name,omitempty"`
-	// The directory to restore the inode into. It requires `destination_display_name`.
-	DestinationParentInodeID *InodeID `json:"destination_parent_inode_id,omitempty" url:"destination_parent_inode_id,omitempty"`
-	// The absolute path to restore the inode to. It can't be combined with
-	// `destination_parent_inode_id`.
-	DestinationPath *AbsolutePath `json:"destination_path,omitempty" url:"destination_path,omitempty"`
-	// The deleted inode to make reachable again.
-	InodeID InodeID `json:"inode_id" url:"inode_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (f *FilesystemOperationUndelete) GetDeletionSeq() ChangeSeq {
-	if f == nil {
-		return 0
-	}
-	return f.DeletionSeq
-}
-
-func (f *FilesystemOperationUndelete) GetDestinationDisplayName() *DisplayName {
-	if f == nil {
-		return nil
-	}
-	return f.DestinationDisplayName
-}
-
-func (f *FilesystemOperationUndelete) GetDestinationParentInodeID() *InodeID {
-	if f == nil {
-		return nil
-	}
-	return f.DestinationParentInodeID
-}
-
-func (f *FilesystemOperationUndelete) GetDestinationPath() *AbsolutePath {
-	if f == nil {
-		return nil
-	}
-	return f.DestinationPath
-}
-
-func (f *FilesystemOperationUndelete) GetInodeID() InodeID {
-	if f == nil {
-		return ""
-	}
-	return f.InodeID
-}
-
-func (f *FilesystemOperationUndelete) GetExtraProperties() map[string]interface{} {
-	if f == nil {
-		return nil
-	}
-	return f.extraProperties
-}
-
-func (f *FilesystemOperationUndelete) require(field *big.Int) {
-	if f.explicitFields == nil {
-		f.explicitFields = big.NewInt(0)
-	}
-	f.explicitFields.Or(f.explicitFields, field)
-}
-
-// SetDeletionSeq sets the DeletionSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemOperationUndelete) SetDeletionSeq(deletionSeq ChangeSeq) {
-	f.DeletionSeq = deletionSeq
-	f.require(filesystemOperationUndeleteFieldDeletionSeq)
-}
-
-// SetDestinationDisplayName sets the DestinationDisplayName field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemOperationUndelete) SetDestinationDisplayName(destinationDisplayName *DisplayName) {
-	f.DestinationDisplayName = destinationDisplayName
-	f.require(filesystemOperationUndeleteFieldDestinationDisplayName)
-}
-
-// SetDestinationParentInodeID sets the DestinationParentInodeID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemOperationUndelete) SetDestinationParentInodeID(destinationParentInodeID *InodeID) {
-	f.DestinationParentInodeID = destinationParentInodeID
-	f.require(filesystemOperationUndeleteFieldDestinationParentInodeID)
-}
-
-// SetDestinationPath sets the DestinationPath field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemOperationUndelete) SetDestinationPath(destinationPath *AbsolutePath) {
-	f.DestinationPath = destinationPath
-	f.require(filesystemOperationUndeleteFieldDestinationPath)
-}
-
-// SetInodeID sets the InodeID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemOperationUndelete) SetInodeID(inodeID InodeID) {
-	f.InodeID = inodeID
-	f.require(filesystemOperationUndeleteFieldInodeID)
-}
-
-func (f *FilesystemOperationUndelete) UnmarshalJSON(data []byte) error {
-	type unmarshaler FilesystemOperationUndelete
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*f = FilesystemOperationUndelete(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *f)
-	if err != nil {
-		return err
-	}
-	f.extraProperties = extraProperties
-	f.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (f *FilesystemOperationUndelete) MarshalJSON() ([]byte, error) {
-	type embed FilesystemOperationUndelete
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*f),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (f *FilesystemOperationUndelete) String() string {
 	if f == nil {
 		return "<nil>"
 	}

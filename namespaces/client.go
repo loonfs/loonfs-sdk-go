@@ -34,13 +34,11 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Creates a new empty namespace.
+// Creates a new empty namespace. Without `namespace_id` in the request, LoonFS generates an ID. The response's `namespace_id` is the new namespace's ID.
 //
 // Example:
 //
-//	request := &loonfs.CreateNamespaceRequest{
-//	    NamespaceID: "demo",
-//	}
+//	request := &loonfs.CreateNamespaceRequest{}
 //	client.Namespaces.Create(
 //	    context.TODO(),
 //	    request,
@@ -115,13 +113,12 @@ func (c *Client) Delete(
 	return response.Body, nil
 }
 
-// Creates a new namespace from the source namespace's current head or from a live snapshot.
+// Creates a new namespace from the source namespace's current head or from an unexpired snapshot. Without `new_namespace_id` in the request, LoonFS generates an ID. The response's `namespace_id` is the new namespace's ID.
 //
 // Example:
 //
 //	request := &loonfs.ForkNamespaceRequest{
 //	    NamespaceID: "namespace_id",
-//	    NewNamespaceID: "demo",
 //	}
 //	client.Namespaces.Fork(
 //	    context.TODO(),
@@ -133,6 +130,120 @@ func (c *Client) Fork(
 	opts ...option.RequestOption,
 ) (*loonfs.NamespaceMetadata, error) {
 	response, err := c.WithRawResponse.Fork(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Returns where the fork's next merge into the namespace starts, without planning the merge: the fork's newest merge into the namespace, the fork sequence that the next merge starts after, the fork point, and the fork's head. When the namespace is a rebase's new fork for the fork, the range continues the new fork's replay commits. When a retention floor would refuse the merge with `below_retention_floor`, the response's `outcome` says which floor instead of failing.
+//
+// Example:
+//
+//	request := &loonfs.GetNextMergeRangeRequest{
+//	    NamespaceID: "namespace_id",
+//	    Source: "demo",
+//	}
+//	client.Namespaces.NextMergeRange(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) NextMergeRange(
+	ctx context.Context,
+	request *loonfs.GetNextMergeRangeRequest,
+	opts ...option.RequestOption,
+) (*loonfs.NextMergeRangeResponse, error) {
+	response, err := c.WithRawResponse.NextMergeRange(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Merges a fork's commits into the namespace as one commit. The merge applies the fork's net change since its previous merge, or since the fork point, through `through_seq` or the fork's head. A change that conflicts with the namespace returns `merge_conflict`, and nothing is committed. The commit ID makes retries idempotent. The merge's WAL object counts toward the namespace's fold triggers like any commit.
+//
+// Example:
+//
+//	request := &loonfs.MergeForkRequest{
+//	    NamespaceID: "namespace_id",
+//	    CommitID: "cmt_7kn71d9dq885x91hejz3gvf9p0",
+//	    SourceNamespaceID: "demo",
+//	}
+//	client.Namespaces.Merge(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Merge(
+	ctx context.Context,
+	request *loonfs.MergeForkRequest,
+	opts ...option.RequestOption,
+) (*loonfs.Commit, error) {
+	response, err := c.WithRawResponse.Merge(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Creates a rebase's new fork from the namespace's head, for a fork of the namespace whose unmerged commits the replay route then replays into the new fork. Without `new_namespace_id` in the request, LoonFS generates an ID. The response's `namespace_id` is the new fork's ID, and its `fork_basis.rebased_from` identifies the fork. A request whose new fork already exists returns `namespace_exists`.
+//
+// Example:
+//
+//	request := &loonfs.ForkNamespaceForRebaseRequest{
+//	    NamespaceID: "namespace_id",
+//	    SourceNamespaceID: "demo",
+//	}
+//	client.Namespaces.ForkForRebase(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) ForkForRebase(
+	ctx context.Context,
+	request *loonfs.ForkNamespaceForRebaseRequest,
+	opts ...option.RequestOption,
+) (*loonfs.NamespaceMetadata, error) {
+	response, err := c.WithRawResponse.ForkForRebase(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Replays a fork's unmerged commits into the namespace, a rebase's new fork for the fork, as one replay commit, which applies the changes that don't conflict with the new fork and reports the ones that do. Each request continues after the new fork's previous replay commit. The commit ID makes retries idempotent, and a retry of a committed replay commit returns the new fork without the conflict report.
+//
+// Example:
+//
+//	request := &loonfs.ReplayForkRequest{
+//	    NamespaceID: "namespace_id",
+//	    CommitID: "cmt_7kn71d9dq885x91hejz3gvf9p0",
+//	    SourceNamespaceID: "demo",
+//	}
+//	client.Namespaces.Replay(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Replay(
+	ctx context.Context,
+	request *loonfs.ReplayForkRequest,
+	opts ...option.RequestOption,
+) (*loonfs.ReplayForkResponse, error) {
+	response, err := c.WithRawResponse.Replay(
 		ctx,
 		request,
 		opts...,

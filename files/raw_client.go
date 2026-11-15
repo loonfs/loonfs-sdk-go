@@ -60,6 +60,10 @@ func (r *RawClient) Content(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
+	if request.Range != nil {
+		headers.Add("Range", *request.Range)
+	}
+
 	response := bytes.NewBuffer(nil)
 	raw, err := r.caller.Call(
 		ctx,

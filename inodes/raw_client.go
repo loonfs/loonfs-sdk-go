@@ -114,6 +114,10 @@ func (r *RawClient) Content(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
+	if request.Range != nil {
+		headers.Add("Range", *request.Range)
+	}
+
 	response := bytes.NewBuffer(nil)
 	raw, err := r.caller.Call(
 		ctx,
@@ -205,10 +209,21 @@ func (r *RawClient) RevisionContent(
 		request.InodeID,
 		request.RevisionNo,
 	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
+	if request.Range != nil {
+		headers.Add("Range", *request.Range)
+	}
+
 	response := bytes.NewBuffer(nil)
 	raw, err := r.caller.Call(
 		ctx,

@@ -5,19 +5,21 @@ package client
 import (
 	core "github.com/loonfs/loonfs-sdk-go/core"
 	internal "github.com/loonfs/loonfs-sdk-go/internal"
-	checkpoints "github.com/loonfs/loonfs-sdk-go/maintenance/checkpoints"
 	diagnostics "github.com/loonfs/loonfs-sdk-go/maintenance/diagnostics"
 	grepindex "github.com/loonfs/loonfs-sdk-go/maintenance/grepindex"
-	runs "github.com/loonfs/loonfs-sdk-go/maintenance/runs"
+	jobs "github.com/loonfs/loonfs-sdk-go/maintenance/jobs"
+	client "github.com/loonfs/loonfs-sdk-go/maintenance/pools/client"
+	snapshots "github.com/loonfs/loonfs-sdk-go/maintenance/snapshots"
 	store "github.com/loonfs/loonfs-sdk-go/maintenance/store"
 )
 
 type Client struct {
-	Checkpoints *checkpoints.Client
 	Diagnostics *diagnostics.Client
 	GrepIndex   *grepindex.Client
-	Runs        *runs.Client
+	Jobs        *jobs.Client
+	Snapshots   *snapshots.Client
 	Store       *store.Client
+	Pools       *client.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -26,11 +28,12 @@ type Client struct {
 
 func NewClient(options *core.RequestOptions) *Client {
 	return &Client{
-		Checkpoints: checkpoints.NewClient(options),
 		Diagnostics: diagnostics.NewClient(options),
 		GrepIndex:   grepindex.NewClient(options),
-		Runs:        runs.NewClient(options),
+		Jobs:        jobs.NewClient(options),
+		Snapshots:   snapshots.NewClient(options),
 		Store:       store.NewClient(options),
+		Pools:       client.NewClient(options),
 		options:     options,
 		baseURL:     options.BaseURL,
 		caller: internal.NewCaller(

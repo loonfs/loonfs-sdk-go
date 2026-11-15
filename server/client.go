@@ -7,6 +7,7 @@ import (
 	changes "github.com/loonfs/loonfs-sdk-go/changes"
 	commits "github.com/loonfs/loonfs-sdk-go/commits"
 	core "github.com/loonfs/loonfs-sdk-go/core"
+	diff "github.com/loonfs/loonfs-sdk-go/diff"
 	files "github.com/loonfs/loonfs-sdk-go/files"
 	inodes "github.com/loonfs/loonfs-sdk-go/inodes"
 	internal "github.com/loonfs/loonfs-sdk-go/internal"
@@ -23,6 +24,7 @@ type Client struct {
 	Namespaces   *namespaces.Client
 	Changes      *changes.Client
 	Commits      *commits.Client
+	Diff         *diff.Client
 	Files        *files.Client
 	Trash        *trash.Client
 	Inodes       *inodes.Client
@@ -42,6 +44,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Namespaces:   namespaces.NewClient(options),
 		Changes:      changes.NewClient(options),
 		Commits:      commits.NewClient(options),
+		Diff:         diff.NewClient(options),
 		Files:        files.NewClient(options),
 		Trash:        trash.NewClient(options),
 		Inodes:       inodes.NewClient(options),
