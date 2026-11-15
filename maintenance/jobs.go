@@ -9,19 +9,19 @@ import (
 )
 
 var (
-	createRunsRequestFieldNamespaceID = big.NewInt(1 << 0)
+	createJobsRequestFieldNamespaceID = big.NewInt(1 << 0)
 )
 
-type CreateRunsRequest struct {
+type CreateJobsRequest struct {
 	// The namespace ID.
-	NamespaceID string                             `json:"-" url:"-"`
-	Body        *loonfssdkgo.RunMaintenanceRequest `json:"-" url:"-"`
+	NamespaceID string                                `json:"-" url:"-"`
+	Body        *loonfssdkgo.RunMaintenanceJobRequest `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (c *CreateRunsRequest) require(field *big.Int) {
+func (c *CreateJobsRequest) require(field *big.Int) {
 	if c.explicitFields == nil {
 		c.explicitFields = big.NewInt(0)
 	}
@@ -30,13 +30,13 @@ func (c *CreateRunsRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateRunsRequest) SetNamespaceID(namespaceID string) {
+func (c *CreateJobsRequest) SetNamespaceID(namespaceID string) {
 	c.NamespaceID = namespaceID
-	c.require(createRunsRequestFieldNamespaceID)
+	c.require(createJobsRequestFieldNamespaceID)
 }
 
-func (c *CreateRunsRequest) UnmarshalJSON(data []byte) error {
-	body := new(loonfssdkgo.RunMaintenanceRequest)
+func (c *CreateJobsRequest) UnmarshalJSON(data []byte) error {
+	body := new(loonfssdkgo.RunMaintenanceJobRequest)
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -44,6 +44,6 @@ func (c *CreateRunsRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *CreateRunsRequest) MarshalJSON() ([]byte, error) {
+func (c *CreateJobsRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.Body)
 }

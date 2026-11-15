@@ -43,8 +43,18 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
+	403: func(apiError *core.APIError) error {
+		return &ForbiddenError{
+			APIError: apiError,
+		}
+	},
 	501: func(apiError *core.APIError) error {
 		return &NotImplementedError{
+			APIError: apiError,
+		}
+	},
+	416: func(apiError *core.APIError) error {
+		return &RangeNotSatisfiableError{
 			APIError: apiError,
 		}
 	},

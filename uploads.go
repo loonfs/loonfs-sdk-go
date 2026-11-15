@@ -1154,7 +1154,7 @@ func (c *CreateUploadBodyServiceProxied) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// One capability for each requested part.
+// One presigned URL for each requested part.
 var (
 	signUploadPartsResponseFieldNamespaceID = big.NewInt(1 << 0)
 	signUploadPartsResponseFieldParts       = big.NewInt(1 << 1)
@@ -1276,15 +1276,15 @@ func (s *SignUploadPartsResponse) String() string {
 
 // One authorized part upload.
 var (
-	signedUploadPartFieldAccess     = big.NewInt(1 << 0)
-	signedUploadPartFieldPartNumber = big.NewInt(1 << 1)
+	signedUploadPartFieldPartNumber = big.NewInt(1 << 0)
+	signedUploadPartFieldTransfer   = big.NewInt(1 << 1)
 )
 
 type SignedUploadPart struct {
-	// A short-lived write capability for this part.
-	Access *ObjectTransferAccess `json:"access" url:"access"`
-	// The part number that this capability writes.
+	// The part number that this presigned URL writes.
 	PartNumber int `json:"part_number" url:"part_number"`
+	// A short-lived presigned URL that writes this part.
+	Transfer *ObjectTransfer `json:"transfer" url:"transfer"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1293,18 +1293,18 @@ type SignedUploadPart struct {
 	rawJSON         json.RawMessage
 }
 
-func (s *SignedUploadPart) GetAccess() *ObjectTransferAccess {
-	if s == nil {
-		return nil
-	}
-	return s.Access
-}
-
 func (s *SignedUploadPart) GetPartNumber() int {
 	if s == nil {
 		return 0
 	}
 	return s.PartNumber
+}
+
+func (s *SignedUploadPart) GetTransfer() *ObjectTransfer {
+	if s == nil {
+		return nil
+	}
+	return s.Transfer
 }
 
 func (s *SignedUploadPart) GetExtraProperties() map[string]interface{} {
@@ -1321,18 +1321,18 @@ func (s *SignedUploadPart) require(field *big.Int) {
 	s.explicitFields.Or(s.explicitFields, field)
 }
 
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SignedUploadPart) SetAccess(access *ObjectTransferAccess) {
-	s.Access = access
-	s.require(signedUploadPartFieldAccess)
-}
-
 // SetPartNumber sets the PartNumber field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (s *SignedUploadPart) SetPartNumber(partNumber int) {
 	s.PartNumber = partNumber
 	s.require(signedUploadPartFieldPartNumber)
+}
+
+// SetTransfer sets the Transfer field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SignedUploadPart) SetTransfer(transfer *ObjectTransfer) {
+	s.Transfer = transfer
+	s.require(signedUploadPartFieldTransfer)
 }
 
 func (s *SignedUploadPart) UnmarshalJSON(data []byte) error {
@@ -2075,20 +2075,17 @@ func (u *UploadSessionStatusCompleted) String() string {
 
 // A session that accepts content until its lease ends.
 var (
-	uploadSessionStatusOpenFieldAccess            = big.NewInt(1 << 0)
-	uploadSessionStatusOpenFieldChecksumAlgorithm = big.NewInt(1 << 1)
-	uploadSessionStatusOpenFieldContentRef        = big.NewInt(1 << 2)
-	uploadSessionStatusOpenFieldExpiresAtMs       = big.NewInt(1 << 3)
-	uploadSessionStatusOpenFieldMode              = big.NewInt(1 << 4)
-	uploadSessionStatusOpenFieldNamespaceID       = big.NewInt(1 << 5)
-	uploadSessionStatusOpenFieldPartSizeBytes     = big.NewInt(1 << 6)
+	uploadSessionStatusOpenFieldChecksumAlgorithm = big.NewInt(1 << 0)
+	uploadSessionStatusOpenFieldContentRef        = big.NewInt(1 << 1)
+	uploadSessionStatusOpenFieldExpiresAtMs       = big.NewInt(1 << 2)
+	uploadSessionStatusOpenFieldMode              = big.NewInt(1 << 3)
+	uploadSessionStatusOpenFieldNamespaceID       = big.NewInt(1 << 4)
+	uploadSessionStatusOpenFieldPartSizeBytes     = big.NewInt(1 << 5)
+	uploadSessionStatusOpenFieldTransfer          = big.NewInt(1 << 6)
 	uploadSessionStatusOpenFieldUploadID          = big.NewInt(1 << 7)
 )
 
 type UploadSessionStatusOpen struct {
-	// The capability for the direct PUT. It's present for `direct_put` sessions, and the
-	// server creates a new one on every read.
-	Access *ObjectTransferAccess `json:"access,omitempty" url:"access,omitempty"`
 	// The checksum algorithm that the store uses for content.
 	ChecksumAlgorithm ChecksumAlgorithm `json:"checksum_algorithm" url:"checksum_algorithm"`
 	// The staged content. It's present after content is staged in a `service_proxied` session.
@@ -2102,6 +2099,9 @@ type UploadSessionStatusOpen struct {
 	// The size of every part except the last, in bytes. It's present for `direct_multipart`
 	// sessions.
 	PartSizeBytes *int64 `json:"part_size_bytes,omitempty" url:"part_size_bytes,omitempty"`
+	// The presigned URL for the direct PUT. It's present for `direct_put` sessions, and the
+	// server creates a new one on every read.
+	Transfer *ObjectTransfer `json:"transfer,omitempty" url:"transfer,omitempty"`
 	// The upload session ID.
 	UploadID UploadID `json:"upload_id" url:"upload_id"`
 
@@ -2110,13 +2110,6 @@ type UploadSessionStatusOpen struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UploadSessionStatusOpen) GetAccess() *ObjectTransferAccess {
-	if u == nil {
-		return nil
-	}
-	return u.Access
 }
 
 func (u *UploadSessionStatusOpen) GetChecksumAlgorithm() ChecksumAlgorithm {
@@ -2161,6 +2154,13 @@ func (u *UploadSessionStatusOpen) GetPartSizeBytes() *int64 {
 	return u.PartSizeBytes
 }
 
+func (u *UploadSessionStatusOpen) GetTransfer() *ObjectTransfer {
+	if u == nil {
+		return nil
+	}
+	return u.Transfer
+}
+
 func (u *UploadSessionStatusOpen) GetUploadID() UploadID {
 	if u == nil {
 		return ""
@@ -2180,13 +2180,6 @@ func (u *UploadSessionStatusOpen) require(field *big.Int) {
 		u.explicitFields = big.NewInt(0)
 	}
 	u.explicitFields.Or(u.explicitFields, field)
-}
-
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UploadSessionStatusOpen) SetAccess(access *ObjectTransferAccess) {
-	u.Access = access
-	u.require(uploadSessionStatusOpenFieldAccess)
 }
 
 // SetChecksumAlgorithm sets the ChecksumAlgorithm field and marks it as non-optional;
@@ -2229,6 +2222,13 @@ func (u *UploadSessionStatusOpen) SetNamespaceID(namespaceID NamespaceID) {
 func (u *UploadSessionStatusOpen) SetPartSizeBytes(partSizeBytes *int64) {
 	u.PartSizeBytes = partSizeBytes
 	u.require(uploadSessionStatusOpenFieldPartSizeBytes)
+}
+
+// SetTransfer sets the Transfer field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UploadSessionStatusOpen) SetTransfer(transfer *ObjectTransfer) {
+	u.Transfer = transfer
+	u.require(uploadSessionStatusOpenFieldTransfer)
 }
 
 // SetUploadID sets the UploadID field and marks it as non-optional;

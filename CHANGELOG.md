@@ -1,60 +1,61 @@
 # SDK 0.5.0
 
-Regenerated from LoonFS main 9c6b0419a.
+Regenerated from LoonFS main d8fae8607.
 
 Breaking changes on the wire:
 
 - Path and inode download responses replace `access` with required ordered
-  `ranges`. Each `DownloadRange` carries `start_offset`, `length`, and its
-  own signed `access`, and together the ranges cover the requested revision
-  suffix across immutable extents. Transfer helpers read them in order and
-  verify the whole value at the end.
+  `ranges`. Each `DownloadRange` includes `start_offset`, `length`, and its
+  own presigned URL in `transfer`, and together the ranges cover the requested
+  revision suffix across immutable extents. Transfer helpers read them in
+  order and verify the whole value at the end.
 - `create_download_by_inode` no longer takes `revision_no`. It authorizes a
   read of the current revision of a visible file inode, or of the revision a
-  live snapshot captured when the request names `snapshot_id`. The new
+  live snapshot captured when the request includes `snapshot_id`. The new
   `create_revision_download_by_inode` authorizes a read of one retained
   revision. Both take their options in a JSON body: `snapshot_id` and
   `start_offset` for the first, and `start_offset` for the second. The inode
-  and revision stay in the path. A request with options in the query string
-  or no body returns 400. The client methods are `Inodes.CreateDownload` and
+  and revision stay in the path. A request with options in the query string or
+  no body returns 400. The client methods are `Inodes.CreateDownload` and
   `Inodes.CreateRevisionDownload`.
 - `Inodes.Content` no longer takes `revision_no`. It calls the new
   `get_file_content_by_inode`, which reads the current revision of a visible
-  file inode, or the revision a live snapshot captured when the request names
-  `snapshot_id`. `Inodes.RevisionContent` reads one retained revision
+  file inode, or the revision a live snapshot captured when the request
+  includes `snapshot_id`. `Inodes.RevisionContent` reads one retained revision
   through `get_file_revision_content_by_inode`. The path read operation is
   `get_file_content`, and `Files.Content` keeps its name. The request types
   are `GetFileContentRequest`, `GetFileContentByInodeRequest`, and
   `GetFileRevisionContentByInodeRequest`.
-- Every open upload session names `checksum_algorithm`, including
+- Every open upload session includes `checksum_algorithm`, including
   `service_proxied`, and the field is required.
-- `ChecksumAlgorithm` allows only `crc64nvme` and `crc32c`; `sha256` is
-  gone. Every content reference, including inline writes, uploads, copies,
+- `ChecksumAlgorithm` allows `crc64nvme` and `crc32c`, and `sha256` is
+  removed. Every content reference, including inline writes, uploads, copies,
   restores, and appends, uses the deployment's store algorithm.
-- A store shape offers a fixed set of upload modes: S3-shaped stores offer
-  direct PUT and multipart, GCS-shaped stores offer direct PUT only, and the
-  local store proxies. Helpers select from the advertised capabilities.
-- Appends combine the base checksum with the appended bytes; the
-  `not_supported` answer for a base without a digest is gone, and a base in
+- The upload modes depend on the store shape. S3-shaped stores offer direct
+  PUT and multipart, GCS-shaped stores offer direct PUT, and the local store
+  proxies uploads. Helpers select from the advertised capabilities.
+- Appends combine the base checksum with the appended bytes. An append to a
+  base without a digest no longer returns `not_supported`, and a base in
   another algorithm reports `namespace_corrupt`.
-- `ListChangesResponse.through_seq` is `head_seq`, and it holds the
-  namespace head the page was read at on every page. The old field held the
-  head only on the final page. Resume a listing only from `next_after_seq`.
-  A client that resumes from `head_seq` skips changes.
+- `ListChangesResponse.through_seq` is `head_seq`, and it contains the
+  namespace head the page was read at on every page. The old field reported
+  the head on the final page alone. Resume a listing only from
+  `next_after_seq`. A client that resumes from `head_seq` skips changes.
 - Every cursor, binding version, and content token uses a new encoding. The
   values stay opaque. A value issued before the upgrade is rejected with
   `invalid_request`. Restart the listing, read the entry again, or read the
   upload session again to get a new value.
 - The `BindingVersion` pattern is `^[A-Za-z0-9_-]+$` instead of lowercase
   hex.
-- Metadata maintenance reports rename `wal_flush` to `wal_fold` and
-  `reorganize` to `compaction`. The types are `WalFoldStepOutcome` and
-  `CompactionStepOutcome`. The fold outcome `flushed` is `folded`. The
-  compaction outcome `compaction_required` is `metadata_compaction_required`,
-  and `unit_published` is `bounded_merge_published`. The type is
-  `CompactionStepOutcomeBoundedMergePublished`, the union field is
-  `CompactionStepOutcome.BoundedMergePublished`, and the visitor method is
-  `VisitBoundedMergePublished`.
+- The `metadata` maintenance report replaces `wal_flush` and `reorganize`
+  with the required `outcome` and `compaction_units` and the optional
+  `skipped`. `outcome` is a `MetadataMaintenanceOutcome`, `caught_up` or
+  `due`, and `skipped` lists `MetadataSkippedWork` values. The
+  `WalFlushStepOutcome` and `ReorganizeStepOutcome` types are removed.
+- The `metadata_compaction` and `grep_gc` maintenance kinds are removed,
+  together with their request and response types and the
+  `MetadataCompactionOutcome` types. A `metadata` job includes compaction, and
+  a `gc` job includes grep index collection.
 - The metadata maintenance request renames `max_wal_tail_segments` to
   `max_wal_tail_objects`. Namespace diagnostics rename `wal_tail_segments` to
   `wal_tail_objects`. GC reports rename the deleted object count
@@ -66,22 +67,113 @@ Breaking changes on the wire:
   `GrepIndexStatusBackfilling`, and `GrepIndexStatusDisabled`. They replace
   the three `GrepIndexLifecycle` types.
 - `GrepIndexStatusActive.NextEventIndex` and
-  `ObjectTransferAccessPresignedURL.Headers` are required. An omitted field
-  always means the field does not apply.
-- The capability limit `snapshot.max_lifetime_ms` is `snapshot.max_age_ms`.
+  `ObjectTransferPresignedURL.Headers` are required. An omitted field always
+  means the field does not apply.
+- The capability document no longer has these keys:
+  - `filesystem.namespaces.create`, `filesystem.namespaces.delete`, and
+    `filesystem.namespaces.fork`
+  - `filesystem.snapshots`
+  - `query.grep.default_limit` and `query.grep.max_limit`
+  - `snapshot.max_lifetime_ms`, `snapshot.max_ttl_ms`, and
+    `snapshot.max_live_per_namespace`
+- `create_checkpoint` and `delete_checkpoint` are removed, together with
+  `Maintenance.Checkpoints.Create`, `Maintenance.Checkpoints.Delete`,
+  `CreateCheckpointRequest`, and `DeleteCheckpointResponse`. A snapshot is the
+  one kind of user pin. `NamespaceDiagnostics.live_checkpoints` is removed.
+- The error codes `checkpoint_not_found`, `snapshot_gone`, and
+  `snapshot_quota_exceeded` are removed. A read, fork, or extension of an
+  expired snapshot returns `snapshot_not_found`, and so does a retrieve of a
+  missing snapshot record. The server has no limit on live snapshots.
+- `CreateSnapshotRequest.ttl_ms` is optional, and a snapshot created without
+  it doesn't expire. `Snapshot.expires_at_ms` is optional. `ttl_ms` must be at
+  least 1 on create and extend, and an extension never moves the expiry
+  earlier.
+- Live reads default to `eventual` consistency unless the server's
+  `consistency` setting is `strong`. An eventual read uses the head that the
+  server confirmed last while that confirmation is younger than the maximum
+  staleness, so it can miss a recent commit. Set `consistency` to `strong` to
+  confirm the head before the read.
+- `ContentRef.owner_namespace_id` is removed. A namespace and its forks
+  share one pool, which stores their content, and the required
+  `NamespaceMetadata.pool_id` identifies it. A pool ID (`PoolID`) is `pool_`
+  followed by 26 lowercase Crockford base 32 characters. A `content_token` is
+  valid only in the namespace where its upload session was completed.
+- A namespace's `gc` report no longer covers content. The deleted counts
+  `content_objects`, `upload_sessions`, and `retired_content_objects` and the
+  retained counts `upload_session_window` and `upload_session_undecided` are
+  removed from `DeletedObjectCounts` and `RetainedCandidates`. A pool's `gc`
+  job reports content, upload sessions, and temporary objects.
+- `PathEntryFile.content_ref` is optional. Entry reads by path or by inode
+  include it, and directory listings leave it out.
+- Inode, content, and upload IDs are the prefix `ino_`, `con_`, or `upl_`
+  followed by 26 lowercase Crockford base 32 characters. Inode IDs were
+  decimal numbers, and content and upload IDs were 32 hex digits.
+- `GrepIndexStatusActive`, `GrepIndexStatusBackfilling`, and
+  `GrepIndexStatusDisabled` no longer have `next_run_no`, and the `RunNo`
+  type is removed.
+- `StoreProbeResponse.checks` contains `StoreProbeCheck` values, a union on
+  `outcome` with the members `passed`, `unsupported`, and `failed`. A failed
+  check has a `message`. `StoreProbeCheck` replaces `StoreProbeCheckResult`
+  and `StoreProbeCheckOutcome`.
+- The metadata maintenance request's `max_wal_tail_objects` must be at
+  least 1.
+- The maintenance routes end in `/jobs` instead of `/runs`.
+  `run_maintenance_job` (`Maintenance.Jobs.Create`,
+  `POST /v0/maintenance/namespaces/{namespace_id}/jobs`) replaces
+  `run_maintenance` and `Maintenance.Runs.Create`. `RunMaintenanceJobRequest`,
+  `RunMaintenanceJobResponse`, and their members, such as
+  `RunMaintenanceJobRequestGc`, replace the `RunMaintenanceRequest` and
+  `RunMaintenanceResponse` types.
+- `ChangeSeq` is `CommitSeq`. `Commit.events` lists `FilesystemEvent` values,
+  which replace the `FilesystemChange` types. The `undeleted` event is
+  `restored` (`FilesystemEventRestored`), and the `undelete` commit operation
+  is `restore_deleted` (`FilesystemOperationRestoreDeleted`).
+- `ObjectTransfer` and `ObjectTransferPresignedURL` replace
+  `ObjectTransferAccess` and `ObjectTransferAccessPresignedURL`.
+  `SignedUploadPart` and `UploadSessionStatusOpen` have `transfer` instead of
+  `access`.
+- `StoreProbeResponse.run_id` is `probe_id`, with the type `ProbeID`, which
+  replaces `ProbeRunID`. A probe ID is `probe_` followed by 26 lowercase
+  Crockford base 32 characters.
+- `PinID` is `SnapshotID`. A snapshot ID is `snp_` followed by 20 digits, a
+  hyphen, and 26 lowercase Crockford base 32 characters.
+- `NamespaceForkBasis.source_head_seq` is `fork_point_seq`.
+- The maintenance checkpoint inventory is the snapshot record inventory.
+  `list_snapshot_records` (`Maintenance.Snapshots.List`) and
+  `get_snapshot_record` (`Maintenance.Snapshots.Retrieve`) replace
+  `list_checkpoints` and `get_checkpoint`. The routes are
+  `GET /v0/maintenance/namespaces/{namespace_id}/snapshots` and
+  `GET /v0/maintenance/namespaces/{namespace_id}/snapshots/{snapshot_id}`.
+  `SnapshotRecord`, `SnapshotRecordOwner`, `SnapshotRecordOwnerUser`,
+  `SnapshotRecordOwnerFork`, and `ListSnapshotRecordsResponse` replace the
+  `Checkpoint` types and `ListCheckpointsResponse`. The inventory lists a user
+  snapshot with the `user` owner, and `CheckpointOwnerSnapshot` is removed. A
+  namespace's `gc` report has `deleted_snapshots_by_owner`
+  (`DeletedSnapshotsByOwner`) instead of `deleted_checkpoints_by_owner`, and
+  `RetainedCandidates.snapshot_not_deletable` replaces
+  `checkpoint_not_deletable`. `GrepIndexStatusBackfilling` no longer has
+  `checkpoint_id`.
+- `InodeKind` and `PathEntryDirectory.inode_kind` spell a directory as
+  `directory` instead of `dir`.
+- A namespace's `gc` report has `retires_at_ms`, the deletion time of the
+  current tombstone plus the grace window, instead of `reclaimable_at_ms`.
+- `RunMaintenanceJobRequestGc` no longer takes `grace_window_ms`. Every
+  collection uses one grace window of 24 hours.
+- `Snapshot.name` and `CreateSnapshotRequest.name` are optional, and a merge
+  plan's snapshot has no name.
 
 Other changes:
 
-- `Snapshots.Retrieve` (`get_snapshot`) returns one live snapshot. A missing
-  id returns `snapshot_not_found`, and an expired snapshot returns
-  `snapshot_gone`. `Maintenance.Checkpoints.Retrieve` (`get_checkpoint`)
-  returns one pin as the checkpoint listing returns it.
+- `Snapshots.Retrieve` (`get_snapshot`) returns one snapshot, as the snapshot
+  listing returns it. A missing ID, the ID of an expired or deleted snapshot,
+  or the ID of a fork snapshot returns `snapshot_not_found`. The snapshot
+  listing leaves out expired and deleted snapshots.
+  `Maintenance.Snapshots.Retrieve` (`get_snapshot_record`) returns one
+  snapshot record of any owner, including an expired or deleted snapshot that
+  garbage collection hasn't deleted, and a missing ID returns
+  `snapshot_not_found`.
 - The proxy forwards `GET` requests for one snapshot, so browser clients can
   retrieve a snapshot.
-- Namespaces have a naming mode that sets how sibling names compare.
-  `NamespaceNaming` is `case_insensitive` or `case_sensitive`, and it is fixed
-  when the namespace is created. `CreateNamespaceRequest.naming` is optional
-  and defaults to `case_insensitive`. `NamespaceMetadata.naming` is required.
 - Commits accept `append_file` (`FilesystemOperationAppendFile`) and
   `append_file_by_inode` (`FilesystemOperationAppendFileByInode`). Each one
   adds 1 byte to 256 KiB of inline content to a file as its next revision.
@@ -94,34 +186,106 @@ Other changes:
 - Commits accept two inode-addressed preconditions:
   - `inode_binding` (`CommitPreconditionInodeBinding`)
   - `name_absence` (`CommitPreconditionNameAbsence`)
-- `FilesystemOperationUndelete` can name its destination with the optional
-  `destination_parent_inode_id` and `destination_display_name` instead of
-  `destination_path`.
+- `FilesystemOperationRestoreDeleted` can identify its destination with the
+  optional `destination_parent_inode_id` and `destination_display_name`
+  instead of `destination_path`.
 - `grep` takes an `inode_id` scope that limits matches to the inode's
   descendants. It cannot be combined with `path_prefix`.
-- `RunMaintenanceRequestRetention` takes an optional target, `to_seq` or
-  `cutoff_at_ms`, but not both. Without a target, a `retention` run advances
+- `RunMaintenanceJobRequestRetention` takes an optional target, `to_seq` or
+  `cutoff_at_ms`, but not both. Without a target, a `retention` job advances
   the floor to the folded manifest head.
 - The three download grant requests take an optional `start_offset`. A grant
   covers the revision from `start_offset` to its end.
-- GC reports count deleted temporary objects in the required
-  `DeletedObjectCounts.TemporaryObjects`.
-- `StoreProbeResponse.RunID` has the type `ProbeRunID`. A run ID is `probe_`
-  followed by 32 lowercase hex digits.
 - The new error code `store_contention` (503) reports that a write to a
   namespace control object used every compare-and-swap attempt it was
-  allowed. The response includes `Retry-After: 1`, and the client retries
-  it under the same rules as `server_busy`.
-- An error caused by a JSON body field names the field in `param` as a JSON
-  Pointer, such as `/start_offset`. An invalid grep pattern reports `param`
-  as `pattern`.
+  allowed. The response has no `Retry-After` header, and the client doesn't
+  retry it. Back off before retrying the request.
+- An error caused by a JSON body field reports the field in `param` as a JSON
+  Pointer, such as `/start_offset`. An invalid grep pattern reports `param` as
+  `pattern`.
 - `not_deleted` reports `expected_deletion_seq` and `actual_deletion_seq`
   when a live deletion exists at a different sequence.
 - The store probe accepts JSON bodies up to 2 MiB.
-- Newer servers may report other event kinds in `FilesystemChange`, and
-  clients ignore them. Newer servers may also report other inode kinds in
-  `PathEntry` and `TrashEntry`. Only the documentation changed. The generated
-  unions are unchanged.
+- Newer servers may report other event kinds in `FilesystemEvent`, and clients
+  ignore them. Newer servers may also report other inode kinds in `PathEntry`
+  and `TrashEntry`. For a path entry of another kind, `PathEntry.GetUnknown`
+  returns a `PathEntryUnknown` with the fields that every entry includes.
+- Forks can be merged and rebased. `merge_fork` (`Namespaces.Merge`) merges a
+  fork's commits into the namespace as one commit. `get_next_merge_range`
+  (`Namespaces.NextMergeRange`) reports where the fork's next merge starts, as
+  a `NextMergeRangeResponse` union on `outcome` with the members `open`,
+  `range_start_below_floor`, and `fork_point_below_floor`. A rebase takes two
+  calls. `fork_namespace_for_rebase` (`Namespaces.ForkForRebase`,
+  `POST /v0/namespaces/{namespace_id}/rebases`) creates the rebase's new fork
+  from the namespace's head. `replay_fork` (`Namespaces.Replay`,
+  `POST /v0/namespaces/{namespace_id}/replays`) replays the fork's unmerged
+  commits into the new fork and reports the conflicting changes as
+  `MergeConflict` values. A merge commit has `Commit.merge`, and a namespace
+  that a rebase created has `NamespaceForkBasis.rebased_from`.
+- `list_diff` (`Diff.List`) returns a page of the inodes whose state differs
+  between two sequences, as `DiffEntry` values with a `DiffEntryKind`.
+- The new error codes are `merge_conflict` (409), `merge_range_conflict`
+  (409), `merge_too_large` (413), and `range_not_satisfiable` (416).
+  `ErrorDetails` adds `conflict`, `conflict_count`, `merge_bound`,
+  `split_at_seq`, `fork_point_seq`, `from_seq`, `source_namespace_id`,
+  `source_after_seq`, `expected_after_seq`, `actual_after_seq`, and
+  `size_bytes`. The client returns `ForbiddenError` for 403 and
+  `RangeNotSatisfiableError` for 416.
+- `grep` returns `rebootstrap_required` (409) when a later page's read
+  position is below the retention floor.
+- Live reads take an optional `consistency` (`ReadConsistency`, `eventual` or
+  `strong`) and `max_staleness_ms`, which is at most 1200000 (20 minutes). The
+  three download grant requests take the same fields in their bodies.
+- The three content reads take an optional `Range`, sent as the `Range`
+  header, and return one byte range of the file as 206 with `Content-Range`. A
+  range that starts at or past the end of the file returns
+  `range_not_satisfiable`.
+- `get_file_revision_content_by_inode` takes an optional `snapshot_id`.
+- `list_path_entries` and `list_inode_children` take an optional
+  `recursive`.
+- `list_changes` takes `split_commits` and `event_index`, and
+  `ListChangesResponse.next_event_index` resumes a page that ended inside a
+  commit. The capability key is `filesystem.changes.split_commits`.
+- `FilesystemEventContentChanged.append_offset` reports where an append's
+  bytes begin.
+- A namespace can have a retention window. `CreateNamespaceRequest` and
+  `NamespaceMetadata` have the optional `retention_window_ms`, and the
+  `retention_window` maintenance job sets or clears it. The window must be at
+  least the grace window (86400000, which is 24 hours).
+- `NamespaceForkBasis.source_snapshot_id` is required. A read can pass it as
+  `snapshot_id` to read the source namespace at the fork point.
+- A namespace's `gc` report has the required `listed_bytes` and
+  `DeletedObjectCounts.extension_segments`.
+- `run_pool_maintenance_job` (`Maintenance.Pools.Jobs.Create`) runs one
+  maintenance job on a pool. The route is
+  `POST /v0/maintenance/pools/{pool_id}/jobs`. The one kind is `gc`
+  (`RunPoolMaintenanceJobRequestGc`). Its result,
+  `RunPoolMaintenanceJobResponseGc`, reports the deleted content objects,
+  upload sessions, and temporary objects (`PoolDeletedObjectCounts`), the
+  retained candidates (`PoolRetainedCandidates`), `listed_bytes`, the optional
+  `next_reclamation_at_ms`, and the optional `skipped`, a list of
+  `GcSkippedWork` values (`content_deletion_pool_budget` or
+  `content_deletion_unreadable_member`).
+- The new error code `pool_not_found` (404) reports a pool that has no pool
+  record.
+- `delete_snapshot` records the server's current time as the snapshot's delete
+  time. From then on, the snapshot can't be read, forked, extended, or
+  retrieved. `SnapshotRecord.deleted_at_ms` reports the delete time, and
+  garbage collection deletes the record one grace window later. The request is
+  idempotent, and the client retries it.
+- The capability key `filesystem.merges` reports whether the deployment
+  serves merges.
+- `CreateNamespaceRequest.namespace_id` and
+  `ForkNamespaceRequest.new_namespace_id` are optional. Without one, LoonFS
+  generates the new namespace's ID, and the response's `namespace_id` reports
+  the generated ID.
+- A namespace's `gc` report has the required
+  `RetainedCandidates.fences_and_floor_objects`, the number of fences and
+  floor objects that the collection kept. No collection deletes these objects,
+  and the collection tells them apart from data WAL objects by their listed
+  size.
+- `get_snapshot` and `list_snapshots` return `namespace_deleted` (410) for a
+  deleted namespace. The client returns `GoneError`.
 - Documentation strings follow the current specification wording.
 
 Handwritten layers:
@@ -143,6 +307,12 @@ Handwritten layers:
 - The three languages share helper names, verification order, and error
   wording. SHA-256 code and optional-algorithm branches are removed.
 - The browser proxy strips the browser's `Host` header.
+- The proxy forwards `/v0/capabilities` and the namespace routes for files,
+  uploads, snapshots, changes, and grep with the path unchanged, and it
+  returns 404 for every other route. `Config.NamespaceAliases` and the
+  `/v0/namespace-aliases/` routes are removed. The `authorize` hook receives
+  the decoded namespace ID in `RouteContext.NamespaceID`, and it checks that
+  the caller may use that namespace.
 
 # SDK 0.4.0
 

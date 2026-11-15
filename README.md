@@ -63,20 +63,20 @@ and body reads; without one, the operation has a 60-second deadline. Direct and
 proxied transfers use the configured HTTP client and the same context. Direct
 requests carry only the presigned headers, and do not follow redirects.
 
-Direct grants contain ordered `ranges`. Each range has a revision `start_offset`,
-`length`, and signed `access`. Helpers validate the range list before any object
-request and read the ranges in order. They keep up to four range responses
+A download response contains ordered `ranges`. Each range has a revision
+`start_offset`, a `length`, and a presigned URL (`transfer`). Helpers validate
+the range list before any object request and read the ranges in order. They keep up to four range responses
 open: the one being read and up to three requested after it. They check each
 range's length and verify the complete file at the end.
 They send the signed headers unchanged. The object Range header can differ from
 the revision offset. An empty file needs no object request. Successful EOF checks
 the total length, then the checksum of the complete file.
 
-The download helpers read complete files. To resume through the generated grant
-API, pin `revision_no`, retain the bytes already read, and request a new grant
+The download helpers read complete files. To resume through the generated download
+API, pin `revision_no`, retain the bytes already read, and request a new download
 with `start_offset` equal to that prefix's length. Verify prefix plus suffix
 against the content reference. Checking only the suffix cannot verify the file.
-A complete local file needs no new grant.
+A complete local file needs no new download.
 
 `client.Files.Download` collects that stream into memory. `client.Files.Upload`
 accepts an in-memory byte slice through the same transfer path.
@@ -133,11 +133,16 @@ generated commit API also accepts `append_file_by_inode`.
 ## Proxy
 
 Use the `proxy` package in your backend to forward client requests while
-keeping the LoonFS credential on the server.
+keeping the LoonFS credential on the server. The proxy forwards
+`/v0/capabilities` and the namespace routes for files, uploads, snapshots,
+changes, and grep with the path unchanged, and returns 404 for every other
+route.
 
 Set `Authorize` to check each request and set `Loonfs-Actor` on forwarded
 requests. The proxy always removes the browser's actor header.
-The `Authorize` hook is required; returning `proxy.Authorization{}` with no error forwards as the token holder.
+The `Authorize` hook is required. Returning `proxy.Authorization{}` with no
+error forwards as the token holder. Any namespace ID in the path reaches LoonFS,
+so the hook checks that the caller may use `route.NamespaceID`.
 Here, `authorizedActor` checks the application's session and namespace access.
 
 ```go
@@ -151,7 +156,6 @@ import (
 handler, err := proxy.NewHandler(proxy.Config{
 	ServerBaseURL: os.Getenv("LOONFS_URL"),
 	Token: os.Getenv("LOONFS_AUTH_TOKEN"),
-	NamespaceAliases: map[string]string{"team-files": "demo"},
 	Authorize: func(r *http.Request, route proxy.RouteContext) (proxy.Authorization, error) {
 		actorID, ok := authorizedActor(r, route.NamespaceID)
 		if !ok {

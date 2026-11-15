@@ -90,608 +90,6 @@ type AttributesRevisionNo = int64
 // An opaque token for one version of a parent and name binding.
 type BindingVersion = string
 
-// The sequence number of one namespace commit. Commits become visible in the order of these numbers.
-type ChangeSeq = int64
-
-// One checkpoint, as its durable record stores it.
-var (
-	checkpointFieldCapturedSeq  = big.NewInt(1 << 0)
-	checkpointFieldCheckpointID = big.NewInt(1 << 1)
-	checkpointFieldCreatedAtMs  = big.NewInt(1 << 2)
-	checkpointFieldExpiresAtMs  = big.NewInt(1 << 3)
-	checkpointFieldManifestNo   = big.NewInt(1 << 4)
-	checkpointFieldNamespaceID  = big.NewInt(1 << 5)
-	checkpointFieldOwner        = big.NewInt(1 << 6)
-)
-
-type Checkpoint struct {
-	// The namespace sequence that the checkpoint captured.
-	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
-	// The checkpoint's durable ID. Use it to delete the checkpoint.
-	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
-	// The time the checkpoint record was created, in Unix milliseconds.
-	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
-	// The time the checkpoint expires, in Unix milliseconds. Garbage collection waits one more
-	// grace window before it deletes the record.
-	ExpiresAtMs *int64 `json:"expires_at_ms,omitempty" url:"expires_at_ms,omitempty"`
-	// The manifest that the checkpoint pins.
-	ManifestNo ManifestNo `json:"manifest_no" url:"manifest_no"`
-	// The namespace that the checkpoint belongs to.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The checkpoint's owner. For a user pin, the owner includes the label.
-	Owner *CheckpointOwner `json:"owner" url:"owner"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *Checkpoint) GetCapturedSeq() ChangeSeq {
-	if c == nil {
-		return 0
-	}
-	return c.CapturedSeq
-}
-
-func (c *Checkpoint) GetCheckpointID() PinID {
-	if c == nil {
-		return ""
-	}
-	return c.CheckpointID
-}
-
-func (c *Checkpoint) GetCreatedAtMs() int64 {
-	if c == nil {
-		return 0
-	}
-	return c.CreatedAtMs
-}
-
-func (c *Checkpoint) GetExpiresAtMs() *int64 {
-	if c == nil {
-		return nil
-	}
-	return c.ExpiresAtMs
-}
-
-func (c *Checkpoint) GetManifestNo() ManifestNo {
-	if c == nil {
-		return 0
-	}
-	return c.ManifestNo
-}
-
-func (c *Checkpoint) GetNamespaceID() NamespaceID {
-	if c == nil {
-		return ""
-	}
-	return c.NamespaceID
-}
-
-func (c *Checkpoint) GetOwner() *CheckpointOwner {
-	if c == nil {
-		return nil
-	}
-	return c.Owner
-}
-
-func (c *Checkpoint) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *Checkpoint) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetCapturedSeq sets the CapturedSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetCapturedSeq(capturedSeq ChangeSeq) {
-	c.CapturedSeq = capturedSeq
-	c.require(checkpointFieldCapturedSeq)
-}
-
-// SetCheckpointID sets the CheckpointID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetCheckpointID(checkpointID PinID) {
-	c.CheckpointID = checkpointID
-	c.require(checkpointFieldCheckpointID)
-}
-
-// SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetCreatedAtMs(createdAtMs int64) {
-	c.CreatedAtMs = createdAtMs
-	c.require(checkpointFieldCreatedAtMs)
-}
-
-// SetExpiresAtMs sets the ExpiresAtMs field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetExpiresAtMs(expiresAtMs *int64) {
-	c.ExpiresAtMs = expiresAtMs
-	c.require(checkpointFieldExpiresAtMs)
-}
-
-// SetManifestNo sets the ManifestNo field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetManifestNo(manifestNo ManifestNo) {
-	c.ManifestNo = manifestNo
-	c.require(checkpointFieldManifestNo)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetNamespaceID(namespaceID NamespaceID) {
-	c.NamespaceID = namespaceID
-	c.require(checkpointFieldNamespaceID)
-}
-
-// SetOwner sets the Owner field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Checkpoint) SetOwner(owner *CheckpointOwner) {
-	c.Owner = owner
-	c.require(checkpointFieldOwner)
-}
-
-func (c *Checkpoint) UnmarshalJSON(data []byte) error {
-	type unmarshaler Checkpoint
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = Checkpoint(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *Checkpoint) MarshalJSON() ([]byte, error) {
-	type embed Checkpoint
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *Checkpoint) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-// The owner of a checkpoint record.
-type CheckpointOwner struct {
-	Kind     string
-	Fork     *CheckpointOwnerFork
-	Snapshot *CheckpointOwnerSnapshot
-	User     *CheckpointOwnerUser
-
-	rawJSON json.RawMessage
-}
-
-func (c *CheckpointOwner) GetKind() string {
-	if c == nil {
-		return ""
-	}
-	return c.Kind
-}
-
-func (c *CheckpointOwner) GetFork() *CheckpointOwnerFork {
-	if c == nil {
-		return nil
-	}
-	return c.Fork
-}
-
-func (c *CheckpointOwner) GetSnapshot() *CheckpointOwnerSnapshot {
-	if c == nil {
-		return nil
-	}
-	return c.Snapshot
-}
-
-func (c *CheckpointOwner) GetUser() *CheckpointOwnerUser {
-	if c == nil {
-		return nil
-	}
-	return c.User
-}
-
-func (c *CheckpointOwner) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Kind string `json:"kind"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	c.Kind = unmarshaler.Kind
-	if unmarshaler.Kind == "" {
-		return fmt.Errorf("%T did not include discriminant kind", c)
-	}
-	switch unmarshaler.Kind {
-	case "fork":
-		value := new(CheckpointOwnerFork)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.Fork = value
-	case "snapshot":
-		value := new(CheckpointOwnerSnapshot)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.Snapshot = value
-	case "user":
-		value := new(CheckpointOwnerUser)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.User = value
-	}
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c CheckpointOwner) MarshalJSON() ([]byte, error) {
-	if err := c.validate(); err != nil {
-		return nil, err
-	}
-	if c.Fork != nil {
-		return internal.MarshalJSONWithExtraProperty(c.Fork, "kind", "fork")
-	}
-	if c.Snapshot != nil {
-		return internal.MarshalJSONWithExtraProperty(c.Snapshot, "kind", "snapshot")
-	}
-	if c.User != nil {
-		return internal.MarshalJSONWithExtraProperty(c.User, "kind", "user")
-	}
-	if len(c.rawJSON) > 0 {
-		return c.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
-}
-
-type CheckpointOwnerVisitor interface {
-	VisitFork(*CheckpointOwnerFork) error
-	VisitSnapshot(*CheckpointOwnerSnapshot) error
-	VisitUser(*CheckpointOwnerUser) error
-}
-
-func (c *CheckpointOwner) Accept(visitor CheckpointOwnerVisitor) error {
-	if c.Fork != nil {
-		return visitor.VisitFork(c.Fork)
-	}
-	if c.Snapshot != nil {
-		return visitor.VisitSnapshot(c.Snapshot)
-	}
-	if c.User != nil {
-		return visitor.VisitUser(c.User)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", c)
-}
-
-func (c *CheckpointOwner) validate() error {
-	if c == nil {
-		return fmt.Errorf("type %T is nil", c)
-	}
-	var fields []string
-	if c.Fork != nil {
-		fields = append(fields, "fork")
-	}
-	if c.Snapshot != nil {
-		fields = append(fields, "snapshot")
-	}
-	if c.User != nil {
-		fields = append(fields, "user")
-	}
-	if len(fields) == 0 {
-		if c.Kind != "" {
-			if len(c.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Kind)
-		}
-		return fmt.Errorf("type %T is empty", c)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
-	}
-	if c.Kind != "" {
-		field := fields[0]
-		if c.Kind != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				c,
-				c.Kind,
-				c,
-			)
-		}
-	}
-	return nil
-}
-
-// A pin that keeps the source state that one fork attempt starts from.
-var (
-	checkpointOwnerForkFieldTargetNamespaceID = big.NewInt(1 << 0)
-)
-
-type CheckpointOwnerFork struct {
-	// The fork's target namespace. Garbage collection keeps this checkpoint while that
-	// namespace exists.
-	TargetNamespaceID NamespaceID `json:"target_namespace_id" url:"target_namespace_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CheckpointOwnerFork) GetTargetNamespaceID() NamespaceID {
-	if c == nil {
-		return ""
-	}
-	return c.TargetNamespaceID
-}
-
-func (c *CheckpointOwnerFork) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CheckpointOwnerFork) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetTargetNamespaceID sets the TargetNamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CheckpointOwnerFork) SetTargetNamespaceID(targetNamespaceID NamespaceID) {
-	c.TargetNamespaceID = targetNamespaceID
-	c.require(checkpointOwnerForkFieldTargetNamespaceID)
-}
-
-func (c *CheckpointOwnerFork) UnmarshalJSON(data []byte) error {
-	type unmarshaler CheckpointOwnerFork
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CheckpointOwnerFork(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CheckpointOwnerFork) MarshalJSON() ([]byte, error) {
-	type embed CheckpointOwnerFork
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CheckpointOwnerFork) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-// A pin that an application created as a snapshot. It's readable until it expires.
-var (
-	checkpointOwnerSnapshotFieldName = big.NewInt(1 << 0)
-)
-
-type CheckpointOwnerSnapshot struct {
-	// The snapshot's label, which doesn't need to be unique.
-	Name string `json:"name" url:"name"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CheckpointOwnerSnapshot) GetName() string {
-	if c == nil {
-		return ""
-	}
-	return c.Name
-}
-
-func (c *CheckpointOwnerSnapshot) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CheckpointOwnerSnapshot) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetName sets the Name field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CheckpointOwnerSnapshot) SetName(name string) {
-	c.Name = name
-	c.require(checkpointOwnerSnapshotFieldName)
-}
-
-func (c *CheckpointOwnerSnapshot) UnmarshalJSON(data []byte) error {
-	type unmarshaler CheckpointOwnerSnapshot
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CheckpointOwnerSnapshot(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CheckpointOwnerSnapshot) MarshalJSON() ([]byte, error) {
-	type embed CheckpointOwnerSnapshot
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CheckpointOwnerSnapshot) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-// A pin that an operator created. It's deleted by its ID or after it expires.
-var (
-	checkpointOwnerUserFieldName = big.NewInt(1 << 0)
-)
-
-type CheckpointOwnerUser struct {
-	// The label that the creator recorded. Labels don't need to be unique.
-	Name string `json:"name" url:"name"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CheckpointOwnerUser) GetName() string {
-	if c == nil {
-		return ""
-	}
-	return c.Name
-}
-
-func (c *CheckpointOwnerUser) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CheckpointOwnerUser) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetName sets the Name field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CheckpointOwnerUser) SetName(name string) {
-	c.Name = name
-	c.require(checkpointOwnerUserFieldName)
-}
-
-func (c *CheckpointOwnerUser) UnmarshalJSON(data []byte) error {
-	type unmarshaler CheckpointOwnerUser
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CheckpointOwnerUser(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CheckpointOwnerUser) MarshalJSON() ([]byte, error) {
-	type embed CheckpointOwnerUser
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CheckpointOwnerUser) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
 // A checksum algorithm and the checksum's canonical lowercase hexadecimal value.
 var (
 	checksumFieldAlgorithm = big.NewInt(1 << 0)
@@ -825,8 +223,9 @@ var (
 	commitFieldCommittedBy   = big.NewInt(1 << 2)
 	commitFieldCommittedSeq  = big.NewInt(1 << 3)
 	commitFieldEvents        = big.NewInt(1 << 4)
-	commitFieldMessage       = big.NewInt(1 << 5)
-	commitFieldNamespaceID   = big.NewInt(1 << 6)
+	commitFieldMerge         = big.NewInt(1 << 5)
+	commitFieldMessage       = big.NewInt(1 << 6)
+	commitFieldNamespaceID   = big.NewInt(1 << 7)
 )
 
 type Commit struct {
@@ -838,9 +237,12 @@ type Commit struct {
 	// The actor responsible for the commit, as the application supplied it.
 	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
 	// The sequence at which the commit became visible.
-	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
+	CommittedSeq CommitSeq `json:"committed_seq" url:"committed_seq"`
 	// The semantic filesystem changes that the commit applied, in request order.
-	Events []*FilesystemChange `json:"events" url:"events"`
+	Events []*FilesystemEvent `json:"events" url:"events"`
+	// The fork and the range of its commits that the commit applied, when the commit is a merge.
+	// It's absent for every other commit.
+	Merge *Merge `json:"merge,omitempty" url:"merge,omitempty"`
 	// The caller's optional annotation for the commit.
 	Message *string `json:"message,omitempty" url:"message,omitempty"`
 	// The namespace that changed.
@@ -874,18 +276,25 @@ func (c *Commit) GetCommittedBy() ActorID {
 	return c.CommittedBy
 }
 
-func (c *Commit) GetCommittedSeq() ChangeSeq {
+func (c *Commit) GetCommittedSeq() CommitSeq {
 	if c == nil {
 		return 0
 	}
 	return c.CommittedSeq
 }
 
-func (c *Commit) GetEvents() []*FilesystemChange {
+func (c *Commit) GetEvents() []*FilesystemEvent {
 	if c == nil {
 		return nil
 	}
 	return c.Events
+}
+
+func (c *Commit) GetMerge() *Merge {
+	if c == nil {
+		return nil
+	}
+	return c.Merge
 }
 
 func (c *Commit) GetMessage() *string {
@@ -939,16 +348,23 @@ func (c *Commit) SetCommittedBy(committedBy ActorID) {
 
 // SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Commit) SetCommittedSeq(committedSeq ChangeSeq) {
+func (c *Commit) SetCommittedSeq(committedSeq CommitSeq) {
 	c.CommittedSeq = committedSeq
 	c.require(commitFieldCommittedSeq)
 }
 
 // SetEvents sets the Events field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Commit) SetEvents(events []*FilesystemChange) {
+func (c *Commit) SetEvents(events []*FilesystemEvent) {
 	c.Events = events
 	c.require(commitFieldEvents)
+}
+
+// SetMerge sets the Merge field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Commit) SetMerge(merge *Merge) {
+	c.Merge = merge
+	c.require(commitFieldMerge)
 }
 
 // SetMessage sets the Message field and marks it as non-optional;
@@ -1011,563 +427,32 @@ func (c *Commit) String() string {
 //
 // Reuse the same commit ID when you retry the same request. A commit ID is 1 to 128 lowercase
 // ASCII letters, digits, dots, underscores, or hyphens, and it starts with a letter or digit.
-// Generated commit IDs have the form `c_<32 lowercase hex>`, but callers can supply any value
-// that follows these rules.
+// Generated commit IDs have the form `cmt_` followed by 26 lowercase Crockford base 32
+// characters, but callers can supply any value that follows these rules.
 type CommitID = string
 
-// What the bounded compaction step of a maintenance pass did.
-type CompactionStepOutcome struct {
-	Outcome                    string
-	BoundedMergePublished      *CompactionStepOutcomeBoundedMergePublished
-	Fenced                     *CompactionStepOutcomeFenced
-	ManifestAdvanced           *CompactionStepOutcomeManifestAdvanced
-	MetadataCompactionRequired *CompactionStepOutcomeMetadataCompactionRequired
-	NotNeeded                  *CompactionStepOutcomeNotNeeded
-
-	rawJSON json.RawMessage
-}
-
-func (c *CompactionStepOutcome) GetOutcome() string {
-	if c == nil {
-		return ""
-	}
-	return c.Outcome
-}
-
-func (c *CompactionStepOutcome) GetBoundedMergePublished() *CompactionStepOutcomeBoundedMergePublished {
-	if c == nil {
-		return nil
-	}
-	return c.BoundedMergePublished
-}
-
-func (c *CompactionStepOutcome) GetFenced() *CompactionStepOutcomeFenced {
-	if c == nil {
-		return nil
-	}
-	return c.Fenced
-}
-
-func (c *CompactionStepOutcome) GetManifestAdvanced() *CompactionStepOutcomeManifestAdvanced {
-	if c == nil {
-		return nil
-	}
-	return c.ManifestAdvanced
-}
-
-func (c *CompactionStepOutcome) GetMetadataCompactionRequired() *CompactionStepOutcomeMetadataCompactionRequired {
-	if c == nil {
-		return nil
-	}
-	return c.MetadataCompactionRequired
-}
-
-func (c *CompactionStepOutcome) GetNotNeeded() *CompactionStepOutcomeNotNeeded {
-	if c == nil {
-		return nil
-	}
-	return c.NotNeeded
-}
-
-func (c *CompactionStepOutcome) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Outcome string `json:"outcome"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	c.Outcome = unmarshaler.Outcome
-	if unmarshaler.Outcome == "" {
-		return fmt.Errorf("%T did not include discriminant outcome", c)
-	}
-	switch unmarshaler.Outcome {
-	case "bounded_merge_published":
-		value := new(CompactionStepOutcomeBoundedMergePublished)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.BoundedMergePublished = value
-	case "fenced":
-		value := new(CompactionStepOutcomeFenced)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.Fenced = value
-	case "manifest_advanced":
-		value := new(CompactionStepOutcomeManifestAdvanced)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.ManifestAdvanced = value
-	case "metadata_compaction_required":
-		value := new(CompactionStepOutcomeMetadataCompactionRequired)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.MetadataCompactionRequired = value
-	case "not_needed":
-		value := new(CompactionStepOutcomeNotNeeded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.NotNeeded = value
-	}
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c CompactionStepOutcome) MarshalJSON() ([]byte, error) {
-	if err := c.validate(); err != nil {
-		return nil, err
-	}
-	if c.BoundedMergePublished != nil {
-		return internal.MarshalJSONWithExtraProperty(c.BoundedMergePublished, "outcome", "bounded_merge_published")
-	}
-	if c.Fenced != nil {
-		return internal.MarshalJSONWithExtraProperty(c.Fenced, "outcome", "fenced")
-	}
-	if c.ManifestAdvanced != nil {
-		return internal.MarshalJSONWithExtraProperty(c.ManifestAdvanced, "outcome", "manifest_advanced")
-	}
-	if c.MetadataCompactionRequired != nil {
-		return internal.MarshalJSONWithExtraProperty(c.MetadataCompactionRequired, "outcome", "metadata_compaction_required")
-	}
-	if c.NotNeeded != nil {
-		return internal.MarshalJSONWithExtraProperty(c.NotNeeded, "outcome", "not_needed")
-	}
-	if len(c.rawJSON) > 0 {
-		return c.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
-}
-
-type CompactionStepOutcomeVisitor interface {
-	VisitBoundedMergePublished(*CompactionStepOutcomeBoundedMergePublished) error
-	VisitFenced(*CompactionStepOutcomeFenced) error
-	VisitManifestAdvanced(*CompactionStepOutcomeManifestAdvanced) error
-	VisitMetadataCompactionRequired(*CompactionStepOutcomeMetadataCompactionRequired) error
-	VisitNotNeeded(*CompactionStepOutcomeNotNeeded) error
-}
-
-func (c *CompactionStepOutcome) Accept(visitor CompactionStepOutcomeVisitor) error {
-	if c.BoundedMergePublished != nil {
-		return visitor.VisitBoundedMergePublished(c.BoundedMergePublished)
-	}
-	if c.Fenced != nil {
-		return visitor.VisitFenced(c.Fenced)
-	}
-	if c.ManifestAdvanced != nil {
-		return visitor.VisitManifestAdvanced(c.ManifestAdvanced)
-	}
-	if c.MetadataCompactionRequired != nil {
-		return visitor.VisitMetadataCompactionRequired(c.MetadataCompactionRequired)
-	}
-	if c.NotNeeded != nil {
-		return visitor.VisitNotNeeded(c.NotNeeded)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", c)
-}
-
-func (c *CompactionStepOutcome) validate() error {
-	if c == nil {
-		return fmt.Errorf("type %T is nil", c)
-	}
-	var fields []string
-	if c.BoundedMergePublished != nil {
-		fields = append(fields, "bounded_merge_published")
-	}
-	if c.Fenced != nil {
-		fields = append(fields, "fenced")
-	}
-	if c.ManifestAdvanced != nil {
-		fields = append(fields, "manifest_advanced")
-	}
-	if c.MetadataCompactionRequired != nil {
-		fields = append(fields, "metadata_compaction_required")
-	}
-	if c.NotNeeded != nil {
-		fields = append(fields, "not_needed")
-	}
-	if len(fields) == 0 {
-		if c.Outcome != "" {
-			if len(c.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Outcome)
-		}
-		return fmt.Errorf("type %T is empty", c)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
-	}
-	if c.Outcome != "" {
-		field := fields[0]
-		if c.Outcome != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				c,
-				c.Outcome,
-				c,
-			)
-		}
-	}
-	return nil
-}
-
-// One family group was merged, and a new manifest was published.
-type CompactionStepOutcomeBoundedMergePublished struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CompactionStepOutcomeBoundedMergePublished) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CompactionStepOutcomeBoundedMergePublished) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-func (c *CompactionStepOutcomeBoundedMergePublished) UnmarshalJSON(data []byte) error {
-	type unmarshaler CompactionStepOutcomeBoundedMergePublished
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CompactionStepOutcomeBoundedMergePublished(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CompactionStepOutcomeBoundedMergePublished) MarshalJSON() ([]byte, error) {
-	type embed CompactionStepOutcomeBoundedMergePublished
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CompactionStepOutcomeBoundedMergePublished) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-// A newer runtime claimed the namespace's compactor epoch, so this step published nothing.
-type CompactionStepOutcomeFenced struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CompactionStepOutcomeFenced) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CompactionStepOutcomeFenced) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-func (c *CompactionStepOutcomeFenced) UnmarshalJSON(data []byte) error {
-	type unmarshaler CompactionStepOutcomeFenced
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CompactionStepOutcomeFenced(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CompactionStepOutcomeFenced) MarshalJSON() ([]byte, error) {
-	type embed CompactionStepOutcomeFenced
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CompactionStepOutcomeFenced) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-// Another publisher changed the current manifest before this step could publish.
-type CompactionStepOutcomeManifestAdvanced struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CompactionStepOutcomeManifestAdvanced) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CompactionStepOutcomeManifestAdvanced) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-func (c *CompactionStepOutcomeManifestAdvanced) UnmarshalJSON(data []byte) error {
-	type unmarshaler CompactionStepOutcomeManifestAdvanced
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CompactionStepOutcomeManifestAdvanced(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CompactionStepOutcomeManifestAdvanced) MarshalJSON() ([]byte, error) {
-	type embed CompactionStepOutcomeManifestAdvanced
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CompactionStepOutcomeManifestAdvanced) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-// A family group's window is too large for one bounded merge.
-//
-// Run the `metadata_compaction` job, which compacts the group by streaming.
-type CompactionStepOutcomeMetadataCompactionRequired struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CompactionStepOutcomeMetadataCompactionRequired) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CompactionStepOutcomeMetadataCompactionRequired) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-func (c *CompactionStepOutcomeMetadataCompactionRequired) UnmarshalJSON(data []byte) error {
-	type unmarshaler CompactionStepOutcomeMetadataCompactionRequired
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CompactionStepOutcomeMetadataCompactionRequired(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CompactionStepOutcomeMetadataCompactionRequired) MarshalJSON() ([]byte, error) {
-	type embed CompactionStepOutcomeMetadataCompactionRequired
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CompactionStepOutcomeMetadataCompactionRequired) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-// No family group had enough delta runs to merge.
-type CompactionStepOutcomeNotNeeded struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CompactionStepOutcomeNotNeeded) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CompactionStepOutcomeNotNeeded) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-func (c *CompactionStepOutcomeNotNeeded) UnmarshalJSON(data []byte) error {
-	type unmarshaler CompactionStepOutcomeNotNeeded
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CompactionStepOutcomeNotNeeded(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CompactionStepOutcomeNotNeeded) MarshalJSON() ([]byte, error) {
-	type embed CompactionStepOutcomeNotNeeded
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CompactionStepOutcomeNotNeeded) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
+// The sequence number of one namespace commit. Commits become visible in the order of these numbers.
+type CommitSeq = int64
 
 // The random identity of one immutable content object.
 type ContentID = string
 
-// A reference to a prefix of one content chain, by its owner, content ID, size, and checksum.
+// A reference to a prefix of one content chain, by its content ID, size, and checksum.
 var (
-	contentRefFieldChecksum         = big.NewInt(1 << 0)
-	contentRefFieldContentID        = big.NewInt(1 << 1)
-	contentRefFieldKind             = big.NewInt(1 << 2)
-	contentRefFieldOwnerNamespaceID = big.NewInt(1 << 3)
-	contentRefFieldSizeBytes        = big.NewInt(1 << 4)
+	contentRefFieldChecksum  = big.NewInt(1 << 0)
+	contentRefFieldContentID = big.NewInt(1 << 1)
+	contentRefFieldKind      = big.NewInt(1 << 2)
+	contentRefFieldSizeBytes = big.NewInt(1 << 3)
 )
 
 type ContentRef struct {
 	// The required checksum of the referenced bytes.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
-	// The immutable identity of the content. The content ID and the owner together determine the
-	// object key.
+	// The immutable identity of the content. The content ID and the reading namespace's pool
+	// together determine the object key.
 	ContentID ContentID `json:"content_id" url:"content_id"`
 	// The kind of content reference. The format defines one kind, `blob_v1`.
 	Kind ContentRefKind `json:"kind" url:"kind"`
-	// The namespace that originally wrote the bytes.
-	OwnerNamespaceID NamespaceID `json:"owner_namespace_id" url:"owner_namespace_id"`
 	// The length of the referenced bytes, which are a prefix of the content object.
 	SizeBytes int64 `json:"size_bytes" url:"size_bytes"`
 
@@ -1597,13 +482,6 @@ func (c *ContentRef) GetKind() ContentRefKind {
 		return ""
 	}
 	return c.Kind
-}
-
-func (c *ContentRef) GetOwnerNamespaceID() NamespaceID {
-	if c == nil {
-		return ""
-	}
-	return c.OwnerNamespaceID
 }
 
 func (c *ContentRef) GetSizeBytes() int64 {
@@ -1646,13 +524,6 @@ func (c *ContentRef) SetContentID(contentID ContentID) {
 func (c *ContentRef) SetKind(kind ContentRefKind) {
 	c.Kind = kind
 	c.require(contentRefFieldKind)
-}
-
-// SetOwnerNamespaceID sets the OwnerNamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContentRef) SetOwnerNamespaceID(ownerNamespaceID NamespaceID) {
-	c.OwnerNamespaceID = ownerNamespaceID
-	c.require(contentRefFieldOwnerNamespaceID)
 }
 
 // SetSizeBytes sets the SizeBytes field and marks it as non-optional;
@@ -1828,256 +699,24 @@ func (c *ContentToken) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// The checkpoint record that was deleted.
+// The number of objects that one garbage collection of a namespace deleted, grouped by
+// object family.
 var (
-	deleteCheckpointResponseFieldCheckpointID = big.NewInt(1 << 0)
-	deleteCheckpointResponseFieldNamespaceID  = big.NewInt(1 << 1)
-)
-
-type DeleteCheckpointResponse struct {
-	// The ID of the deleted checkpoint record.
-	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
-	// The namespace that the checkpoint belonged to.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (d *DeleteCheckpointResponse) GetCheckpointID() PinID {
-	if d == nil {
-		return ""
-	}
-	return d.CheckpointID
-}
-
-func (d *DeleteCheckpointResponse) GetNamespaceID() NamespaceID {
-	if d == nil {
-		return ""
-	}
-	return d.NamespaceID
-}
-
-func (d *DeleteCheckpointResponse) GetExtraProperties() map[string]interface{} {
-	if d == nil {
-		return nil
-	}
-	return d.extraProperties
-}
-
-func (d *DeleteCheckpointResponse) require(field *big.Int) {
-	if d.explicitFields == nil {
-		d.explicitFields = big.NewInt(0)
-	}
-	d.explicitFields.Or(d.explicitFields, field)
-}
-
-// SetCheckpointID sets the CheckpointID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteCheckpointResponse) SetCheckpointID(checkpointID PinID) {
-	d.CheckpointID = checkpointID
-	d.require(deleteCheckpointResponseFieldCheckpointID)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteCheckpointResponse) SetNamespaceID(namespaceID NamespaceID) {
-	d.NamespaceID = namespaceID
-	d.require(deleteCheckpointResponseFieldNamespaceID)
-}
-
-func (d *DeleteCheckpointResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeleteCheckpointResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*d = DeleteCheckpointResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *d)
-	if err != nil {
-		return err
-	}
-	d.extraProperties = extraProperties
-	d.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (d *DeleteCheckpointResponse) MarshalJSON() ([]byte, error) {
-	type embed DeleteCheckpointResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*d),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (d *DeleteCheckpointResponse) String() string {
-	if d == nil {
-		return "<nil>"
-	}
-	if len(d.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(d); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", d)
-}
-
-// The number of checkpoint records that one garbage collection pass deleted, grouped by owner.
-var (
-	deletedCheckpointsByOwnerFieldFork     = big.NewInt(1 << 0)
-	deletedCheckpointsByOwnerFieldSnapshot = big.NewInt(1 << 1)
-	deletedCheckpointsByOwnerFieldUser     = big.NewInt(1 << 2)
-)
-
-type DeletedCheckpointsByOwner struct {
-	// The fork pins that the pass deleted because their target namespaces no longer exist.
-	Fork int64 `json:"fork" url:"fork"`
-	// The snapshot pins that the pass deleted after they expired or their namespace was deleted.
-	Snapshot int64 `json:"snapshot" url:"snapshot"`
-	// The user pins that the pass deleted after they expired or their namespace was deleted.
-	User int64 `json:"user" url:"user"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (d *DeletedCheckpointsByOwner) GetFork() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.Fork
-}
-
-func (d *DeletedCheckpointsByOwner) GetSnapshot() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.Snapshot
-}
-
-func (d *DeletedCheckpointsByOwner) GetUser() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.User
-}
-
-func (d *DeletedCheckpointsByOwner) GetExtraProperties() map[string]interface{} {
-	if d == nil {
-		return nil
-	}
-	return d.extraProperties
-}
-
-func (d *DeletedCheckpointsByOwner) require(field *big.Int) {
-	if d.explicitFields == nil {
-		d.explicitFields = big.NewInt(0)
-	}
-	d.explicitFields.Or(d.explicitFields, field)
-}
-
-// SetFork sets the Fork field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedCheckpointsByOwner) SetFork(fork int64) {
-	d.Fork = fork
-	d.require(deletedCheckpointsByOwnerFieldFork)
-}
-
-// SetSnapshot sets the Snapshot field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedCheckpointsByOwner) SetSnapshot(snapshot int64) {
-	d.Snapshot = snapshot
-	d.require(deletedCheckpointsByOwnerFieldSnapshot)
-}
-
-// SetUser sets the User field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedCheckpointsByOwner) SetUser(user int64) {
-	d.User = user
-	d.require(deletedCheckpointsByOwnerFieldUser)
-}
-
-func (d *DeletedCheckpointsByOwner) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeletedCheckpointsByOwner
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*d = DeletedCheckpointsByOwner(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *d)
-	if err != nil {
-		return err
-	}
-	d.extraProperties = extraProperties
-	d.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (d *DeletedCheckpointsByOwner) MarshalJSON() ([]byte, error) {
-	type embed DeletedCheckpointsByOwner
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*d),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (d *DeletedCheckpointsByOwner) String() string {
-	if d == nil {
-		return "<nil>"
-	}
-	if len(d.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(d); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", d)
-}
-
-// The number of objects that one garbage collection pass deleted, grouped by object family.
-var (
-	deletedObjectCountsFieldContentObjects        = big.NewInt(1 << 0)
-	deletedObjectCountsFieldManifests             = big.NewInt(1 << 1)
-	deletedObjectCountsFieldMetadataSegments      = big.NewInt(1 << 2)
-	deletedObjectCountsFieldRetiredContentObjects = big.NewInt(1 << 3)
-	deletedObjectCountsFieldTemporaryObjects      = big.NewInt(1 << 4)
-	deletedObjectCountsFieldUploadSessions        = big.NewInt(1 << 5)
-	deletedObjectCountsFieldWalObjects            = big.NewInt(1 << 6)
+	deletedObjectCountsFieldExtensionSegments = big.NewInt(1 << 0)
+	deletedObjectCountsFieldManifests         = big.NewInt(1 << 1)
+	deletedObjectCountsFieldMetadataSegments  = big.NewInt(1 << 2)
+	deletedObjectCountsFieldWalObjects        = big.NewInt(1 << 3)
 )
 
 type DeletedObjectCounts struct {
-	// The content objects the pass deleted because no retained view referenced them and they were
-	// older than the grace window.
-	ContentObjects int64 `json:"content_objects" url:"content_objects"`
-	// The unreferenced manifests that the pass deleted.
+	// The unreferenced extension segments, such as the grep index's segments, that the collection
+	// deleted.
+	ExtensionSegments int64 `json:"extension_segments" url:"extension_segments"`
+	// The unreferenced manifests that the collection deleted.
 	Manifests int64 `json:"manifests" url:"manifests"`
-	// The unreferenced metadata segments that the pass deleted.
+	// The unreferenced metadata segments that the collection deleted.
 	MetadataSegments int64 `json:"metadata_segments" url:"metadata_segments"`
-	// The content objects that the pass listed under a retired namespace and deleted.
-	RetiredContentObjects int64 `json:"retired_content_objects" url:"retired_content_objects"`
-	// The store's temporary objects that the pass deleted because they were older than the grace
-	// window.
-	TemporaryObjects int64 `json:"temporary_objects" url:"temporary_objects"`
-	// The upload session records that the pass deleted after their grace windows passed.
-	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
-	// The unreferenced WAL objects that the pass deleted.
+	// The unreferenced WAL objects that the collection deleted.
 	WalObjects int64 `json:"wal_objects" url:"wal_objects"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2087,11 +726,11 @@ type DeletedObjectCounts struct {
 	rawJSON         json.RawMessage
 }
 
-func (d *DeletedObjectCounts) GetContentObjects() int64 {
+func (d *DeletedObjectCounts) GetExtensionSegments() int64 {
 	if d == nil {
 		return 0
 	}
-	return d.ContentObjects
+	return d.ExtensionSegments
 }
 
 func (d *DeletedObjectCounts) GetManifests() int64 {
@@ -2106,27 +745,6 @@ func (d *DeletedObjectCounts) GetMetadataSegments() int64 {
 		return 0
 	}
 	return d.MetadataSegments
-}
-
-func (d *DeletedObjectCounts) GetRetiredContentObjects() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.RetiredContentObjects
-}
-
-func (d *DeletedObjectCounts) GetTemporaryObjects() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.TemporaryObjects
-}
-
-func (d *DeletedObjectCounts) GetUploadSessions() int64 {
-	if d == nil {
-		return 0
-	}
-	return d.UploadSessions
 }
 
 func (d *DeletedObjectCounts) GetWalObjects() int64 {
@@ -2150,11 +768,11 @@ func (d *DeletedObjectCounts) require(field *big.Int) {
 	d.explicitFields.Or(d.explicitFields, field)
 }
 
-// SetContentObjects sets the ContentObjects field and marks it as non-optional;
+// SetExtensionSegments sets the ExtensionSegments field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedObjectCounts) SetContentObjects(contentObjects int64) {
-	d.ContentObjects = contentObjects
-	d.require(deletedObjectCountsFieldContentObjects)
+func (d *DeletedObjectCounts) SetExtensionSegments(extensionSegments int64) {
+	d.ExtensionSegments = extensionSegments
+	d.require(deletedObjectCountsFieldExtensionSegments)
 }
 
 // SetManifests sets the Manifests field and marks it as non-optional;
@@ -2169,27 +787,6 @@ func (d *DeletedObjectCounts) SetManifests(manifests int64) {
 func (d *DeletedObjectCounts) SetMetadataSegments(metadataSegments int64) {
 	d.MetadataSegments = metadataSegments
 	d.require(deletedObjectCountsFieldMetadataSegments)
-}
-
-// SetRetiredContentObjects sets the RetiredContentObjects field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedObjectCounts) SetRetiredContentObjects(retiredContentObjects int64) {
-	d.RetiredContentObjects = retiredContentObjects
-	d.require(deletedObjectCountsFieldRetiredContentObjects)
-}
-
-// SetTemporaryObjects sets the TemporaryObjects field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedObjectCounts) SetTemporaryObjects(temporaryObjects int64) {
-	d.TemporaryObjects = temporaryObjects
-	d.require(deletedObjectCountsFieldTemporaryObjects)
-}
-
-// SetUploadSessions sets the UploadSessions field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeletedObjectCounts) SetUploadSessions(uploadSessions int64) {
-	d.UploadSessions = uploadSessions
-	d.require(deletedObjectCountsFieldUploadSessions)
 }
 
 // SetWalObjects sets the WalObjects field and marks it as non-optional;
@@ -2227,6 +824,109 @@ func (d *DeletedObjectCounts) MarshalJSON() ([]byte, error) {
 }
 
 func (d *DeletedObjectCounts) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+// The number of snapshot records that one garbage collection deleted, grouped by owner.
+var (
+	deletedSnapshotsByOwnerFieldFork = big.NewInt(1 << 0)
+	deletedSnapshotsByOwnerFieldUser = big.NewInt(1 << 1)
+)
+
+type DeletedSnapshotsByOwner struct {
+	// The fork snapshot on the namespace's source that the collection deleted when it retired the namespace (0 or 1).
+	Fork int64 `json:"fork" url:"fork"`
+	// The user snapshots that the collection deleted after they expired or their namespace was deleted.
+	User int64 `json:"user" url:"user"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeletedSnapshotsByOwner) GetFork() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.Fork
+}
+
+func (d *DeletedSnapshotsByOwner) GetUser() int64 {
+	if d == nil {
+		return 0
+	}
+	return d.User
+}
+
+func (d *DeletedSnapshotsByOwner) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeletedSnapshotsByOwner) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetFork sets the Fork field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSnapshotsByOwner) SetFork(fork int64) {
+	d.Fork = fork
+	d.require(deletedSnapshotsByOwnerFieldFork)
+}
+
+// SetUser sets the User field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSnapshotsByOwner) SetUser(user int64) {
+	d.User = user
+	d.require(deletedSnapshotsByOwnerFieldUser)
+}
+
+func (d *DeletedSnapshotsByOwner) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeletedSnapshotsByOwner
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeletedSnapshotsByOwner(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeletedSnapshotsByOwner) MarshalJSON() ([]byte, error) {
+	type embed DeletedSnapshotsByOwner
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeletedSnapshotsByOwner) String() string {
 	if d == nil {
 		return "<nil>"
 	}
@@ -2366,31 +1066,24 @@ type DisplayName = string
 
 // One contiguous run of a revision's bytes, which the client reads from one object.
 var (
-	downloadRangeFieldAccess      = big.NewInt(1 << 0)
-	downloadRangeFieldLength      = big.NewInt(1 << 1)
-	downloadRangeFieldStartOffset = big.NewInt(1 << 2)
+	downloadRangeFieldLength      = big.NewInt(1 << 0)
+	downloadRangeFieldStartOffset = big.NewInt(1 << 1)
+	downloadRangeFieldTransfer    = big.NewInt(1 << 2)
 )
 
 type DownloadRange struct {
-	// A short-lived read capability for exactly this range's bytes.
-	Access *ObjectTransferAccess `json:"access" url:"access"`
 	// The number of bytes in the run.
 	Length int64 `json:"length" url:"length"`
 	// The offset of the run's first byte in the revision.
 	StartOffset int64 `json:"start_offset" url:"start_offset"`
+	// A short-lived presigned URL that reads exactly this range's bytes.
+	Transfer *ObjectTransfer `json:"transfer" url:"transfer"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (d *DownloadRange) GetAccess() *ObjectTransferAccess {
-	if d == nil {
-		return nil
-	}
-	return d.Access
 }
 
 func (d *DownloadRange) GetLength() int64 {
@@ -2407,6 +1100,13 @@ func (d *DownloadRange) GetStartOffset() int64 {
 	return d.StartOffset
 }
 
+func (d *DownloadRange) GetTransfer() *ObjectTransfer {
+	if d == nil {
+		return nil
+	}
+	return d.Transfer
+}
+
 func (d *DownloadRange) GetExtraProperties() map[string]interface{} {
 	if d == nil {
 		return nil
@@ -2421,13 +1121,6 @@ func (d *DownloadRange) require(field *big.Int) {
 	d.explicitFields.Or(d.explicitFields, field)
 }
 
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DownloadRange) SetAccess(access *ObjectTransferAccess) {
-	d.Access = access
-	d.require(downloadRangeFieldAccess)
-}
-
 // SetLength sets the Length field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (d *DownloadRange) SetLength(length int64) {
@@ -2440,6 +1133,13 @@ func (d *DownloadRange) SetLength(length int64) {
 func (d *DownloadRange) SetStartOffset(startOffset int64) {
 	d.StartOffset = startOffset
 	d.require(downloadRangeFieldStartOffset)
+}
+
+// SetTransfer sets the Transfer field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DownloadRange) SetTransfer(transfer *ObjectTransfer) {
+	d.Transfer = transfer
+	d.require(downloadRangeFieldTransfer)
 }
 
 func (d *DownloadRange) UnmarshalJSON(data []byte) error {
@@ -2492,29 +1192,40 @@ var (
 	errorDetailsFieldActiveWriterEpoch            = big.NewInt(1 << 1)
 	errorDetailsFieldActiveWriterID               = big.NewInt(1 << 2)
 	errorDetailsFieldActualAccessRevisionNo       = big.NewInt(1 << 3)
-	errorDetailsFieldActualAttributesRevisionNo   = big.NewInt(1 << 4)
-	errorDetailsFieldActualBindingVersion         = big.NewInt(1 << 5)
-	errorDetailsFieldActualDeletionSeq            = big.NewInt(1 << 6)
-	errorDetailsFieldActualHeadSeq                = big.NewInt(1 << 7)
-	errorDetailsFieldActualInodeID                = big.NewInt(1 << 8)
-	errorDetailsFieldActualRevisionNo             = big.NewInt(1 << 9)
-	errorDetailsFieldAfterSeq                     = big.NewInt(1 << 10)
-	errorDetailsFieldCommitID                     = big.NewInt(1 << 11)
-	errorDetailsFieldCommittedFingerprint         = big.NewInt(1 << 12)
-	errorDetailsFieldCommittedSeq                 = big.NewInt(1 << 13)
-	errorDetailsFieldExpectedAccessRevisionNo     = big.NewInt(1 << 14)
-	errorDetailsFieldExpectedAttributesRevisionNo = big.NewInt(1 << 15)
-	errorDetailsFieldExpectedBindingVersion       = big.NewInt(1 << 16)
-	errorDetailsFieldExpectedDeletionSeq          = big.NewInt(1 << 17)
-	errorDetailsFieldExpectedHeadSeq              = big.NewInt(1 << 18)
-	errorDetailsFieldExpectedInodeID              = big.NewInt(1 << 19)
-	errorDetailsFieldExpectedRevisionNo           = big.NewInt(1 << 20)
-	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 21)
-	errorDetailsFieldInodeID                      = big.NewInt(1 << 22)
-	errorDetailsFieldNamespaceID                  = big.NewInt(1 << 23)
-	errorDetailsFieldOperationIndex               = big.NewInt(1 << 24)
-	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 25)
-	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 26)
+	errorDetailsFieldActualAfterSeq               = big.NewInt(1 << 4)
+	errorDetailsFieldActualAttributesRevisionNo   = big.NewInt(1 << 5)
+	errorDetailsFieldActualBindingVersion         = big.NewInt(1 << 6)
+	errorDetailsFieldActualDeletionSeq            = big.NewInt(1 << 7)
+	errorDetailsFieldActualHeadSeq                = big.NewInt(1 << 8)
+	errorDetailsFieldActualInodeID                = big.NewInt(1 << 9)
+	errorDetailsFieldActualRevisionNo             = big.NewInt(1 << 10)
+	errorDetailsFieldAfterSeq                     = big.NewInt(1 << 11)
+	errorDetailsFieldCommitID                     = big.NewInt(1 << 12)
+	errorDetailsFieldCommittedFingerprint         = big.NewInt(1 << 13)
+	errorDetailsFieldCommittedSeq                 = big.NewInt(1 << 14)
+	errorDetailsFieldConflict                     = big.NewInt(1 << 15)
+	errorDetailsFieldConflictCount                = big.NewInt(1 << 16)
+	errorDetailsFieldExpectedAccessRevisionNo     = big.NewInt(1 << 17)
+	errorDetailsFieldExpectedAfterSeq             = big.NewInt(1 << 18)
+	errorDetailsFieldExpectedAttributesRevisionNo = big.NewInt(1 << 19)
+	errorDetailsFieldExpectedBindingVersion       = big.NewInt(1 << 20)
+	errorDetailsFieldExpectedDeletionSeq          = big.NewInt(1 << 21)
+	errorDetailsFieldExpectedHeadSeq              = big.NewInt(1 << 22)
+	errorDetailsFieldExpectedInodeID              = big.NewInt(1 << 23)
+	errorDetailsFieldExpectedRevisionNo           = big.NewInt(1 << 24)
+	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 25)
+	errorDetailsFieldForkPointSeq                 = big.NewInt(1 << 26)
+	errorDetailsFieldFromSeq                      = big.NewInt(1 << 27)
+	errorDetailsFieldInodeID                      = big.NewInt(1 << 28)
+	errorDetailsFieldMergeBound                   = big.NewInt(1 << 29)
+	errorDetailsFieldNamespaceID                  = big.NewInt(1 << 30)
+	errorDetailsFieldOperationIndex               = big.NewInt(1 << 31)
+	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 32)
+	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 33)
+	errorDetailsFieldSizeBytes                    = big.NewInt(1 << 34)
+	errorDetailsFieldSourceAfterSeq               = big.NewInt(1 << 35)
+	errorDetailsFieldSourceNamespaceID            = big.NewInt(1 << 36)
+	errorDetailsFieldSplitAtSeq                   = big.NewInt(1 << 37)
 )
 
 type ErrorDetails struct {
@@ -2527,20 +1238,22 @@ type ErrorDetails struct {
 	ActiveWriterID *WriterID `json:"active_writer_id,omitempty" url:"active_writer_id,omitempty"`
 	// The access revision that is actually current for the inode.
 	ActualAccessRevisionNo *AccessRevisionNo `json:"actual_access_revision_no,omitempty" url:"actual_access_revision_no,omitempty"`
+	// The fork sequence that the merge started after.
+	ActualAfterSeq *CommitSeq `json:"actual_after_seq,omitempty" url:"actual_after_seq,omitempty"`
 	// The attribute revision that is actually current for the inode.
 	ActualAttributesRevisionNo *AttributesRevisionNo `json:"actual_attributes_revision_no,omitempty" url:"actual_attributes_revision_no,omitempty"`
 	// The current binding token.
 	ActualBindingVersion *BindingVersion `json:"actual_binding_version,omitempty" url:"actual_binding_version,omitempty"`
 	// The deletion sequence that is actually active for the inode.
-	ActualDeletionSeq *ChangeSeq `json:"actual_deletion_seq,omitempty" url:"actual_deletion_seq,omitempty"`
+	ActualDeletionSeq *CommitSeq `json:"actual_deletion_seq,omitempty" url:"actual_deletion_seq,omitempty"`
 	// The namespace's actual head sequence.
-	ActualHeadSeq *ChangeSeq `json:"actual_head_seq,omitempty" url:"actual_head_seq,omitempty"`
+	ActualHeadSeq *CommitSeq `json:"actual_head_seq,omitempty" url:"actual_head_seq,omitempty"`
 	// The inode that the path actually contained.
 	ActualInodeID *InodeID `json:"actual_inode_id,omitempty" url:"actual_inode_id,omitempty"`
 	// The revision that is actually current. It's absent when the inode has no current revision.
 	ActualRevisionNo *RevisionNo `json:"actual_revision_no,omitempty" url:"actual_revision_no,omitempty"`
 	// The `after_seq` value from the change feed request.
-	AfterSeq *ChangeSeq `json:"after_seq,omitempty" url:"after_seq,omitempty"`
+	AfterSeq *CommitSeq `json:"after_seq,omitempty" url:"after_seq,omitempty"`
 	// The idempotency key of the commit that the error is about.
 	CommitID *CommitID `json:"commit_id,omitempty" url:"commit_id,omitempty"`
 	// The fingerprint of the mutation that was committed under `commit_id`. This field is present
@@ -2548,25 +1261,39 @@ type ErrorDetails struct {
 	CommittedFingerprint *string `json:"committed_fingerprint,omitempty" url:"committed_fingerprint,omitempty"`
 	// The sequence that `commit_id` was already committed at. The server includes it when a
 	// durable commit receipt records that commit.
-	CommittedSeq *ChangeSeq `json:"committed_seq,omitempty" url:"committed_seq,omitempty"`
+	CommittedSeq *CommitSeq `json:"committed_seq,omitempty" url:"committed_seq,omitempty"`
+	// The first inode whose change a refused merge can't apply.
+	Conflict *MergeConflict `json:"conflict,omitempty" url:"conflict,omitempty"`
+	// The number of inodes whose change a refused merge can't apply.
+	ConflictCount *int64 `json:"conflict_count,omitempty" url:"conflict_count,omitempty"`
 	// The access revision that the request expected to be current.
 	ExpectedAccessRevisionNo *AccessRevisionNo `json:"expected_access_revision_no,omitempty" url:"expected_access_revision_no,omitempty"`
+	// The fork sequence that the merge had to start after: the end of the previous merge's range,
+	// or the fork point for the fork's first merge.
+	ExpectedAfterSeq *CommitSeq `json:"expected_after_seq,omitempty" url:"expected_after_seq,omitempty"`
 	// The attribute revision that the request expected to be current.
 	ExpectedAttributesRevisionNo *AttributesRevisionNo `json:"expected_attributes_revision_no,omitempty" url:"expected_attributes_revision_no,omitempty"`
 	// The opaque binding token that the request supplied.
 	ExpectedBindingVersion *BindingVersion `json:"expected_binding_version,omitempty" url:"expected_binding_version,omitempty"`
-	// The deletion sequence that the undelete expected to be active.
-	ExpectedDeletionSeq *ChangeSeq `json:"expected_deletion_seq,omitempty" url:"expected_deletion_seq,omitempty"`
+	// The deletion sequence that the restore expected to be active.
+	ExpectedDeletionSeq *CommitSeq `json:"expected_deletion_seq,omitempty" url:"expected_deletion_seq,omitempty"`
 	// The head sequence that the request required.
-	ExpectedHeadSeq *ChangeSeq `json:"expected_head_seq,omitempty" url:"expected_head_seq,omitempty"`
+	ExpectedHeadSeq *CommitSeq `json:"expected_head_seq,omitempty" url:"expected_head_seq,omitempty"`
 	// The inode that the request expected the path to contain.
 	ExpectedInodeID *InodeID `json:"expected_inode_id,omitempty" url:"expected_inode_id,omitempty"`
 	// The revision that the request expected to be current.
 	ExpectedRevisionNo *RevisionNo `json:"expected_revision_no,omitempty" url:"expected_revision_no,omitempty"`
 	// The epoch of the failed writer session at the time another writer displaced it.
 	FencedWriterEpoch *WriterEpoch `json:"fenced_writer_epoch,omitempty" url:"fenced_writer_epoch,omitempty"`
+	// The fork point of the fork whose commits a merge applies, which is the sequence of this
+	// namespace that the fork was made at.
+	ForkPointSeq *CommitSeq `json:"fork_point_seq,omitempty" url:"fork_point_seq,omitempty"`
+	// The `from_seq` value from the diff request.
+	FromSeq *CommitSeq `json:"from_seq,omitempty" url:"from_seq,omitempty"`
 	// The inode that the failed precondition or operation targeted.
 	InodeID *InodeID `json:"inode_id,omitempty" url:"inode_id,omitempty"`
+	// The bound that a merge's size exceeded.
+	MergeBound *MergeBound `json:"merge_bound,omitempty" url:"merge_bound,omitempty"`
 	// The deleted namespace that caused the operation to fail.
 	NamespaceID *NamespaceID `json:"namespace_id,omitempty" url:"namespace_id,omitempty"`
 	// The index of the failed operation in the request.
@@ -2574,8 +1301,21 @@ type ErrorDetails struct {
 	// The zero-based position of the failed request precondition.
 	PreconditionIndex *int `json:"precondition_index,omitempty" url:"precondition_index,omitempty"`
 	// The namespace's retention floor. A change feed request can set `after_seq` to this sequence
-	// or any later one, and the feed returns the changes committed after it.
-	RetentionFloorSeq *ChangeSeq `json:"retention_floor_seq,omitempty" url:"retention_floor_seq,omitempty"`
+	// or any later one, and the feed returns the changes committed after it. A diff request can
+	// set `from_seq` to this sequence or any later one.
+	RetentionFloorSeq *CommitSeq `json:"retention_floor_seq,omitempty" url:"retention_floor_seq,omitempty"`
+	// For `range_not_satisfiable`, the size in bytes of the file that the range was requested
+	// from.
+	SizeBytes *int64 `json:"size_bytes,omitempty" url:"size_bytes,omitempty"`
+	// The fork sequence that a merge's range starts after, when that start is below the fork's
+	// own retention floor.
+	SourceAfterSeq *CommitSeq `json:"source_after_seq,omitempty" url:"source_after_seq,omitempty"`
+	// The fork of a refused merge: the fork whose range conflicts, or whose range starts below
+	// its own retention floor.
+	SourceNamespaceID *NamespaceID `json:"source_namespace_id,omitempty" url:"source_namespace_id,omitempty"`
+	// The split hint of a merge that exceeded a bound: a fork sequence such that a merge of the
+	// fork's commits through it fits. It's absent when no shorter range fits.
+	SplitAtSeq *CommitSeq `json:"split_at_seq,omitempty" url:"split_at_seq,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2612,6 +1352,13 @@ func (e *ErrorDetails) GetActualAccessRevisionNo() *AccessRevisionNo {
 	return e.ActualAccessRevisionNo
 }
 
+func (e *ErrorDetails) GetActualAfterSeq() *CommitSeq {
+	if e == nil {
+		return nil
+	}
+	return e.ActualAfterSeq
+}
+
 func (e *ErrorDetails) GetActualAttributesRevisionNo() *AttributesRevisionNo {
 	if e == nil {
 		return nil
@@ -2626,14 +1373,14 @@ func (e *ErrorDetails) GetActualBindingVersion() *BindingVersion {
 	return e.ActualBindingVersion
 }
 
-func (e *ErrorDetails) GetActualDeletionSeq() *ChangeSeq {
+func (e *ErrorDetails) GetActualDeletionSeq() *CommitSeq {
 	if e == nil {
 		return nil
 	}
 	return e.ActualDeletionSeq
 }
 
-func (e *ErrorDetails) GetActualHeadSeq() *ChangeSeq {
+func (e *ErrorDetails) GetActualHeadSeq() *CommitSeq {
 	if e == nil {
 		return nil
 	}
@@ -2654,7 +1401,7 @@ func (e *ErrorDetails) GetActualRevisionNo() *RevisionNo {
 	return e.ActualRevisionNo
 }
 
-func (e *ErrorDetails) GetAfterSeq() *ChangeSeq {
+func (e *ErrorDetails) GetAfterSeq() *CommitSeq {
 	if e == nil {
 		return nil
 	}
@@ -2675,11 +1422,25 @@ func (e *ErrorDetails) GetCommittedFingerprint() *string {
 	return e.CommittedFingerprint
 }
 
-func (e *ErrorDetails) GetCommittedSeq() *ChangeSeq {
+func (e *ErrorDetails) GetCommittedSeq() *CommitSeq {
 	if e == nil {
 		return nil
 	}
 	return e.CommittedSeq
+}
+
+func (e *ErrorDetails) GetConflict() *MergeConflict {
+	if e == nil {
+		return nil
+	}
+	return e.Conflict
+}
+
+func (e *ErrorDetails) GetConflictCount() *int64 {
+	if e == nil {
+		return nil
+	}
+	return e.ConflictCount
 }
 
 func (e *ErrorDetails) GetExpectedAccessRevisionNo() *AccessRevisionNo {
@@ -2687,6 +1448,13 @@ func (e *ErrorDetails) GetExpectedAccessRevisionNo() *AccessRevisionNo {
 		return nil
 	}
 	return e.ExpectedAccessRevisionNo
+}
+
+func (e *ErrorDetails) GetExpectedAfterSeq() *CommitSeq {
+	if e == nil {
+		return nil
+	}
+	return e.ExpectedAfterSeq
 }
 
 func (e *ErrorDetails) GetExpectedAttributesRevisionNo() *AttributesRevisionNo {
@@ -2703,14 +1471,14 @@ func (e *ErrorDetails) GetExpectedBindingVersion() *BindingVersion {
 	return e.ExpectedBindingVersion
 }
 
-func (e *ErrorDetails) GetExpectedDeletionSeq() *ChangeSeq {
+func (e *ErrorDetails) GetExpectedDeletionSeq() *CommitSeq {
 	if e == nil {
 		return nil
 	}
 	return e.ExpectedDeletionSeq
 }
 
-func (e *ErrorDetails) GetExpectedHeadSeq() *ChangeSeq {
+func (e *ErrorDetails) GetExpectedHeadSeq() *CommitSeq {
 	if e == nil {
 		return nil
 	}
@@ -2738,11 +1506,32 @@ func (e *ErrorDetails) GetFencedWriterEpoch() *WriterEpoch {
 	return e.FencedWriterEpoch
 }
 
+func (e *ErrorDetails) GetForkPointSeq() *CommitSeq {
+	if e == nil {
+		return nil
+	}
+	return e.ForkPointSeq
+}
+
+func (e *ErrorDetails) GetFromSeq() *CommitSeq {
+	if e == nil {
+		return nil
+	}
+	return e.FromSeq
+}
+
 func (e *ErrorDetails) GetInodeID() *InodeID {
 	if e == nil {
 		return nil
 	}
 	return e.InodeID
+}
+
+func (e *ErrorDetails) GetMergeBound() *MergeBound {
+	if e == nil {
+		return nil
+	}
+	return e.MergeBound
 }
 
 func (e *ErrorDetails) GetNamespaceID() *NamespaceID {
@@ -2766,11 +1555,39 @@ func (e *ErrorDetails) GetPreconditionIndex() *int {
 	return e.PreconditionIndex
 }
 
-func (e *ErrorDetails) GetRetentionFloorSeq() *ChangeSeq {
+func (e *ErrorDetails) GetRetentionFloorSeq() *CommitSeq {
 	if e == nil {
 		return nil
 	}
 	return e.RetentionFloorSeq
+}
+
+func (e *ErrorDetails) GetSizeBytes() *int64 {
+	if e == nil {
+		return nil
+	}
+	return e.SizeBytes
+}
+
+func (e *ErrorDetails) GetSourceAfterSeq() *CommitSeq {
+	if e == nil {
+		return nil
+	}
+	return e.SourceAfterSeq
+}
+
+func (e *ErrorDetails) GetSourceNamespaceID() *NamespaceID {
+	if e == nil {
+		return nil
+	}
+	return e.SourceNamespaceID
+}
+
+func (e *ErrorDetails) GetSplitAtSeq() *CommitSeq {
+	if e == nil {
+		return nil
+	}
+	return e.SplitAtSeq
 }
 
 func (e *ErrorDetails) GetExtraProperties() map[string]interface{} {
@@ -2815,6 +1632,13 @@ func (e *ErrorDetails) SetActualAccessRevisionNo(actualAccessRevisionNo *AccessR
 	e.require(errorDetailsFieldActualAccessRevisionNo)
 }
 
+// SetActualAfterSeq sets the ActualAfterSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetActualAfterSeq(actualAfterSeq *CommitSeq) {
+	e.ActualAfterSeq = actualAfterSeq
+	e.require(errorDetailsFieldActualAfterSeq)
+}
+
 // SetActualAttributesRevisionNo sets the ActualAttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (e *ErrorDetails) SetActualAttributesRevisionNo(actualAttributesRevisionNo *AttributesRevisionNo) {
@@ -2831,14 +1655,14 @@ func (e *ErrorDetails) SetActualBindingVersion(actualBindingVersion *BindingVers
 
 // SetActualDeletionSeq sets the ActualDeletionSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetActualDeletionSeq(actualDeletionSeq *ChangeSeq) {
+func (e *ErrorDetails) SetActualDeletionSeq(actualDeletionSeq *CommitSeq) {
 	e.ActualDeletionSeq = actualDeletionSeq
 	e.require(errorDetailsFieldActualDeletionSeq)
 }
 
 // SetActualHeadSeq sets the ActualHeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetActualHeadSeq(actualHeadSeq *ChangeSeq) {
+func (e *ErrorDetails) SetActualHeadSeq(actualHeadSeq *CommitSeq) {
 	e.ActualHeadSeq = actualHeadSeq
 	e.require(errorDetailsFieldActualHeadSeq)
 }
@@ -2859,7 +1683,7 @@ func (e *ErrorDetails) SetActualRevisionNo(actualRevisionNo *RevisionNo) {
 
 // SetAfterSeq sets the AfterSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetAfterSeq(afterSeq *ChangeSeq) {
+func (e *ErrorDetails) SetAfterSeq(afterSeq *CommitSeq) {
 	e.AfterSeq = afterSeq
 	e.require(errorDetailsFieldAfterSeq)
 }
@@ -2880,9 +1704,23 @@ func (e *ErrorDetails) SetCommittedFingerprint(committedFingerprint *string) {
 
 // SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetCommittedSeq(committedSeq *ChangeSeq) {
+func (e *ErrorDetails) SetCommittedSeq(committedSeq *CommitSeq) {
 	e.CommittedSeq = committedSeq
 	e.require(errorDetailsFieldCommittedSeq)
+}
+
+// SetConflict sets the Conflict field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetConflict(conflict *MergeConflict) {
+	e.Conflict = conflict
+	e.require(errorDetailsFieldConflict)
+}
+
+// SetConflictCount sets the ConflictCount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetConflictCount(conflictCount *int64) {
+	e.ConflictCount = conflictCount
+	e.require(errorDetailsFieldConflictCount)
 }
 
 // SetExpectedAccessRevisionNo sets the ExpectedAccessRevisionNo field and marks it as non-optional;
@@ -2890,6 +1728,13 @@ func (e *ErrorDetails) SetCommittedSeq(committedSeq *ChangeSeq) {
 func (e *ErrorDetails) SetExpectedAccessRevisionNo(expectedAccessRevisionNo *AccessRevisionNo) {
 	e.ExpectedAccessRevisionNo = expectedAccessRevisionNo
 	e.require(errorDetailsFieldExpectedAccessRevisionNo)
+}
+
+// SetExpectedAfterSeq sets the ExpectedAfterSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetExpectedAfterSeq(expectedAfterSeq *CommitSeq) {
+	e.ExpectedAfterSeq = expectedAfterSeq
+	e.require(errorDetailsFieldExpectedAfterSeq)
 }
 
 // SetExpectedAttributesRevisionNo sets the ExpectedAttributesRevisionNo field and marks it as non-optional;
@@ -2908,14 +1753,14 @@ func (e *ErrorDetails) SetExpectedBindingVersion(expectedBindingVersion *Binding
 
 // SetExpectedDeletionSeq sets the ExpectedDeletionSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetExpectedDeletionSeq(expectedDeletionSeq *ChangeSeq) {
+func (e *ErrorDetails) SetExpectedDeletionSeq(expectedDeletionSeq *CommitSeq) {
 	e.ExpectedDeletionSeq = expectedDeletionSeq
 	e.require(errorDetailsFieldExpectedDeletionSeq)
 }
 
 // SetExpectedHeadSeq sets the ExpectedHeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetExpectedHeadSeq(expectedHeadSeq *ChangeSeq) {
+func (e *ErrorDetails) SetExpectedHeadSeq(expectedHeadSeq *CommitSeq) {
 	e.ExpectedHeadSeq = expectedHeadSeq
 	e.require(errorDetailsFieldExpectedHeadSeq)
 }
@@ -2941,11 +1786,32 @@ func (e *ErrorDetails) SetFencedWriterEpoch(fencedWriterEpoch *WriterEpoch) {
 	e.require(errorDetailsFieldFencedWriterEpoch)
 }
 
+// SetForkPointSeq sets the ForkPointSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetForkPointSeq(forkPointSeq *CommitSeq) {
+	e.ForkPointSeq = forkPointSeq
+	e.require(errorDetailsFieldForkPointSeq)
+}
+
+// SetFromSeq sets the FromSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetFromSeq(fromSeq *CommitSeq) {
+	e.FromSeq = fromSeq
+	e.require(errorDetailsFieldFromSeq)
+}
+
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (e *ErrorDetails) SetInodeID(inodeID *InodeID) {
 	e.InodeID = inodeID
 	e.require(errorDetailsFieldInodeID)
+}
+
+// SetMergeBound sets the MergeBound field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetMergeBound(mergeBound *MergeBound) {
+	e.MergeBound = mergeBound
+	e.require(errorDetailsFieldMergeBound)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
@@ -2971,9 +1837,37 @@ func (e *ErrorDetails) SetPreconditionIndex(preconditionIndex *int) {
 
 // SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ErrorDetails) SetRetentionFloorSeq(retentionFloorSeq *ChangeSeq) {
+func (e *ErrorDetails) SetRetentionFloorSeq(retentionFloorSeq *CommitSeq) {
 	e.RetentionFloorSeq = retentionFloorSeq
 	e.require(errorDetailsFieldRetentionFloorSeq)
+}
+
+// SetSizeBytes sets the SizeBytes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetSizeBytes(sizeBytes *int64) {
+	e.SizeBytes = sizeBytes
+	e.require(errorDetailsFieldSizeBytes)
+}
+
+// SetSourceAfterSeq sets the SourceAfterSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetSourceAfterSeq(sourceAfterSeq *CommitSeq) {
+	e.SourceAfterSeq = sourceAfterSeq
+	e.require(errorDetailsFieldSourceAfterSeq)
+}
+
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetSourceNamespaceID(sourceNamespaceID *NamespaceID) {
+	e.SourceNamespaceID = sourceNamespaceID
+	e.require(errorDetailsFieldSourceNamespaceID)
+}
+
+// SetSplitAtSeq sets the SplitAtSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetSplitAtSeq(splitAtSeq *CommitSeq) {
+	e.SplitAtSeq = splitAtSeq
+	e.require(errorDetailsFieldSplitAtSeq)
 }
 
 func (e *ErrorDetails) UnmarshalJSON(data []byte) error {
@@ -3209,7 +2103,7 @@ type FileRevision struct {
 	// The actor responsible for this revision, as the application supplied it.
 	CommittedBy ActorID `json:"committed_by" url:"committed_by"`
 	// The namespace sequence of the commit that created this revision.
-	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
+	CommittedSeq CommitSeq `json:"committed_seq" url:"committed_seq"`
 	// The content stored for this revision.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// The file inode that this revision belongs to.
@@ -3245,7 +2139,7 @@ func (f *FileRevision) GetCommittedBy() ActorID {
 	return f.CommittedBy
 }
 
-func (f *FileRevision) GetCommittedSeq() ChangeSeq {
+func (f *FileRevision) GetCommittedSeq() CommitSeq {
 	if f == nil {
 		return 0
 	}
@@ -3310,7 +2204,7 @@ func (f *FileRevision) SetCommittedBy(committedBy ActorID) {
 
 // SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FileRevision) SetCommittedSeq(committedSeq ChangeSeq) {
+func (f *FileRevision) SetCommittedSeq(committedSeq CommitSeq) {
 	f.CommittedSeq = committedSeq
 	f.require(fileRevisionFieldCommittedSeq)
 }
@@ -3384,84 +2278,84 @@ func (f *FileRevision) String() string {
 //
 // A newer server can return a change kind that isn't listed here. Clients should skip a change
 // whose kind they don't recognize.
-type FilesystemChange struct {
+type FilesystemEvent struct {
 	Kind              string
-	AccessChanged     *FilesystemChangeAccessChanged
-	AttributesChanged *FilesystemChangeAttributesChanged
-	ContentChanged    *FilesystemChangeContentChanged
-	Deleted           *FilesystemChangeDeleted
-	DirectoryCreated  *FilesystemChangeDirectoryCreated
-	FileCreated       *FilesystemChangeFileCreated
-	Moved             *FilesystemChangeMoved
-	Undeleted         *FilesystemChangeUndeleted
+	AccessChanged     *FilesystemEventAccessChanged
+	AttributesChanged *FilesystemEventAttributesChanged
+	ContentChanged    *FilesystemEventContentChanged
+	Deleted           *FilesystemEventDeleted
+	DirectoryCreated  *FilesystemEventDirectoryCreated
+	FileCreated       *FilesystemEventFileCreated
+	Moved             *FilesystemEventMoved
+	Restored          *FilesystemEventRestored
 
 	rawJSON json.RawMessage
 }
 
-func (f *FilesystemChange) GetKind() string {
+func (f *FilesystemEvent) GetKind() string {
 	if f == nil {
 		return ""
 	}
 	return f.Kind
 }
 
-func (f *FilesystemChange) GetAccessChanged() *FilesystemChangeAccessChanged {
+func (f *FilesystemEvent) GetAccessChanged() *FilesystemEventAccessChanged {
 	if f == nil {
 		return nil
 	}
 	return f.AccessChanged
 }
 
-func (f *FilesystemChange) GetAttributesChanged() *FilesystemChangeAttributesChanged {
+func (f *FilesystemEvent) GetAttributesChanged() *FilesystemEventAttributesChanged {
 	if f == nil {
 		return nil
 	}
 	return f.AttributesChanged
 }
 
-func (f *FilesystemChange) GetContentChanged() *FilesystemChangeContentChanged {
+func (f *FilesystemEvent) GetContentChanged() *FilesystemEventContentChanged {
 	if f == nil {
 		return nil
 	}
 	return f.ContentChanged
 }
 
-func (f *FilesystemChange) GetDeleted() *FilesystemChangeDeleted {
+func (f *FilesystemEvent) GetDeleted() *FilesystemEventDeleted {
 	if f == nil {
 		return nil
 	}
 	return f.Deleted
 }
 
-func (f *FilesystemChange) GetDirectoryCreated() *FilesystemChangeDirectoryCreated {
+func (f *FilesystemEvent) GetDirectoryCreated() *FilesystemEventDirectoryCreated {
 	if f == nil {
 		return nil
 	}
 	return f.DirectoryCreated
 }
 
-func (f *FilesystemChange) GetFileCreated() *FilesystemChangeFileCreated {
+func (f *FilesystemEvent) GetFileCreated() *FilesystemEventFileCreated {
 	if f == nil {
 		return nil
 	}
 	return f.FileCreated
 }
 
-func (f *FilesystemChange) GetMoved() *FilesystemChangeMoved {
+func (f *FilesystemEvent) GetMoved() *FilesystemEventMoved {
 	if f == nil {
 		return nil
 	}
 	return f.Moved
 }
 
-func (f *FilesystemChange) GetUndeleted() *FilesystemChangeUndeleted {
+func (f *FilesystemEvent) GetRestored() *FilesystemEventRestored {
 	if f == nil {
 		return nil
 	}
-	return f.Undeleted
+	return f.Restored
 }
 
-func (f *FilesystemChange) UnmarshalJSON(data []byte) error {
+func (f *FilesystemEvent) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Kind string `json:"kind"`
 	}
@@ -3474,59 +2368,59 @@ func (f *FilesystemChange) UnmarshalJSON(data []byte) error {
 	}
 	switch unmarshaler.Kind {
 	case "access_changed":
-		value := new(FilesystemChangeAccessChanged)
+		value := new(FilesystemEventAccessChanged)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.AccessChanged = value
 	case "attributes_changed":
-		value := new(FilesystemChangeAttributesChanged)
+		value := new(FilesystemEventAttributesChanged)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.AttributesChanged = value
 	case "content_changed":
-		value := new(FilesystemChangeContentChanged)
+		value := new(FilesystemEventContentChanged)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.ContentChanged = value
 	case "deleted":
-		value := new(FilesystemChangeDeleted)
+		value := new(FilesystemEventDeleted)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.Deleted = value
 	case "directory_created":
-		value := new(FilesystemChangeDirectoryCreated)
+		value := new(FilesystemEventDirectoryCreated)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.DirectoryCreated = value
 	case "file_created":
-		value := new(FilesystemChangeFileCreated)
+		value := new(FilesystemEventFileCreated)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.FileCreated = value
 	case "moved":
-		value := new(FilesystemChangeMoved)
+		value := new(FilesystemEventMoved)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		f.Moved = value
-	case "undeleted":
-		value := new(FilesystemChangeUndeleted)
+	case "restored":
+		value := new(FilesystemEventRestored)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		f.Undeleted = value
+		f.Restored = value
 	}
 	f.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (f FilesystemChange) MarshalJSON() ([]byte, error) {
+func (f FilesystemEvent) MarshalJSON() ([]byte, error) {
 	if err := f.validate(); err != nil {
 		return nil, err
 	}
@@ -3551,8 +2445,8 @@ func (f FilesystemChange) MarshalJSON() ([]byte, error) {
 	if f.Moved != nil {
 		return internal.MarshalJSONWithExtraProperty(f.Moved, "kind", "moved")
 	}
-	if f.Undeleted != nil {
-		return internal.MarshalJSONWithExtraProperty(f.Undeleted, "kind", "undeleted")
+	if f.Restored != nil {
+		return internal.MarshalJSONWithExtraProperty(f.Restored, "kind", "restored")
 	}
 	if len(f.rawJSON) > 0 {
 		return f.rawJSON, nil
@@ -3560,18 +2454,18 @@ func (f FilesystemChange) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not define a non-empty union type", f)
 }
 
-type FilesystemChangeVisitor interface {
-	VisitAccessChanged(*FilesystemChangeAccessChanged) error
-	VisitAttributesChanged(*FilesystemChangeAttributesChanged) error
-	VisitContentChanged(*FilesystemChangeContentChanged) error
-	VisitDeleted(*FilesystemChangeDeleted) error
-	VisitDirectoryCreated(*FilesystemChangeDirectoryCreated) error
-	VisitFileCreated(*FilesystemChangeFileCreated) error
-	VisitMoved(*FilesystemChangeMoved) error
-	VisitUndeleted(*FilesystemChangeUndeleted) error
+type FilesystemEventVisitor interface {
+	VisitAccessChanged(*FilesystemEventAccessChanged) error
+	VisitAttributesChanged(*FilesystemEventAttributesChanged) error
+	VisitContentChanged(*FilesystemEventContentChanged) error
+	VisitDeleted(*FilesystemEventDeleted) error
+	VisitDirectoryCreated(*FilesystemEventDirectoryCreated) error
+	VisitFileCreated(*FilesystemEventFileCreated) error
+	VisitMoved(*FilesystemEventMoved) error
+	VisitRestored(*FilesystemEventRestored) error
 }
 
-func (f *FilesystemChange) Accept(visitor FilesystemChangeVisitor) error {
+func (f *FilesystemEvent) Accept(visitor FilesystemEventVisitor) error {
 	if f.AccessChanged != nil {
 		return visitor.VisitAccessChanged(f.AccessChanged)
 	}
@@ -3593,13 +2487,13 @@ func (f *FilesystemChange) Accept(visitor FilesystemChangeVisitor) error {
 	if f.Moved != nil {
 		return visitor.VisitMoved(f.Moved)
 	}
-	if f.Undeleted != nil {
-		return visitor.VisitUndeleted(f.Undeleted)
+	if f.Restored != nil {
+		return visitor.VisitRestored(f.Restored)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", f)
 }
 
-func (f *FilesystemChange) validate() error {
+func (f *FilesystemEvent) validate() error {
 	if f == nil {
 		return fmt.Errorf("type %T is nil", f)
 	}
@@ -3625,8 +2519,8 @@ func (f *FilesystemChange) validate() error {
 	if f.Moved != nil {
 		fields = append(fields, "moved")
 	}
-	if f.Undeleted != nil {
-		fields = append(fields, "undeleted")
+	if f.Restored != nil {
+		fields = append(fields, "restored")
 	}
 	if len(fields) == 0 {
 		if f.Kind != "" {
@@ -3658,13 +2552,13 @@ func (f *FilesystemChange) validate() error {
 //
 // `grants` is the complete direct grant map after the update.
 var (
-	filesystemChangeAccessChangedFieldAccessRevisionNo = big.NewInt(1 << 0)
-	filesystemChangeAccessChangedFieldBoundary         = big.NewInt(1 << 1)
-	filesystemChangeAccessChangedFieldGrants           = big.NewInt(1 << 2)
-	filesystemChangeAccessChangedFieldInodeID          = big.NewInt(1 << 3)
+	filesystemEventAccessChangedFieldAccessRevisionNo = big.NewInt(1 << 0)
+	filesystemEventAccessChangedFieldBoundary         = big.NewInt(1 << 1)
+	filesystemEventAccessChangedFieldGrants           = big.NewInt(1 << 2)
+	filesystemEventAccessChangedFieldInodeID          = big.NewInt(1 << 3)
 )
 
-type FilesystemChangeAccessChanged struct {
+type FilesystemEventAccessChanged struct {
 	// The access revision that the update published.
 	AccessRevisionNo AccessRevisionNo `json:"access_revision_no" url:"access_revision_no"`
 	// Whether the directory stops inheriting grants from its ancestors.
@@ -3681,42 +2575,42 @@ type FilesystemChangeAccessChanged struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeAccessChanged) GetAccessRevisionNo() AccessRevisionNo {
+func (f *FilesystemEventAccessChanged) GetAccessRevisionNo() AccessRevisionNo {
 	if f == nil {
 		return 0
 	}
 	return f.AccessRevisionNo
 }
 
-func (f *FilesystemChangeAccessChanged) GetBoundary() bool {
+func (f *FilesystemEventAccessChanged) GetBoundary() bool {
 	if f == nil {
 		return false
 	}
 	return f.Boundary
 }
 
-func (f *FilesystemChangeAccessChanged) GetGrants() AccessGrants {
+func (f *FilesystemEventAccessChanged) GetGrants() AccessGrants {
 	if f == nil {
 		return nil
 	}
 	return f.Grants
 }
 
-func (f *FilesystemChangeAccessChanged) GetInodeID() InodeID {
+func (f *FilesystemEventAccessChanged) GetInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.InodeID
 }
 
-func (f *FilesystemChangeAccessChanged) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemEventAccessChanged) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FilesystemChangeAccessChanged) require(field *big.Int) {
+func (f *FilesystemEventAccessChanged) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -3725,39 +2619,39 @@ func (f *FilesystemChangeAccessChanged) require(field *big.Int) {
 
 // SetAccessRevisionNo sets the AccessRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeAccessChanged) SetAccessRevisionNo(accessRevisionNo AccessRevisionNo) {
+func (f *FilesystemEventAccessChanged) SetAccessRevisionNo(accessRevisionNo AccessRevisionNo) {
 	f.AccessRevisionNo = accessRevisionNo
-	f.require(filesystemChangeAccessChangedFieldAccessRevisionNo)
+	f.require(filesystemEventAccessChangedFieldAccessRevisionNo)
 }
 
 // SetBoundary sets the Boundary field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeAccessChanged) SetBoundary(boundary bool) {
+func (f *FilesystemEventAccessChanged) SetBoundary(boundary bool) {
 	f.Boundary = boundary
-	f.require(filesystemChangeAccessChangedFieldBoundary)
+	f.require(filesystemEventAccessChangedFieldBoundary)
 }
 
 // SetGrants sets the Grants field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeAccessChanged) SetGrants(grants AccessGrants) {
+func (f *FilesystemEventAccessChanged) SetGrants(grants AccessGrants) {
 	f.Grants = grants
-	f.require(filesystemChangeAccessChangedFieldGrants)
+	f.require(filesystemEventAccessChangedFieldGrants)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeAccessChanged) SetInodeID(inodeID InodeID) {
+func (f *FilesystemEventAccessChanged) SetInodeID(inodeID InodeID) {
 	f.InodeID = inodeID
-	f.require(filesystemChangeAccessChangedFieldInodeID)
+	f.require(filesystemEventAccessChangedFieldInodeID)
 }
 
-func (f *FilesystemChangeAccessChanged) UnmarshalJSON(data []byte) error {
-	type unmarshaler FilesystemChangeAccessChanged
+func (f *FilesystemEventAccessChanged) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemEventAccessChanged
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FilesystemChangeAccessChanged(value)
+	*f = FilesystemEventAccessChanged(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -3767,8 +2661,8 @@ func (f *FilesystemChangeAccessChanged) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FilesystemChangeAccessChanged) MarshalJSON() ([]byte, error) {
-	type embed FilesystemChangeAccessChanged
+func (f *FilesystemEventAccessChanged) MarshalJSON() ([]byte, error) {
+	type embed FilesystemEventAccessChanged
 	var marshaler = struct {
 		embed
 	}{
@@ -3778,7 +2672,7 @@ func (f *FilesystemChangeAccessChanged) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FilesystemChangeAccessChanged) String() string {
+func (f *FilesystemEventAccessChanged) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3795,12 +2689,12 @@ func (f *FilesystemChangeAccessChanged) String() string {
 
 // An inode's attributes changed.
 var (
-	filesystemChangeAttributesChangedFieldAttributes           = big.NewInt(1 << 0)
-	filesystemChangeAttributesChangedFieldAttributesRevisionNo = big.NewInt(1 << 1)
-	filesystemChangeAttributesChangedFieldInodeID              = big.NewInt(1 << 2)
+	filesystemEventAttributesChangedFieldAttributes           = big.NewInt(1 << 0)
+	filesystemEventAttributesChangedFieldAttributesRevisionNo = big.NewInt(1 << 1)
+	filesystemEventAttributesChangedFieldInodeID              = big.NewInt(1 << 2)
 )
 
-type FilesystemChangeAttributesChanged struct {
+type FilesystemEventAttributesChanged struct {
 	// The inode's complete attribute map after the update. The map is empty when the update
 	// removed every attribute.
 	Attributes Attributes `json:"attributes" url:"attributes"`
@@ -3816,35 +2710,35 @@ type FilesystemChangeAttributesChanged struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeAttributesChanged) GetAttributes() Attributes {
+func (f *FilesystemEventAttributesChanged) GetAttributes() Attributes {
 	if f == nil {
 		return nil
 	}
 	return f.Attributes
 }
 
-func (f *FilesystemChangeAttributesChanged) GetAttributesRevisionNo() AttributesRevisionNo {
+func (f *FilesystemEventAttributesChanged) GetAttributesRevisionNo() AttributesRevisionNo {
 	if f == nil {
 		return 0
 	}
 	return f.AttributesRevisionNo
 }
 
-func (f *FilesystemChangeAttributesChanged) GetInodeID() InodeID {
+func (f *FilesystemEventAttributesChanged) GetInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.InodeID
 }
 
-func (f *FilesystemChangeAttributesChanged) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemEventAttributesChanged) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FilesystemChangeAttributesChanged) require(field *big.Int) {
+func (f *FilesystemEventAttributesChanged) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -3853,32 +2747,32 @@ func (f *FilesystemChangeAttributesChanged) require(field *big.Int) {
 
 // SetAttributes sets the Attributes field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeAttributesChanged) SetAttributes(attributes Attributes) {
+func (f *FilesystemEventAttributesChanged) SetAttributes(attributes Attributes) {
 	f.Attributes = attributes
-	f.require(filesystemChangeAttributesChangedFieldAttributes)
+	f.require(filesystemEventAttributesChangedFieldAttributes)
 }
 
 // SetAttributesRevisionNo sets the AttributesRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeAttributesChanged) SetAttributesRevisionNo(attributesRevisionNo AttributesRevisionNo) {
+func (f *FilesystemEventAttributesChanged) SetAttributesRevisionNo(attributesRevisionNo AttributesRevisionNo) {
 	f.AttributesRevisionNo = attributesRevisionNo
-	f.require(filesystemChangeAttributesChangedFieldAttributesRevisionNo)
+	f.require(filesystemEventAttributesChangedFieldAttributesRevisionNo)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeAttributesChanged) SetInodeID(inodeID InodeID) {
+func (f *FilesystemEventAttributesChanged) SetInodeID(inodeID InodeID) {
 	f.InodeID = inodeID
-	f.require(filesystemChangeAttributesChangedFieldInodeID)
+	f.require(filesystemEventAttributesChangedFieldInodeID)
 }
 
-func (f *FilesystemChangeAttributesChanged) UnmarshalJSON(data []byte) error {
-	type unmarshaler FilesystemChangeAttributesChanged
+func (f *FilesystemEventAttributesChanged) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemEventAttributesChanged
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FilesystemChangeAttributesChanged(value)
+	*f = FilesystemEventAttributesChanged(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -3888,8 +2782,8 @@ func (f *FilesystemChangeAttributesChanged) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FilesystemChangeAttributesChanged) MarshalJSON() ([]byte, error) {
-	type embed FilesystemChangeAttributesChanged
+func (f *FilesystemEventAttributesChanged) MarshalJSON() ([]byte, error) {
+	type embed FilesystemEventAttributesChanged
 	var marshaler = struct {
 		embed
 	}{
@@ -3899,7 +2793,7 @@ func (f *FilesystemChangeAttributesChanged) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FilesystemChangeAttributesChanged) String() string {
+func (f *FilesystemEventAttributesChanged) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -3914,14 +2808,24 @@ func (f *FilesystemChangeAttributesChanged) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
-// A file received a new current revision from a put or revision restore.
+// A file received a new current revision from a put, a copy, an append, or a revision
+// restore.
 var (
-	filesystemChangeContentChangedFieldContentRef = big.NewInt(1 << 0)
-	filesystemChangeContentChangedFieldInodeID    = big.NewInt(1 << 1)
-	filesystemChangeContentChangedFieldRevisionNo = big.NewInt(1 << 2)
+	filesystemEventContentChangedFieldAppendOffset = big.NewInt(1 << 0)
+	filesystemEventContentChangedFieldContentRef   = big.NewInt(1 << 1)
+	filesystemEventContentChangedFieldInodeID      = big.NewInt(1 << 2)
+	filesystemEventContentChangedFieldRevisionNo   = big.NewInt(1 << 3)
 )
 
-type FilesystemChangeContentChanged struct {
+type FilesystemEventContentChanged struct {
+	// The offset where the appended bytes begin, present when an append published the
+	// revision.
+	//
+	// It equals the base revision's `size_bytes`, so the new revision's bytes are the base
+	// revision's bytes followed by the bytes from this offset to `size_bytes`. It's
+	// present for every append, including one that starts a new content ID, and absent for
+	// a put, a copy, or a revision restore.
+	AppendOffset *int64 `json:"append_offset,omitempty" url:"append_offset,omitempty"`
 	// The immutable content that the revision published.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// The file inode whose history advanced.
@@ -3937,69 +2841,83 @@ type FilesystemChangeContentChanged struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeContentChanged) GetContentRef() *ContentRef {
+func (f *FilesystemEventContentChanged) GetAppendOffset() *int64 {
+	if f == nil {
+		return nil
+	}
+	return f.AppendOffset
+}
+
+func (f *FilesystemEventContentChanged) GetContentRef() *ContentRef {
 	if f == nil {
 		return nil
 	}
 	return f.ContentRef
 }
 
-func (f *FilesystemChangeContentChanged) GetInodeID() InodeID {
+func (f *FilesystemEventContentChanged) GetInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.InodeID
 }
 
-func (f *FilesystemChangeContentChanged) GetRevisionNo() RevisionNo {
+func (f *FilesystemEventContentChanged) GetRevisionNo() RevisionNo {
 	if f == nil {
 		return 0
 	}
 	return f.RevisionNo
 }
 
-func (f *FilesystemChangeContentChanged) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemEventContentChanged) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FilesystemChangeContentChanged) require(field *big.Int) {
+func (f *FilesystemEventContentChanged) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
 	f.explicitFields.Or(f.explicitFields, field)
 }
 
+// SetAppendOffset sets the AppendOffset field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FilesystemEventContentChanged) SetAppendOffset(appendOffset *int64) {
+	f.AppendOffset = appendOffset
+	f.require(filesystemEventContentChangedFieldAppendOffset)
+}
+
 // SetContentRef sets the ContentRef field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeContentChanged) SetContentRef(contentRef *ContentRef) {
+func (f *FilesystemEventContentChanged) SetContentRef(contentRef *ContentRef) {
 	f.ContentRef = contentRef
-	f.require(filesystemChangeContentChangedFieldContentRef)
+	f.require(filesystemEventContentChangedFieldContentRef)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeContentChanged) SetInodeID(inodeID InodeID) {
+func (f *FilesystemEventContentChanged) SetInodeID(inodeID InodeID) {
 	f.InodeID = inodeID
-	f.require(filesystemChangeContentChangedFieldInodeID)
+	f.require(filesystemEventContentChangedFieldInodeID)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeContentChanged) SetRevisionNo(revisionNo RevisionNo) {
+func (f *FilesystemEventContentChanged) SetRevisionNo(revisionNo RevisionNo) {
 	f.RevisionNo = revisionNo
-	f.require(filesystemChangeContentChangedFieldRevisionNo)
+	f.require(filesystemEventContentChangedFieldRevisionNo)
 }
 
-func (f *FilesystemChangeContentChanged) UnmarshalJSON(data []byte) error {
-	type unmarshaler FilesystemChangeContentChanged
+func (f *FilesystemEventContentChanged) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemEventContentChanged
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FilesystemChangeContentChanged(value)
+	*f = FilesystemEventContentChanged(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -4009,8 +2927,8 @@ func (f *FilesystemChangeContentChanged) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FilesystemChangeContentChanged) MarshalJSON() ([]byte, error) {
-	type embed FilesystemChangeContentChanged
+func (f *FilesystemEventContentChanged) MarshalJSON() ([]byte, error) {
+	type embed FilesystemEventContentChanged
 	var marshaler = struct {
 		embed
 	}{
@@ -4020,7 +2938,7 @@ func (f *FilesystemChangeContentChanged) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FilesystemChangeContentChanged) String() string {
+func (f *FilesystemEventContentChanged) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -4037,11 +2955,11 @@ func (f *FilesystemChangeContentChanged) String() string {
 
 // A file or directory subtree was deleted.
 var (
-	filesystemChangeDeletedFieldDeletedBinding = big.NewInt(1 << 0)
-	filesystemChangeDeletedFieldInodeID        = big.NewInt(1 << 1)
+	filesystemEventDeletedFieldDeletedBinding = big.NewInt(1 << 0)
+	filesystemEventDeletedFieldInodeID        = big.NewInt(1 << 1)
 )
 
-type FilesystemChangeDeleted struct {
+type FilesystemEventDeleted struct {
 	// The directory binding that the deletion removed.
 	DeletedBinding *DirectoryBinding `json:"deleted_binding" url:"deleted_binding"`
 	// The inode at the root of the deleted subtree.
@@ -4054,28 +2972,28 @@ type FilesystemChangeDeleted struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeDeleted) GetDeletedBinding() *DirectoryBinding {
+func (f *FilesystemEventDeleted) GetDeletedBinding() *DirectoryBinding {
 	if f == nil {
 		return nil
 	}
 	return f.DeletedBinding
 }
 
-func (f *FilesystemChangeDeleted) GetInodeID() InodeID {
+func (f *FilesystemEventDeleted) GetInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.InodeID
 }
 
-func (f *FilesystemChangeDeleted) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemEventDeleted) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FilesystemChangeDeleted) require(field *big.Int) {
+func (f *FilesystemEventDeleted) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -4084,25 +3002,25 @@ func (f *FilesystemChangeDeleted) require(field *big.Int) {
 
 // SetDeletedBinding sets the DeletedBinding field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeDeleted) SetDeletedBinding(deletedBinding *DirectoryBinding) {
+func (f *FilesystemEventDeleted) SetDeletedBinding(deletedBinding *DirectoryBinding) {
 	f.DeletedBinding = deletedBinding
-	f.require(filesystemChangeDeletedFieldDeletedBinding)
+	f.require(filesystemEventDeletedFieldDeletedBinding)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeDeleted) SetInodeID(inodeID InodeID) {
+func (f *FilesystemEventDeleted) SetInodeID(inodeID InodeID) {
 	f.InodeID = inodeID
-	f.require(filesystemChangeDeletedFieldInodeID)
+	f.require(filesystemEventDeletedFieldInodeID)
 }
 
-func (f *FilesystemChangeDeleted) UnmarshalJSON(data []byte) error {
-	type unmarshaler FilesystemChangeDeleted
+func (f *FilesystemEventDeleted) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemEventDeleted
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FilesystemChangeDeleted(value)
+	*f = FilesystemEventDeleted(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -4112,8 +3030,8 @@ func (f *FilesystemChangeDeleted) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FilesystemChangeDeleted) MarshalJSON() ([]byte, error) {
-	type embed FilesystemChangeDeleted
+func (f *FilesystemEventDeleted) MarshalJSON() ([]byte, error) {
+	type embed FilesystemEventDeleted
 	var marshaler = struct {
 		embed
 	}{
@@ -4123,7 +3041,7 @@ func (f *FilesystemChangeDeleted) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FilesystemChangeDeleted) String() string {
+func (f *FilesystemEventDeleted) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -4140,18 +3058,18 @@ func (f *FilesystemChangeDeleted) String() string {
 
 // A directory was created.
 var (
-	filesystemChangeDirectoryCreatedFieldBindingVersion = big.NewInt(1 << 0)
-	filesystemChangeDirectoryCreatedFieldDisplayName    = big.NewInt(1 << 1)
-	filesystemChangeDirectoryCreatedFieldInodeID        = big.NewInt(1 << 2)
-	filesystemChangeDirectoryCreatedFieldParentInodeID  = big.NewInt(1 << 3)
+	filesystemEventDirectoryCreatedFieldBindingVersion = big.NewInt(1 << 0)
+	filesystemEventDirectoryCreatedFieldDisplayName    = big.NewInt(1 << 1)
+	filesystemEventDirectoryCreatedFieldInodeID        = big.NewInt(1 << 2)
+	filesystemEventDirectoryCreatedFieldParentInodeID  = big.NewInt(1 << 3)
 )
 
-type FilesystemChangeDirectoryCreated struct {
+type FilesystemEventDirectoryCreated struct {
 	// The binding that this event created. The value is opaque.
 	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
 	// The display name of the new entry.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// The newly allocated inode, unique within the namespace.
+	// The new inode, unique within the namespace.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// The directory that the new entry was bound under.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
@@ -4163,42 +3081,42 @@ type FilesystemChangeDirectoryCreated struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeDirectoryCreated) GetBindingVersion() BindingVersion {
+func (f *FilesystemEventDirectoryCreated) GetBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
 	return f.BindingVersion
 }
 
-func (f *FilesystemChangeDirectoryCreated) GetDisplayName() DisplayName {
+func (f *FilesystemEventDirectoryCreated) GetDisplayName() DisplayName {
 	if f == nil {
 		return ""
 	}
 	return f.DisplayName
 }
 
-func (f *FilesystemChangeDirectoryCreated) GetInodeID() InodeID {
+func (f *FilesystemEventDirectoryCreated) GetInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.InodeID
 }
 
-func (f *FilesystemChangeDirectoryCreated) GetParentInodeID() InodeID {
+func (f *FilesystemEventDirectoryCreated) GetParentInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.ParentInodeID
 }
 
-func (f *FilesystemChangeDirectoryCreated) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemEventDirectoryCreated) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FilesystemChangeDirectoryCreated) require(field *big.Int) {
+func (f *FilesystemEventDirectoryCreated) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -4207,39 +3125,39 @@ func (f *FilesystemChangeDirectoryCreated) require(field *big.Int) {
 
 // SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeDirectoryCreated) SetBindingVersion(bindingVersion BindingVersion) {
+func (f *FilesystemEventDirectoryCreated) SetBindingVersion(bindingVersion BindingVersion) {
 	f.BindingVersion = bindingVersion
-	f.require(filesystemChangeDirectoryCreatedFieldBindingVersion)
+	f.require(filesystemEventDirectoryCreatedFieldBindingVersion)
 }
 
 // SetDisplayName sets the DisplayName field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeDirectoryCreated) SetDisplayName(displayName DisplayName) {
+func (f *FilesystemEventDirectoryCreated) SetDisplayName(displayName DisplayName) {
 	f.DisplayName = displayName
-	f.require(filesystemChangeDirectoryCreatedFieldDisplayName)
+	f.require(filesystemEventDirectoryCreatedFieldDisplayName)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeDirectoryCreated) SetInodeID(inodeID InodeID) {
+func (f *FilesystemEventDirectoryCreated) SetInodeID(inodeID InodeID) {
 	f.InodeID = inodeID
-	f.require(filesystemChangeDirectoryCreatedFieldInodeID)
+	f.require(filesystemEventDirectoryCreatedFieldInodeID)
 }
 
 // SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeDirectoryCreated) SetParentInodeID(parentInodeID InodeID) {
+func (f *FilesystemEventDirectoryCreated) SetParentInodeID(parentInodeID InodeID) {
 	f.ParentInodeID = parentInodeID
-	f.require(filesystemChangeDirectoryCreatedFieldParentInodeID)
+	f.require(filesystemEventDirectoryCreatedFieldParentInodeID)
 }
 
-func (f *FilesystemChangeDirectoryCreated) UnmarshalJSON(data []byte) error {
-	type unmarshaler FilesystemChangeDirectoryCreated
+func (f *FilesystemEventDirectoryCreated) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemEventDirectoryCreated
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FilesystemChangeDirectoryCreated(value)
+	*f = FilesystemEventDirectoryCreated(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -4249,8 +3167,8 @@ func (f *FilesystemChangeDirectoryCreated) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FilesystemChangeDirectoryCreated) MarshalJSON() ([]byte, error) {
-	type embed FilesystemChangeDirectoryCreated
+func (f *FilesystemEventDirectoryCreated) MarshalJSON() ([]byte, error) {
+	type embed FilesystemEventDirectoryCreated
 	var marshaler = struct {
 		embed
 	}{
@@ -4260,7 +3178,7 @@ func (f *FilesystemChangeDirectoryCreated) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FilesystemChangeDirectoryCreated) String() string {
+func (f *FilesystemEventDirectoryCreated) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -4277,22 +3195,22 @@ func (f *FilesystemChangeDirectoryCreated) String() string {
 
 // A file and its first revision were created.
 var (
-	filesystemChangeFileCreatedFieldBindingVersion = big.NewInt(1 << 0)
-	filesystemChangeFileCreatedFieldContentRef     = big.NewInt(1 << 1)
-	filesystemChangeFileCreatedFieldDisplayName    = big.NewInt(1 << 2)
-	filesystemChangeFileCreatedFieldInodeID        = big.NewInt(1 << 3)
-	filesystemChangeFileCreatedFieldParentInodeID  = big.NewInt(1 << 4)
-	filesystemChangeFileCreatedFieldRevisionNo     = big.NewInt(1 << 5)
+	filesystemEventFileCreatedFieldBindingVersion = big.NewInt(1 << 0)
+	filesystemEventFileCreatedFieldContentRef     = big.NewInt(1 << 1)
+	filesystemEventFileCreatedFieldDisplayName    = big.NewInt(1 << 2)
+	filesystemEventFileCreatedFieldInodeID        = big.NewInt(1 << 3)
+	filesystemEventFileCreatedFieldParentInodeID  = big.NewInt(1 << 4)
+	filesystemEventFileCreatedFieldRevisionNo     = big.NewInt(1 << 5)
 )
 
-type FilesystemChangeFileCreated struct {
+type FilesystemEventFileCreated struct {
 	// The binding that this event created. The value is opaque.
 	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
 	// The content of the first revision.
 	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
 	// The display name of the new entry.
 	DisplayName DisplayName `json:"display_name" url:"display_name"`
-	// The newly allocated inode, unique within the namespace.
+	// The new inode, unique within the namespace.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// The directory that the new entry was bound under.
 	ParentInodeID InodeID `json:"parent_inode_id" url:"parent_inode_id"`
@@ -4306,56 +3224,56 @@ type FilesystemChangeFileCreated struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeFileCreated) GetBindingVersion() BindingVersion {
+func (f *FilesystemEventFileCreated) GetBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
 	return f.BindingVersion
 }
 
-func (f *FilesystemChangeFileCreated) GetContentRef() *ContentRef {
+func (f *FilesystemEventFileCreated) GetContentRef() *ContentRef {
 	if f == nil {
 		return nil
 	}
 	return f.ContentRef
 }
 
-func (f *FilesystemChangeFileCreated) GetDisplayName() DisplayName {
+func (f *FilesystemEventFileCreated) GetDisplayName() DisplayName {
 	if f == nil {
 		return ""
 	}
 	return f.DisplayName
 }
 
-func (f *FilesystemChangeFileCreated) GetInodeID() InodeID {
+func (f *FilesystemEventFileCreated) GetInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.InodeID
 }
 
-func (f *FilesystemChangeFileCreated) GetParentInodeID() InodeID {
+func (f *FilesystemEventFileCreated) GetParentInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.ParentInodeID
 }
 
-func (f *FilesystemChangeFileCreated) GetRevisionNo() RevisionNo {
+func (f *FilesystemEventFileCreated) GetRevisionNo() RevisionNo {
 	if f == nil {
 		return 0
 	}
 	return f.RevisionNo
 }
 
-func (f *FilesystemChangeFileCreated) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemEventFileCreated) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FilesystemChangeFileCreated) require(field *big.Int) {
+func (f *FilesystemEventFileCreated) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -4364,53 +3282,53 @@ func (f *FilesystemChangeFileCreated) require(field *big.Int) {
 
 // SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeFileCreated) SetBindingVersion(bindingVersion BindingVersion) {
+func (f *FilesystemEventFileCreated) SetBindingVersion(bindingVersion BindingVersion) {
 	f.BindingVersion = bindingVersion
-	f.require(filesystemChangeFileCreatedFieldBindingVersion)
+	f.require(filesystemEventFileCreatedFieldBindingVersion)
 }
 
 // SetContentRef sets the ContentRef field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeFileCreated) SetContentRef(contentRef *ContentRef) {
+func (f *FilesystemEventFileCreated) SetContentRef(contentRef *ContentRef) {
 	f.ContentRef = contentRef
-	f.require(filesystemChangeFileCreatedFieldContentRef)
+	f.require(filesystemEventFileCreatedFieldContentRef)
 }
 
 // SetDisplayName sets the DisplayName field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeFileCreated) SetDisplayName(displayName DisplayName) {
+func (f *FilesystemEventFileCreated) SetDisplayName(displayName DisplayName) {
 	f.DisplayName = displayName
-	f.require(filesystemChangeFileCreatedFieldDisplayName)
+	f.require(filesystemEventFileCreatedFieldDisplayName)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeFileCreated) SetInodeID(inodeID InodeID) {
+func (f *FilesystemEventFileCreated) SetInodeID(inodeID InodeID) {
 	f.InodeID = inodeID
-	f.require(filesystemChangeFileCreatedFieldInodeID)
+	f.require(filesystemEventFileCreatedFieldInodeID)
 }
 
 // SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeFileCreated) SetParentInodeID(parentInodeID InodeID) {
+func (f *FilesystemEventFileCreated) SetParentInodeID(parentInodeID InodeID) {
 	f.ParentInodeID = parentInodeID
-	f.require(filesystemChangeFileCreatedFieldParentInodeID)
+	f.require(filesystemEventFileCreatedFieldParentInodeID)
 }
 
 // SetRevisionNo sets the RevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeFileCreated) SetRevisionNo(revisionNo RevisionNo) {
+func (f *FilesystemEventFileCreated) SetRevisionNo(revisionNo RevisionNo) {
 	f.RevisionNo = revisionNo
-	f.require(filesystemChangeFileCreatedFieldRevisionNo)
+	f.require(filesystemEventFileCreatedFieldRevisionNo)
 }
 
-func (f *FilesystemChangeFileCreated) UnmarshalJSON(data []byte) error {
-	type unmarshaler FilesystemChangeFileCreated
+func (f *FilesystemEventFileCreated) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemEventFileCreated
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FilesystemChangeFileCreated(value)
+	*f = FilesystemEventFileCreated(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -4420,8 +3338,8 @@ func (f *FilesystemChangeFileCreated) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FilesystemChangeFileCreated) MarshalJSON() ([]byte, error) {
-	type embed FilesystemChangeFileCreated
+func (f *FilesystemEventFileCreated) MarshalJSON() ([]byte, error) {
+	type embed FilesystemEventFileCreated
 	var marshaler = struct {
 		embed
 	}{
@@ -4431,7 +3349,7 @@ func (f *FilesystemChangeFileCreated) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FilesystemChangeFileCreated) String() string {
+func (f *FilesystemEventFileCreated) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -4448,15 +3366,15 @@ func (f *FilesystemChangeFileCreated) String() string {
 
 // An inode moved to a new parent directory or name.
 var (
-	filesystemChangeMovedFieldBindingVersion           = big.NewInt(1 << 0)
-	filesystemChangeMovedFieldDestinationDisplayName   = big.NewInt(1 << 1)
-	filesystemChangeMovedFieldDestinationParentInodeID = big.NewInt(1 << 2)
-	filesystemChangeMovedFieldInodeID                  = big.NewInt(1 << 3)
-	filesystemChangeMovedFieldSourceDisplayName        = big.NewInt(1 << 4)
-	filesystemChangeMovedFieldSourceParentInodeID      = big.NewInt(1 << 5)
+	filesystemEventMovedFieldBindingVersion           = big.NewInt(1 << 0)
+	filesystemEventMovedFieldDestinationDisplayName   = big.NewInt(1 << 1)
+	filesystemEventMovedFieldDestinationParentInodeID = big.NewInt(1 << 2)
+	filesystemEventMovedFieldInodeID                  = big.NewInt(1 << 3)
+	filesystemEventMovedFieldSourceDisplayName        = big.NewInt(1 << 4)
+	filesystemEventMovedFieldSourceParentInodeID      = big.NewInt(1 << 5)
 )
 
-type FilesystemChangeMoved struct {
+type FilesystemEventMoved struct {
 	// The binding that this event created. The value is opaque.
 	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
 	// The display name of the new binding.
@@ -4477,56 +3395,56 @@ type FilesystemChangeMoved struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeMoved) GetBindingVersion() BindingVersion {
+func (f *FilesystemEventMoved) GetBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
 	return f.BindingVersion
 }
 
-func (f *FilesystemChangeMoved) GetDestinationDisplayName() DisplayName {
+func (f *FilesystemEventMoved) GetDestinationDisplayName() DisplayName {
 	if f == nil {
 		return ""
 	}
 	return f.DestinationDisplayName
 }
 
-func (f *FilesystemChangeMoved) GetDestinationParentInodeID() InodeID {
+func (f *FilesystemEventMoved) GetDestinationParentInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.DestinationParentInodeID
 }
 
-func (f *FilesystemChangeMoved) GetInodeID() InodeID {
+func (f *FilesystemEventMoved) GetInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.InodeID
 }
 
-func (f *FilesystemChangeMoved) GetSourceDisplayName() DisplayName {
+func (f *FilesystemEventMoved) GetSourceDisplayName() DisplayName {
 	if f == nil {
 		return ""
 	}
 	return f.SourceDisplayName
 }
 
-func (f *FilesystemChangeMoved) GetSourceParentInodeID() InodeID {
+func (f *FilesystemEventMoved) GetSourceParentInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.SourceParentInodeID
 }
 
-func (f *FilesystemChangeMoved) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemEventMoved) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FilesystemChangeMoved) require(field *big.Int) {
+func (f *FilesystemEventMoved) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -4535,53 +3453,53 @@ func (f *FilesystemChangeMoved) require(field *big.Int) {
 
 // SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetBindingVersion(bindingVersion BindingVersion) {
+func (f *FilesystemEventMoved) SetBindingVersion(bindingVersion BindingVersion) {
 	f.BindingVersion = bindingVersion
-	f.require(filesystemChangeMovedFieldBindingVersion)
+	f.require(filesystemEventMovedFieldBindingVersion)
 }
 
 // SetDestinationDisplayName sets the DestinationDisplayName field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetDestinationDisplayName(destinationDisplayName DisplayName) {
+func (f *FilesystemEventMoved) SetDestinationDisplayName(destinationDisplayName DisplayName) {
 	f.DestinationDisplayName = destinationDisplayName
-	f.require(filesystemChangeMovedFieldDestinationDisplayName)
+	f.require(filesystemEventMovedFieldDestinationDisplayName)
 }
 
 // SetDestinationParentInodeID sets the DestinationParentInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetDestinationParentInodeID(destinationParentInodeID InodeID) {
+func (f *FilesystemEventMoved) SetDestinationParentInodeID(destinationParentInodeID InodeID) {
 	f.DestinationParentInodeID = destinationParentInodeID
-	f.require(filesystemChangeMovedFieldDestinationParentInodeID)
+	f.require(filesystemEventMovedFieldDestinationParentInodeID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetInodeID(inodeID InodeID) {
+func (f *FilesystemEventMoved) SetInodeID(inodeID InodeID) {
 	f.InodeID = inodeID
-	f.require(filesystemChangeMovedFieldInodeID)
+	f.require(filesystemEventMovedFieldInodeID)
 }
 
 // SetSourceDisplayName sets the SourceDisplayName field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetSourceDisplayName(sourceDisplayName DisplayName) {
+func (f *FilesystemEventMoved) SetSourceDisplayName(sourceDisplayName DisplayName) {
 	f.SourceDisplayName = sourceDisplayName
-	f.require(filesystemChangeMovedFieldSourceDisplayName)
+	f.require(filesystemEventMovedFieldSourceDisplayName)
 }
 
 // SetSourceParentInodeID sets the SourceParentInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeMoved) SetSourceParentInodeID(sourceParentInodeID InodeID) {
+func (f *FilesystemEventMoved) SetSourceParentInodeID(sourceParentInodeID InodeID) {
 	f.SourceParentInodeID = sourceParentInodeID
-	f.require(filesystemChangeMovedFieldSourceParentInodeID)
+	f.require(filesystemEventMovedFieldSourceParentInodeID)
 }
 
-func (f *FilesystemChangeMoved) UnmarshalJSON(data []byte) error {
-	type unmarshaler FilesystemChangeMoved
+func (f *FilesystemEventMoved) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemEventMoved
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FilesystemChangeMoved(value)
+	*f = FilesystemEventMoved(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -4591,8 +3509,8 @@ func (f *FilesystemChangeMoved) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FilesystemChangeMoved) MarshalJSON() ([]byte, error) {
-	type embed FilesystemChangeMoved
+func (f *FilesystemEventMoved) MarshalJSON() ([]byte, error) {
+	type embed FilesystemEventMoved
 	var marshaler = struct {
 		embed
 	}{
@@ -4602,7 +3520,7 @@ func (f *FilesystemChangeMoved) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FilesystemChangeMoved) String() string {
+func (f *FilesystemEventMoved) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -4619,13 +3537,13 @@ func (f *FilesystemChangeMoved) String() string {
 
 // A deleted inode was recovered and re-bound.
 var (
-	filesystemChangeUndeletedFieldBindingVersion = big.NewInt(1 << 0)
-	filesystemChangeUndeletedFieldDisplayName    = big.NewInt(1 << 1)
-	filesystemChangeUndeletedFieldInodeID        = big.NewInt(1 << 2)
-	filesystemChangeUndeletedFieldParentInodeID  = big.NewInt(1 << 3)
+	filesystemEventRestoredFieldBindingVersion = big.NewInt(1 << 0)
+	filesystemEventRestoredFieldDisplayName    = big.NewInt(1 << 1)
+	filesystemEventRestoredFieldInodeID        = big.NewInt(1 << 2)
+	filesystemEventRestoredFieldParentInodeID  = big.NewInt(1 << 3)
 )
 
-type FilesystemChangeUndeleted struct {
+type FilesystemEventRestored struct {
 	// The binding that this event created. The value is opaque.
 	BindingVersion BindingVersion `json:"binding_version" url:"binding_version"`
 	// The display name of the recovered binding.
@@ -4642,42 +3560,42 @@ type FilesystemChangeUndeleted struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FilesystemChangeUndeleted) GetBindingVersion() BindingVersion {
+func (f *FilesystemEventRestored) GetBindingVersion() BindingVersion {
 	if f == nil {
 		return ""
 	}
 	return f.BindingVersion
 }
 
-func (f *FilesystemChangeUndeleted) GetDisplayName() DisplayName {
+func (f *FilesystemEventRestored) GetDisplayName() DisplayName {
 	if f == nil {
 		return ""
 	}
 	return f.DisplayName
 }
 
-func (f *FilesystemChangeUndeleted) GetInodeID() InodeID {
+func (f *FilesystemEventRestored) GetInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.InodeID
 }
 
-func (f *FilesystemChangeUndeleted) GetParentInodeID() InodeID {
+func (f *FilesystemEventRestored) GetParentInodeID() InodeID {
 	if f == nil {
 		return ""
 	}
 	return f.ParentInodeID
 }
 
-func (f *FilesystemChangeUndeleted) GetExtraProperties() map[string]interface{} {
+func (f *FilesystemEventRestored) GetExtraProperties() map[string]interface{} {
 	if f == nil {
 		return nil
 	}
 	return f.extraProperties
 }
 
-func (f *FilesystemChangeUndeleted) require(field *big.Int) {
+func (f *FilesystemEventRestored) require(field *big.Int) {
 	if f.explicitFields == nil {
 		f.explicitFields = big.NewInt(0)
 	}
@@ -4686,39 +3604,39 @@ func (f *FilesystemChangeUndeleted) require(field *big.Int) {
 
 // SetBindingVersion sets the BindingVersion field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeUndeleted) SetBindingVersion(bindingVersion BindingVersion) {
+func (f *FilesystemEventRestored) SetBindingVersion(bindingVersion BindingVersion) {
 	f.BindingVersion = bindingVersion
-	f.require(filesystemChangeUndeletedFieldBindingVersion)
+	f.require(filesystemEventRestoredFieldBindingVersion)
 }
 
 // SetDisplayName sets the DisplayName field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeUndeleted) SetDisplayName(displayName DisplayName) {
+func (f *FilesystemEventRestored) SetDisplayName(displayName DisplayName) {
 	f.DisplayName = displayName
-	f.require(filesystemChangeUndeletedFieldDisplayName)
+	f.require(filesystemEventRestoredFieldDisplayName)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeUndeleted) SetInodeID(inodeID InodeID) {
+func (f *FilesystemEventRestored) SetInodeID(inodeID InodeID) {
 	f.InodeID = inodeID
-	f.require(filesystemChangeUndeletedFieldInodeID)
+	f.require(filesystemEventRestoredFieldInodeID)
 }
 
 // SetParentInodeID sets the ParentInodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FilesystemChangeUndeleted) SetParentInodeID(parentInodeID InodeID) {
+func (f *FilesystemEventRestored) SetParentInodeID(parentInodeID InodeID) {
 	f.ParentInodeID = parentInodeID
-	f.require(filesystemChangeUndeletedFieldParentInodeID)
+	f.require(filesystemEventRestoredFieldParentInodeID)
 }
 
-func (f *FilesystemChangeUndeleted) UnmarshalJSON(data []byte) error {
-	type unmarshaler FilesystemChangeUndeleted
+func (f *FilesystemEventRestored) UnmarshalJSON(data []byte) error {
+	type unmarshaler FilesystemEventRestored
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = FilesystemChangeUndeleted(value)
+	*f = FilesystemEventRestored(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *f)
 	if err != nil {
 		return err
@@ -4728,8 +3646,8 @@ func (f *FilesystemChangeUndeleted) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *FilesystemChangeUndeleted) MarshalJSON() ([]byte, error) {
-	type embed FilesystemChangeUndeleted
+func (f *FilesystemEventRestored) MarshalJSON() ([]byte, error) {
+	type embed FilesystemEventRestored
 	var marshaler = struct {
 		embed
 	}{
@@ -4739,7 +3657,7 @@ func (f *FilesystemChangeUndeleted) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (f *FilesystemChangeUndeleted) String() string {
+func (f *FilesystemEventRestored) String() string {
 	if f == nil {
 		return "<nil>"
 	}
@@ -4752,6 +3670,29 @@ func (f *FilesystemChangeUndeleted) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", f)
+}
+
+// A part of a collection of a pool that the collection skipped.
+type GcSkippedWork string
+
+const (
+	GcSkippedWorkContentDeletionPoolBudget       GcSkippedWork = "content_deletion_pool_budget"
+	GcSkippedWorkContentDeletionUnreadableMember GcSkippedWork = "content_deletion_unreadable_member"
+)
+
+func NewGcSkippedWorkFromString(s string) (GcSkippedWork, error) {
+	switch s {
+	case "content_deletion_pool_budget":
+		return GcSkippedWorkContentDeletionPoolBudget, nil
+	case "content_deletion_unreadable_member":
+		return GcSkippedWorkContentDeletionUnreadableMember, nil
+	}
+	var t GcSkippedWork
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (g GcSkippedWork) Ptr() *GcSkippedWork {
+	return &g
 }
 
 // The maintenance status of a namespace's grep index.
@@ -4910,20 +3851,17 @@ var (
 	grepIndexStatusActiveFieldBuiltThroughSeq   = big.NewInt(1 << 0)
 	grepIndexStatusActiveFieldNamespaceID       = big.NewInt(1 << 1)
 	grepIndexStatusActiveFieldNextEventIndex    = big.NewInt(1 << 2)
-	grepIndexStatusActiveFieldNextRunNo         = big.NewInt(1 << 3)
-	grepIndexStatusActiveFieldReorganizePending = big.NewInt(1 << 4)
+	grepIndexStatusActiveFieldReorganizePending = big.NewInt(1 << 3)
 )
 
 type GrepIndexStatusActive struct {
 	// The sequence of the commit at the index cursor.
-	BuiltThroughSeq ChangeSeq `json:"built_through_seq" url:"built_through_seq"`
+	BuiltThroughSeq CommitSeq `json:"built_through_seq" url:"built_through_seq"`
 	// The namespace that the status describes.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// The offset of the next change event within `built_through_seq`. It's zero when the whole
 	// commit is indexed.
 	NextEventIndex int `json:"next_event_index" url:"next_event_index"`
-	// The next run number that the index allocates.
-	NextRunNo RunNo `json:"next_run_no" url:"next_run_no"`
 	// Whether a partitioned segment reorganization is in progress.
 	ReorganizePending bool `json:"reorganize_pending" url:"reorganize_pending"`
 
@@ -4934,7 +3872,7 @@ type GrepIndexStatusActive struct {
 	rawJSON         json.RawMessage
 }
 
-func (g *GrepIndexStatusActive) GetBuiltThroughSeq() ChangeSeq {
+func (g *GrepIndexStatusActive) GetBuiltThroughSeq() CommitSeq {
 	if g == nil {
 		return 0
 	}
@@ -4953,13 +3891,6 @@ func (g *GrepIndexStatusActive) GetNextEventIndex() int {
 		return 0
 	}
 	return g.NextEventIndex
-}
-
-func (g *GrepIndexStatusActive) GetNextRunNo() RunNo {
-	if g == nil {
-		return 0
-	}
-	return g.NextRunNo
 }
 
 func (g *GrepIndexStatusActive) GetReorganizePending() bool {
@@ -4985,7 +3916,7 @@ func (g *GrepIndexStatusActive) require(field *big.Int) {
 
 // SetBuiltThroughSeq sets the BuiltThroughSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexStatusActive) SetBuiltThroughSeq(builtThroughSeq ChangeSeq) {
+func (g *GrepIndexStatusActive) SetBuiltThroughSeq(builtThroughSeq CommitSeq) {
 	g.BuiltThroughSeq = builtThroughSeq
 	g.require(grepIndexStatusActiveFieldBuiltThroughSeq)
 }
@@ -5002,13 +3933,6 @@ func (g *GrepIndexStatusActive) SetNamespaceID(namespaceID NamespaceID) {
 func (g *GrepIndexStatusActive) SetNextEventIndex(nextEventIndex int) {
 	g.NextEventIndex = nextEventIndex
 	g.require(grepIndexStatusActiveFieldNextEventIndex)
-}
-
-// SetNextRunNo sets the NextRunNo field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexStatusActive) SetNextRunNo(nextRunNo RunNo) {
-	g.NextRunNo = nextRunNo
-	g.require(grepIndexStatusActiveFieldNextRunNo)
 }
 
 // SetReorganizePending sets the ReorganizePending field and marks it as non-optional;
@@ -5060,27 +3984,22 @@ func (g *GrepIndexStatusActive) String() string {
 	return fmt.Sprintf("%#v", g)
 }
 
-// An index that is running its initial scan of a pinned checkpoint and can't be searched yet.
+// An index that is running its initial scan of the files at one sequence and can't be
+// searched yet.
 var (
 	grepIndexStatusBackfillingFieldCapturedSeq       = big.NewInt(1 << 0)
-	grepIndexStatusBackfillingFieldCheckpointID      = big.NewInt(1 << 1)
-	grepIndexStatusBackfillingFieldCursorInodeID     = big.NewInt(1 << 2)
-	grepIndexStatusBackfillingFieldNamespaceID       = big.NewInt(1 << 3)
-	grepIndexStatusBackfillingFieldNextRunNo         = big.NewInt(1 << 4)
-	grepIndexStatusBackfillingFieldReorganizePending = big.NewInt(1 << 5)
+	grepIndexStatusBackfillingFieldCursorInodeID     = big.NewInt(1 << 1)
+	grepIndexStatusBackfillingFieldNamespaceID       = big.NewInt(1 << 2)
+	grepIndexStatusBackfillingFieldReorganizePending = big.NewInt(1 << 3)
 )
 
 type GrepIndexStatusBackfilling struct {
 	// The namespace sequence that completes the backfill when the index reaches it.
-	CapturedSeq ChangeSeq `json:"captured_seq" url:"captured_seq"`
-	// The checkpoint that pins the state being scanned.
-	CheckpointID PinID `json:"checkpoint_id" url:"checkpoint_id"`
+	CapturedSeq CommitSeq `json:"captured_seq" url:"captured_seq"`
 	// The inode that the scan resumes after. It's absent before the first page.
 	CursorInodeID *InodeID `json:"cursor_inode_id,omitempty" url:"cursor_inode_id,omitempty"`
 	// The namespace that the status describes.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The next run number that the index allocates.
-	NextRunNo RunNo `json:"next_run_no" url:"next_run_no"`
 	// Whether a partitioned segment reorganization is in progress.
 	ReorganizePending bool `json:"reorganize_pending" url:"reorganize_pending"`
 
@@ -5091,18 +4010,11 @@ type GrepIndexStatusBackfilling struct {
 	rawJSON         json.RawMessage
 }
 
-func (g *GrepIndexStatusBackfilling) GetCapturedSeq() ChangeSeq {
+func (g *GrepIndexStatusBackfilling) GetCapturedSeq() CommitSeq {
 	if g == nil {
 		return 0
 	}
 	return g.CapturedSeq
-}
-
-func (g *GrepIndexStatusBackfilling) GetCheckpointID() PinID {
-	if g == nil {
-		return ""
-	}
-	return g.CheckpointID
 }
 
 func (g *GrepIndexStatusBackfilling) GetCursorInodeID() *InodeID {
@@ -5117,13 +4029,6 @@ func (g *GrepIndexStatusBackfilling) GetNamespaceID() NamespaceID {
 		return ""
 	}
 	return g.NamespaceID
-}
-
-func (g *GrepIndexStatusBackfilling) GetNextRunNo() RunNo {
-	if g == nil {
-		return 0
-	}
-	return g.NextRunNo
 }
 
 func (g *GrepIndexStatusBackfilling) GetReorganizePending() bool {
@@ -5149,16 +4054,9 @@ func (g *GrepIndexStatusBackfilling) require(field *big.Int) {
 
 // SetCapturedSeq sets the CapturedSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexStatusBackfilling) SetCapturedSeq(capturedSeq ChangeSeq) {
+func (g *GrepIndexStatusBackfilling) SetCapturedSeq(capturedSeq CommitSeq) {
 	g.CapturedSeq = capturedSeq
 	g.require(grepIndexStatusBackfillingFieldCapturedSeq)
-}
-
-// SetCheckpointID sets the CheckpointID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexStatusBackfilling) SetCheckpointID(checkpointID PinID) {
-	g.CheckpointID = checkpointID
-	g.require(grepIndexStatusBackfillingFieldCheckpointID)
 }
 
 // SetCursorInodeID sets the CursorInodeID field and marks it as non-optional;
@@ -5173,13 +4071,6 @@ func (g *GrepIndexStatusBackfilling) SetCursorInodeID(cursorInodeID *InodeID) {
 func (g *GrepIndexStatusBackfilling) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(grepIndexStatusBackfillingFieldNamespaceID)
-}
-
-// SetNextRunNo sets the NextRunNo field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexStatusBackfilling) SetNextRunNo(nextRunNo RunNo) {
-	g.NextRunNo = nextRunNo
-	g.require(grepIndexStatusBackfillingFieldNextRunNo)
 }
 
 // SetReorganizePending sets the ReorganizePending field and marks it as non-optional;
@@ -5234,15 +4125,12 @@ func (g *GrepIndexStatusBackfilling) String() string {
 // No index is maintained for this namespace.
 var (
 	grepIndexStatusDisabledFieldNamespaceID       = big.NewInt(1 << 0)
-	grepIndexStatusDisabledFieldNextRunNo         = big.NewInt(1 << 1)
-	grepIndexStatusDisabledFieldReorganizePending = big.NewInt(1 << 2)
+	grepIndexStatusDisabledFieldReorganizePending = big.NewInt(1 << 1)
 )
 
 type GrepIndexStatusDisabled struct {
 	// The namespace that the status describes.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The next run number that the index allocates.
-	NextRunNo RunNo `json:"next_run_no" url:"next_run_no"`
 	// Whether a partitioned segment reorganization is in progress.
 	ReorganizePending bool `json:"reorganize_pending" url:"reorganize_pending"`
 
@@ -5258,13 +4146,6 @@ func (g *GrepIndexStatusDisabled) GetNamespaceID() NamespaceID {
 		return ""
 	}
 	return g.NamespaceID
-}
-
-func (g *GrepIndexStatusDisabled) GetNextRunNo() RunNo {
-	if g == nil {
-		return 0
-	}
-	return g.NextRunNo
 }
 
 func (g *GrepIndexStatusDisabled) GetReorganizePending() bool {
@@ -5293,13 +4174,6 @@ func (g *GrepIndexStatusDisabled) require(field *big.Int) {
 func (g *GrepIndexStatusDisabled) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(grepIndexStatusDisabledFieldNamespaceID)
-}
-
-// SetNextRunNo sets the NextRunNo field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepIndexStatusDisabled) SetNextRunNo(nextRunNo RunNo) {
-	g.NextRunNo = nextRunNo
-	g.require(grepIndexStatusDisabledFieldNextRunNo)
 }
 
 // SetReorganizePending sets the ReorganizePending field and marks it as non-optional;
@@ -5354,125 +4228,27 @@ func (g *GrepIndexStatusDisabled) String() string {
 // The stable ID of one inode within a namespace. An inode's ID doesn't change.
 type InodeID = string
 
-// One page of checkpoint records, including expired records that garbage collection hasn't deleted
-// yet.
-var (
-	listCheckpointsResponseFieldCheckpoints = big.NewInt(1 << 0)
-	listCheckpointsResponseFieldNamespaceID = big.NewInt(1 << 1)
-	listCheckpointsResponseFieldNextCursor  = big.NewInt(1 << 2)
+// The kind of a filesystem item, which is a file or a directory.
+type InodeKind string
+
+const (
+	InodeKindFile      InodeKind = "file"
+	InodeKindDirectory InodeKind = "directory"
 )
 
-type ListCheckpointsResponse struct {
-	// The records, in ascending checkpoint ID order.
-	Checkpoints []*Checkpoint `json:"checkpoints" url:"checkpoints"`
-	// The namespace that the records belong to.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// An opaque cursor for the next page.
-	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
+func NewInodeKindFromString(s string) (InodeKind, error) {
+	switch s {
+	case "file":
+		return InodeKindFile, nil
+	case "directory":
+		return InodeKindDirectory, nil
+	}
+	var t InodeKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (l *ListCheckpointsResponse) GetCheckpoints() []*Checkpoint {
-	if l == nil {
-		return nil
-	}
-	return l.Checkpoints
-}
-
-func (l *ListCheckpointsResponse) GetNamespaceID() NamespaceID {
-	if l == nil {
-		return ""
-	}
-	return l.NamespaceID
-}
-
-func (l *ListCheckpointsResponse) GetNextCursor() *string {
-	if l == nil {
-		return nil
-	}
-	return l.NextCursor
-}
-
-func (l *ListCheckpointsResponse) GetExtraProperties() map[string]interface{} {
-	if l == nil {
-		return nil
-	}
-	return l.extraProperties
-}
-
-func (l *ListCheckpointsResponse) require(field *big.Int) {
-	if l.explicitFields == nil {
-		l.explicitFields = big.NewInt(0)
-	}
-	l.explicitFields.Or(l.explicitFields, field)
-}
-
-// SetCheckpoints sets the Checkpoints field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListCheckpointsResponse) SetCheckpoints(checkpoints []*Checkpoint) {
-	l.Checkpoints = checkpoints
-	l.require(listCheckpointsResponseFieldCheckpoints)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListCheckpointsResponse) SetNamespaceID(namespaceID NamespaceID) {
-	l.NamespaceID = namespaceID
-	l.require(listCheckpointsResponseFieldNamespaceID)
-}
-
-// SetNextCursor sets the NextCursor field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListCheckpointsResponse) SetNextCursor(nextCursor *string) {
-	l.NextCursor = nextCursor
-	l.require(listCheckpointsResponseFieldNextCursor)
-}
-
-func (l *ListCheckpointsResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListCheckpointsResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*l = ListCheckpointsResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *l)
-	if err != nil {
-		return err
-	}
-	l.extraProperties = extraProperties
-	l.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (l *ListCheckpointsResponse) MarshalJSON() ([]byte, error) {
-	type embed ListCheckpointsResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*l),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (l *ListCheckpointsResponse) String() string {
-	if l == nil {
-		return "<nil>"
-	}
-	if len(l.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(l); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", l)
+func (i InodeKind) Ptr() *InodeKind {
+	return &i
 }
 
 // One page of a file's revisions.
@@ -5486,7 +4262,7 @@ var (
 
 type ListFileRevisionsResponse struct {
 	// The namespace head sequence that the read used.
-	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
+	HeadSeq CommitSeq `json:"head_seq" url:"head_seq"`
 	// The file inode whose revisions were returned.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// The namespace that was read.
@@ -5503,7 +4279,7 @@ type ListFileRevisionsResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (l *ListFileRevisionsResponse) GetHeadSeq() ChangeSeq {
+func (l *ListFileRevisionsResponse) GetHeadSeq() CommitSeq {
 	if l == nil {
 		return 0
 	}
@@ -5554,7 +4330,7 @@ func (l *ListFileRevisionsResponse) require(field *big.Int) {
 
 // SetHeadSeq sets the HeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListFileRevisionsResponse) SetHeadSeq(headSeq ChangeSeq) {
+func (l *ListFileRevisionsResponse) SetHeadSeq(headSeq CommitSeq) {
 	l.HeadSeq = headSeq
 	l.require(listFileRevisionsResponseFieldHeadSeq)
 }
@@ -5629,264 +4405,219 @@ func (l *ListFileRevisionsResponse) String() string {
 	return fmt.Sprintf("%#v", l)
 }
 
+// One page of snapshot records, including expired records that garbage collection hasn't deleted
+// yet.
+var (
+	listSnapshotRecordsResponseFieldNamespaceID = big.NewInt(1 << 0)
+	listSnapshotRecordsResponseFieldNextCursor  = big.NewInt(1 << 1)
+	listSnapshotRecordsResponseFieldSnapshots   = big.NewInt(1 << 2)
+)
+
+type ListSnapshotRecordsResponse struct {
+	// The namespace that the records belong to.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// An opaque cursor for the next page.
+	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
+	// The records, in ascending snapshot ID order.
+	Snapshots []*SnapshotRecord `json:"snapshots" url:"snapshots"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *ListSnapshotRecordsResponse) GetNamespaceID() NamespaceID {
+	if l == nil {
+		return ""
+	}
+	return l.NamespaceID
+}
+
+func (l *ListSnapshotRecordsResponse) GetNextCursor() *string {
+	if l == nil {
+		return nil
+	}
+	return l.NextCursor
+}
+
+func (l *ListSnapshotRecordsResponse) GetSnapshots() []*SnapshotRecord {
+	if l == nil {
+		return nil
+	}
+	return l.Snapshots
+}
+
+func (l *ListSnapshotRecordsResponse) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *ListSnapshotRecordsResponse) require(field *big.Int) {
+	if l.explicitFields == nil {
+		l.explicitFields = big.NewInt(0)
+	}
+	l.explicitFields.Or(l.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListSnapshotRecordsResponse) SetNamespaceID(namespaceID NamespaceID) {
+	l.NamespaceID = namespaceID
+	l.require(listSnapshotRecordsResponseFieldNamespaceID)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListSnapshotRecordsResponse) SetNextCursor(nextCursor *string) {
+	l.NextCursor = nextCursor
+	l.require(listSnapshotRecordsResponseFieldNextCursor)
+}
+
+// SetSnapshots sets the Snapshots field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListSnapshotRecordsResponse) SetSnapshots(snapshots []*SnapshotRecord) {
+	l.Snapshots = snapshots
+	l.require(listSnapshotRecordsResponseFieldSnapshots)
+}
+
+func (l *ListSnapshotRecordsResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListSnapshotRecordsResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = ListSnapshotRecordsResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *ListSnapshotRecordsResponse) MarshalJSON() ([]byte, error) {
+	type embed ListSnapshotRecordsResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *ListSnapshotRecordsResponse) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
 // The number of one of a namespace's manifests. Later manifests have higher numbers, and the number can increase when metadata changes, even if no namespace commit is written.
 type ManifestNo = int64
 
-// The outcome of one metadata compaction run.
-type MetadataCompactionOutcome struct {
-	Outcome               string
-	Abandoned             *MetadataCompactionOutcomeAbandoned
-	BoundedMergePublished *MetadataCompactionOutcomeBoundedMergePublished
-	Cancelled             *MetadataCompactionOutcomeCancelled
-	Fenced                *MetadataCompactionOutcomeFenced
-	NotNeeded             *MetadataCompactionOutcomeNotNeeded
-	Published             *MetadataCompactionOutcomePublished
+// The fork and the range of the fork's commits that a merge applied.
+//
+// The range follows the change feed's cursor convention, so reading the fork's change feed after
+// `source_after_seq` through `source_through_seq` returns the commits that the merge applied.
+var (
+	mergeFieldSourceAfterSeq    = big.NewInt(1 << 0)
+	mergeFieldSourceNamespaceID = big.NewInt(1 << 1)
+	mergeFieldSourceThroughSeq  = big.NewInt(1 << 2)
+)
 
-	rawJSON json.RawMessage
+type Merge struct {
+	// The fork's commits above this sequence were applied. For a fork's first merge, it's the
+	// sequence that the fork was made at.
+	SourceAfterSeq CommitSeq `json:"source_after_seq" url:"source_after_seq"`
+	// The fork whose commits the merge applied.
+	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"source_namespace_id"`
+	// The fork's commits at or below this sequence were applied.
+	SourceThroughSeq CommitSeq `json:"source_through_seq" url:"source_through_seq"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (m *MetadataCompactionOutcome) GetOutcome() string {
+func (m *Merge) GetSourceAfterSeq() CommitSeq {
+	if m == nil {
+		return 0
+	}
+	return m.SourceAfterSeq
+}
+
+func (m *Merge) GetSourceNamespaceID() NamespaceID {
 	if m == nil {
 		return ""
 	}
-	return m.Outcome
+	return m.SourceNamespaceID
 }
 
-func (m *MetadataCompactionOutcome) GetAbandoned() *MetadataCompactionOutcomeAbandoned {
+func (m *Merge) GetSourceThroughSeq() CommitSeq {
 	if m == nil {
-		return nil
+		return 0
 	}
-	return m.Abandoned
+	return m.SourceThroughSeq
 }
 
-func (m *MetadataCompactionOutcome) GetBoundedMergePublished() *MetadataCompactionOutcomeBoundedMergePublished {
-	if m == nil {
-		return nil
-	}
-	return m.BoundedMergePublished
-}
-
-func (m *MetadataCompactionOutcome) GetCancelled() *MetadataCompactionOutcomeCancelled {
-	if m == nil {
-		return nil
-	}
-	return m.Cancelled
-}
-
-func (m *MetadataCompactionOutcome) GetFenced() *MetadataCompactionOutcomeFenced {
-	if m == nil {
-		return nil
-	}
-	return m.Fenced
-}
-
-func (m *MetadataCompactionOutcome) GetNotNeeded() *MetadataCompactionOutcomeNotNeeded {
-	if m == nil {
-		return nil
-	}
-	return m.NotNeeded
-}
-
-func (m *MetadataCompactionOutcome) GetPublished() *MetadataCompactionOutcomePublished {
-	if m == nil {
-		return nil
-	}
-	return m.Published
-}
-
-func (m *MetadataCompactionOutcome) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Outcome string `json:"outcome"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	m.Outcome = unmarshaler.Outcome
-	if unmarshaler.Outcome == "" {
-		return fmt.Errorf("%T did not include discriminant outcome", m)
-	}
-	switch unmarshaler.Outcome {
-	case "abandoned":
-		value := new(MetadataCompactionOutcomeAbandoned)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		m.Abandoned = value
-	case "bounded_merge_published":
-		value := new(MetadataCompactionOutcomeBoundedMergePublished)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		m.BoundedMergePublished = value
-	case "cancelled":
-		value := new(MetadataCompactionOutcomeCancelled)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		m.Cancelled = value
-	case "fenced":
-		value := new(MetadataCompactionOutcomeFenced)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		m.Fenced = value
-	case "not_needed":
-		value := new(MetadataCompactionOutcomeNotNeeded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		m.NotNeeded = value
-	case "published":
-		value := new(MetadataCompactionOutcomePublished)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		m.Published = value
-	}
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m MetadataCompactionOutcome) MarshalJSON() ([]byte, error) {
-	if err := m.validate(); err != nil {
-		return nil, err
-	}
-	if m.Abandoned != nil {
-		return internal.MarshalJSONWithExtraProperty(m.Abandoned, "outcome", "abandoned")
-	}
-	if m.BoundedMergePublished != nil {
-		return internal.MarshalJSONWithExtraProperty(m.BoundedMergePublished, "outcome", "bounded_merge_published")
-	}
-	if m.Cancelled != nil {
-		return internal.MarshalJSONWithExtraProperty(m.Cancelled, "outcome", "cancelled")
-	}
-	if m.Fenced != nil {
-		return internal.MarshalJSONWithExtraProperty(m.Fenced, "outcome", "fenced")
-	}
-	if m.NotNeeded != nil {
-		return internal.MarshalJSONWithExtraProperty(m.NotNeeded, "outcome", "not_needed")
-	}
-	if m.Published != nil {
-		return internal.MarshalJSONWithExtraProperty(m.Published, "outcome", "published")
-	}
-	if len(m.rawJSON) > 0 {
-		return m.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", m)
-}
-
-type MetadataCompactionOutcomeVisitor interface {
-	VisitAbandoned(*MetadataCompactionOutcomeAbandoned) error
-	VisitBoundedMergePublished(*MetadataCompactionOutcomeBoundedMergePublished) error
-	VisitCancelled(*MetadataCompactionOutcomeCancelled) error
-	VisitFenced(*MetadataCompactionOutcomeFenced) error
-	VisitNotNeeded(*MetadataCompactionOutcomeNotNeeded) error
-	VisitPublished(*MetadataCompactionOutcomePublished) error
-}
-
-func (m *MetadataCompactionOutcome) Accept(visitor MetadataCompactionOutcomeVisitor) error {
-	if m.Abandoned != nil {
-		return visitor.VisitAbandoned(m.Abandoned)
-	}
-	if m.BoundedMergePublished != nil {
-		return visitor.VisitBoundedMergePublished(m.BoundedMergePublished)
-	}
-	if m.Cancelled != nil {
-		return visitor.VisitCancelled(m.Cancelled)
-	}
-	if m.Fenced != nil {
-		return visitor.VisitFenced(m.Fenced)
-	}
-	if m.NotNeeded != nil {
-		return visitor.VisitNotNeeded(m.NotNeeded)
-	}
-	if m.Published != nil {
-		return visitor.VisitPublished(m.Published)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", m)
-}
-
-func (m *MetadataCompactionOutcome) validate() error {
-	if m == nil {
-		return fmt.Errorf("type %T is nil", m)
-	}
-	var fields []string
-	if m.Abandoned != nil {
-		fields = append(fields, "abandoned")
-	}
-	if m.BoundedMergePublished != nil {
-		fields = append(fields, "bounded_merge_published")
-	}
-	if m.Cancelled != nil {
-		fields = append(fields, "cancelled")
-	}
-	if m.Fenced != nil {
-		fields = append(fields, "fenced")
-	}
-	if m.NotNeeded != nil {
-		fields = append(fields, "not_needed")
-	}
-	if m.Published != nil {
-		fields = append(fields, "published")
-	}
-	if len(fields) == 0 {
-		if m.Outcome != "" {
-			if len(m.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", m, m.Outcome)
-		}
-		return fmt.Errorf("type %T is empty", m)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", m, fields)
-	}
-	if m.Outcome != "" {
-		field := fields[0]
-		if m.Outcome != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				m,
-				m.Outcome,
-				m,
-			)
-		}
-	}
-	return nil
-}
-
-// The run stopped because its inputs changed, time ran out, or publication retries were
-// exhausted.
-type MetadataCompactionOutcomeAbandoned struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *MetadataCompactionOutcomeAbandoned) GetExtraProperties() map[string]interface{} {
+func (m *Merge) GetExtraProperties() map[string]interface{} {
 	if m == nil {
 		return nil
 	}
 	return m.extraProperties
 }
 
-func (m *MetadataCompactionOutcomeAbandoned) require(field *big.Int) {
+func (m *Merge) require(field *big.Int) {
 	if m.explicitFields == nil {
 		m.explicitFields = big.NewInt(0)
 	}
 	m.explicitFields.Or(m.explicitFields, field)
 }
 
-func (m *MetadataCompactionOutcomeAbandoned) UnmarshalJSON(data []byte) error {
-	type unmarshaler MetadataCompactionOutcomeAbandoned
+// SetSourceAfterSeq sets the SourceAfterSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Merge) SetSourceAfterSeq(sourceAfterSeq CommitSeq) {
+	m.SourceAfterSeq = sourceAfterSeq
+	m.require(mergeFieldSourceAfterSeq)
+}
+
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Merge) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
+	m.SourceNamespaceID = sourceNamespaceID
+	m.require(mergeFieldSourceNamespaceID)
+}
+
+// SetSourceThroughSeq sets the SourceThroughSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Merge) SetSourceThroughSeq(sourceThroughSeq CommitSeq) {
+	m.SourceThroughSeq = sourceThroughSeq
+	m.require(mergeFieldSourceThroughSeq)
+}
+
+func (m *Merge) UnmarshalJSON(data []byte) error {
+	type unmarshaler Merge
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*m = MetadataCompactionOutcomeAbandoned(value)
+	*m = Merge(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *m)
 	if err != nil {
 		return err
@@ -5896,8 +4627,8 @@ func (m *MetadataCompactionOutcomeAbandoned) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (m *MetadataCompactionOutcomeAbandoned) MarshalJSON() ([]byte, error) {
-	type embed MetadataCompactionOutcomeAbandoned
+func (m *Merge) MarshalJSON() ([]byte, error) {
+	type embed Merge
 	var marshaler = struct {
 		embed
 	}{
@@ -5907,7 +4638,7 @@ func (m *MetadataCompactionOutcomeAbandoned) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (m *MetadataCompactionOutcomeAbandoned) String() string {
+func (m *Merge) String() string {
 	if m == nil {
 		return "<nil>"
 	}
@@ -5922,442 +4653,78 @@ func (m *MetadataCompactionOutcomeAbandoned) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// The selected window fit in a bounded step, and this run published it.
-type MetadataCompactionOutcomeBoundedMergePublished struct {
+// The bound that a merge's size exceeded, which the details of a `merge_too_large` error report.
+//
+// A newer server can return a bound that isn't listed here.
+type MergeBound string
 
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *MetadataCompactionOutcomeBoundedMergePublished) GetExtraProperties() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.extraProperties
-}
-
-func (m *MetadataCompactionOutcomeBoundedMergePublished) require(field *big.Int) {
-	if m.explicitFields == nil {
-		m.explicitFields = big.NewInt(0)
-	}
-	m.explicitFields.Or(m.explicitFields, field)
-}
-
-func (m *MetadataCompactionOutcomeBoundedMergePublished) UnmarshalJSON(data []byte) error {
-	type unmarshaler MetadataCompactionOutcomeBoundedMergePublished
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*m = MetadataCompactionOutcomeBoundedMergePublished(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *m)
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *MetadataCompactionOutcomeBoundedMergePublished) MarshalJSON() ([]byte, error) {
-	type embed MetadataCompactionOutcomeBoundedMergePublished
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*m),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (m *MetadataCompactionOutcomeBoundedMergePublished) String() string {
-	if m == nil {
-		return "<nil>"
-	}
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
-// The run was cancelled, so the current manifest didn't change.
-type MetadataCompactionOutcomeCancelled struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *MetadataCompactionOutcomeCancelled) GetExtraProperties() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.extraProperties
-}
-
-func (m *MetadataCompactionOutcomeCancelled) require(field *big.Int) {
-	if m.explicitFields == nil {
-		m.explicitFields = big.NewInt(0)
-	}
-	m.explicitFields.Or(m.explicitFields, field)
-}
-
-func (m *MetadataCompactionOutcomeCancelled) UnmarshalJSON(data []byte) error {
-	type unmarshaler MetadataCompactionOutcomeCancelled
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*m = MetadataCompactionOutcomeCancelled(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *m)
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *MetadataCompactionOutcomeCancelled) MarshalJSON() ([]byte, error) {
-	type embed MetadataCompactionOutcomeCancelled
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*m),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (m *MetadataCompactionOutcomeCancelled) String() string {
-	if m == nil {
-		return "<nil>"
-	}
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
-// Another process claimed the namespace's compactor epoch, so nothing was published.
-type MetadataCompactionOutcomeFenced struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *MetadataCompactionOutcomeFenced) GetExtraProperties() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.extraProperties
-}
-
-func (m *MetadataCompactionOutcomeFenced) require(field *big.Int) {
-	if m.explicitFields == nil {
-		m.explicitFields = big.NewInt(0)
-	}
-	m.explicitFields.Or(m.explicitFields, field)
-}
-
-func (m *MetadataCompactionOutcomeFenced) UnmarshalJSON(data []byte) error {
-	type unmarshaler MetadataCompactionOutcomeFenced
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*m = MetadataCompactionOutcomeFenced(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *m)
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *MetadataCompactionOutcomeFenced) MarshalJSON() ([]byte, error) {
-	type embed MetadataCompactionOutcomeFenced
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*m),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (m *MetadataCompactionOutcomeFenced) String() string {
-	if m == nil {
-		return "<nil>"
-	}
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
-// No eligible family group was available, so nothing was published.
-type MetadataCompactionOutcomeNotNeeded struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *MetadataCompactionOutcomeNotNeeded) GetExtraProperties() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.extraProperties
-}
-
-func (m *MetadataCompactionOutcomeNotNeeded) require(field *big.Int) {
-	if m.explicitFields == nil {
-		m.explicitFields = big.NewInt(0)
-	}
-	m.explicitFields.Or(m.explicitFields, field)
-}
-
-func (m *MetadataCompactionOutcomeNotNeeded) UnmarshalJSON(data []byte) error {
-	type unmarshaler MetadataCompactionOutcomeNotNeeded
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*m = MetadataCompactionOutcomeNotNeeded(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *m)
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *MetadataCompactionOutcomeNotNeeded) MarshalJSON() ([]byte, error) {
-	type embed MetadataCompactionOutcomeNotNeeded
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*m),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (m *MetadataCompactionOutcomeNotNeeded) String() string {
-	if m == nil {
-		return "<nil>"
-	}
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
-// A streaming compaction merged the selected window and published the next manifest.
-var (
-	metadataCompactionOutcomePublishedFieldInputBytes     = big.NewInt(1 << 0)
-	metadataCompactionOutcomePublishedFieldManifestNo     = big.NewInt(1 << 1)
-	metadataCompactionOutcomePublishedFieldOutputBytes    = big.NewInt(1 << 2)
-	metadataCompactionOutcomePublishedFieldOutputSegments = big.NewInt(1 << 3)
-	metadataCompactionOutcomePublishedFieldRowsRead       = big.NewInt(1 << 4)
-	metadataCompactionOutcomePublishedFieldRowsWritten    = big.NewInt(1 << 5)
+const (
+	MergeBoundWalObject      MergeBound = "wal_object"
+	MergeBoundMergeAllowance MergeBound = "merge_allowance"
+	MergeBoundTouchedInodes  MergeBound = "touched_inodes"
 )
 
-type MetadataCompactionOutcomePublished struct {
-	// The input bytes that the compaction read.
-	InputBytes int64 `json:"input_bytes" url:"input_bytes"`
-	// The manifest that the compaction published.
-	ManifestNo ManifestNo `json:"manifest_no" url:"manifest_no"`
-	// The output bytes that the compaction wrote.
-	OutputBytes int64 `json:"output_bytes" url:"output_bytes"`
-	// The output segments that the compaction wrote.
-	OutputSegments int64 `json:"output_segments" url:"output_segments"`
-	// The rows that the compaction read.
-	RowsRead int64 `json:"rows_read" url:"rows_read"`
-	// The rows that the compaction wrote.
-	RowsWritten int64 `json:"rows_written" url:"rows_written"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *MetadataCompactionOutcomePublished) GetInputBytes() int64 {
-	if m == nil {
-		return 0
+func NewMergeBoundFromString(s string) (MergeBound, error) {
+	switch s {
+	case "wal_object":
+		return MergeBoundWalObject, nil
+	case "merge_allowance":
+		return MergeBoundMergeAllowance, nil
+	case "touched_inodes":
+		return MergeBoundTouchedInodes, nil
 	}
-	return m.InputBytes
+	var t MergeBound
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (m *MetadataCompactionOutcomePublished) GetManifestNo() ManifestNo {
-	if m == nil {
-		return 0
+func (m MergeBound) Ptr() *MergeBound {
+	return &m
+}
+
+// Whether metadata maintenance left work due for a namespace.
+type MetadataMaintenanceOutcome string
+
+const (
+	MetadataMaintenanceOutcomeCaughtUp MetadataMaintenanceOutcome = "caught_up"
+	MetadataMaintenanceOutcomeDue      MetadataMaintenanceOutcome = "due"
+)
+
+func NewMetadataMaintenanceOutcomeFromString(s string) (MetadataMaintenanceOutcome, error) {
+	switch s {
+	case "caught_up":
+		return MetadataMaintenanceOutcomeCaughtUp, nil
+	case "due":
+		return MetadataMaintenanceOutcomeDue, nil
 	}
-	return m.ManifestNo
+	var t MetadataMaintenanceOutcome
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (m *MetadataCompactionOutcomePublished) GetOutputBytes() int64 {
-	if m == nil {
-		return 0
+func (m MetadataMaintenanceOutcome) Ptr() *MetadataMaintenanceOutcome {
+	return &m
+}
+
+// A part of a metadata maintenance job that the job skipped.
+type MetadataSkippedWork string
+
+const (
+	MetadataSkippedWorkExpiredRowRemovalWalkLimit MetadataSkippedWork = "expired_row_removal_walk_limit"
+)
+
+func NewMetadataSkippedWorkFromString(s string) (MetadataSkippedWork, error) {
+	switch s {
+	case "expired_row_removal_walk_limit":
+		return MetadataSkippedWorkExpiredRowRemovalWalkLimit, nil
 	}
-	return m.OutputBytes
+	var t MetadataSkippedWork
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (m *MetadataCompactionOutcomePublished) GetOutputSegments() int64 {
-	if m == nil {
-		return 0
-	}
-	return m.OutputSegments
+func (m MetadataSkippedWork) Ptr() *MetadataSkippedWork {
+	return &m
 }
 
-func (m *MetadataCompactionOutcomePublished) GetRowsRead() int64 {
-	if m == nil {
-		return 0
-	}
-	return m.RowsRead
-}
-
-func (m *MetadataCompactionOutcomePublished) GetRowsWritten() int64 {
-	if m == nil {
-		return 0
-	}
-	return m.RowsWritten
-}
-
-func (m *MetadataCompactionOutcomePublished) GetExtraProperties() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.extraProperties
-}
-
-func (m *MetadataCompactionOutcomePublished) require(field *big.Int) {
-	if m.explicitFields == nil {
-		m.explicitFields = big.NewInt(0)
-	}
-	m.explicitFields.Or(m.explicitFields, field)
-}
-
-// SetInputBytes sets the InputBytes field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MetadataCompactionOutcomePublished) SetInputBytes(inputBytes int64) {
-	m.InputBytes = inputBytes
-	m.require(metadataCompactionOutcomePublishedFieldInputBytes)
-}
-
-// SetManifestNo sets the ManifestNo field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MetadataCompactionOutcomePublished) SetManifestNo(manifestNo ManifestNo) {
-	m.ManifestNo = manifestNo
-	m.require(metadataCompactionOutcomePublishedFieldManifestNo)
-}
-
-// SetOutputBytes sets the OutputBytes field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MetadataCompactionOutcomePublished) SetOutputBytes(outputBytes int64) {
-	m.OutputBytes = outputBytes
-	m.require(metadataCompactionOutcomePublishedFieldOutputBytes)
-}
-
-// SetOutputSegments sets the OutputSegments field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MetadataCompactionOutcomePublished) SetOutputSegments(outputSegments int64) {
-	m.OutputSegments = outputSegments
-	m.require(metadataCompactionOutcomePublishedFieldOutputSegments)
-}
-
-// SetRowsRead sets the RowsRead field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MetadataCompactionOutcomePublished) SetRowsRead(rowsRead int64) {
-	m.RowsRead = rowsRead
-	m.require(metadataCompactionOutcomePublishedFieldRowsRead)
-}
-
-// SetRowsWritten sets the RowsWritten field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MetadataCompactionOutcomePublished) SetRowsWritten(rowsWritten int64) {
-	m.RowsWritten = rowsWritten
-	m.require(metadataCompactionOutcomePublishedFieldRowsWritten)
-}
-
-func (m *MetadataCompactionOutcomePublished) UnmarshalJSON(data []byte) error {
-	type unmarshaler MetadataCompactionOutcomePublished
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*m = MetadataCompactionOutcomePublished(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *m)
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *MetadataCompactionOutcomePublished) MarshalJSON() ([]byte, error) {
-	type embed MetadataCompactionOutcomePublished
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*m),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (m *MetadataCompactionOutcomePublished) String() string {
-	if m == nil {
-		return "<nil>"
-	}
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
-// The directory entry key that the namespace's naming mode derives from a display name.
+// The directory entry key that LoonFS derives from a display name.
 //
 // Use the name key for exact name preconditions, and use the display name for the spelling
 // that users see.
@@ -6370,11 +4737,10 @@ var (
 	namespaceDiagnosticsFieldCurrentManifestNo = big.NewInt(1 << 2)
 	namespaceDiagnosticsFieldForkBasis         = big.NewInt(1 << 3)
 	namespaceDiagnosticsFieldHeadSeq           = big.NewInt(1 << 4)
-	namespaceDiagnosticsFieldLiveCheckpoints   = big.NewInt(1 << 5)
-	namespaceDiagnosticsFieldLiveSnapshots     = big.NewInt(1 << 6)
-	namespaceDiagnosticsFieldNamespaceID       = big.NewInt(1 << 7)
-	namespaceDiagnosticsFieldRetentionFloorSeq = big.NewInt(1 << 8)
-	namespaceDiagnosticsFieldWalTailObjects    = big.NewInt(1 << 9)
+	namespaceDiagnosticsFieldLiveSnapshots     = big.NewInt(1 << 5)
+	namespaceDiagnosticsFieldNamespaceID       = big.NewInt(1 << 6)
+	namespaceDiagnosticsFieldRetentionFloorSeq = big.NewInt(1 << 7)
+	namespaceDiagnosticsFieldWalTailObjects    = big.NewInt(1 << 8)
 )
 
 type NamespaceDiagnostics struct {
@@ -6388,17 +4754,14 @@ type NamespaceDiagnostics struct {
 	// field.
 	ForkBasis *NamespaceForkBasis `json:"fork_basis,omitempty" url:"fork_basis,omitempty"`
 	// The sequence of the namespace's newest visible commit.
-	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
-	// The number of user checkpoints, including expired records that garbage collection hasn't
-	// deleted yet.
-	LiveCheckpoints int64 `json:"live_checkpoints" url:"live_checkpoints"`
+	HeadSeq CommitSeq `json:"head_seq" url:"head_seq"`
 	// The number of snapshots that hadn't expired when the diagnostics read began.
 	LiveSnapshots int64 `json:"live_snapshots" url:"live_snapshots"`
 	// The namespace ID.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// The namespace's retention floor. A change feed request can set `after_seq` to this sequence
 	// or any later one, and the feed returns the changes committed after it.
-	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
+	RetentionFloorSeq CommitSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
 	// The number of visible WAL objects after the current manifest.
 	WalTailObjects int64 `json:"wal_tail_objects" url:"wal_tail_objects"`
 
@@ -6437,18 +4800,11 @@ func (n *NamespaceDiagnostics) GetForkBasis() *NamespaceForkBasis {
 	return n.ForkBasis
 }
 
-func (n *NamespaceDiagnostics) GetHeadSeq() ChangeSeq {
+func (n *NamespaceDiagnostics) GetHeadSeq() CommitSeq {
 	if n == nil {
 		return 0
 	}
 	return n.HeadSeq
-}
-
-func (n *NamespaceDiagnostics) GetLiveCheckpoints() int64 {
-	if n == nil {
-		return 0
-	}
-	return n.LiveCheckpoints
 }
 
 func (n *NamespaceDiagnostics) GetLiveSnapshots() int64 {
@@ -6465,7 +4821,7 @@ func (n *NamespaceDiagnostics) GetNamespaceID() NamespaceID {
 	return n.NamespaceID
 }
 
-func (n *NamespaceDiagnostics) GetRetentionFloorSeq() ChangeSeq {
+func (n *NamespaceDiagnostics) GetRetentionFloorSeq() CommitSeq {
 	if n == nil {
 		return 0
 	}
@@ -6523,16 +4879,9 @@ func (n *NamespaceDiagnostics) SetForkBasis(forkBasis *NamespaceForkBasis) {
 
 // SetHeadSeq sets the HeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceDiagnostics) SetHeadSeq(headSeq ChangeSeq) {
+func (n *NamespaceDiagnostics) SetHeadSeq(headSeq CommitSeq) {
 	n.HeadSeq = headSeq
 	n.require(namespaceDiagnosticsFieldHeadSeq)
-}
-
-// SetLiveCheckpoints sets the LiveCheckpoints field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceDiagnostics) SetLiveCheckpoints(liveCheckpoints int64) {
-	n.LiveCheckpoints = liveCheckpoints
-	n.require(namespaceDiagnosticsFieldLiveCheckpoints)
 }
 
 // SetLiveSnapshots sets the LiveSnapshots field and marks it as non-optional;
@@ -6551,7 +4900,7 @@ func (n *NamespaceDiagnostics) SetNamespaceID(namespaceID NamespaceID) {
 
 // SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceDiagnostics) SetRetentionFloorSeq(retentionFloorSeq ChangeSeq) {
+func (n *NamespaceDiagnostics) SetRetentionFloorSeq(retentionFloorSeq CommitSeq) {
 	n.RetentionFloorSeq = retentionFloorSeq
 	n.require(namespaceDiagnosticsFieldRetentionFloorSeq)
 }
@@ -6607,15 +4956,23 @@ func (n *NamespaceDiagnostics) String() string {
 
 // The source namespace and sequence that a forked namespace started from.
 var (
-	namespaceForkBasisFieldSourceHeadSeq     = big.NewInt(1 << 0)
-	namespaceForkBasisFieldSourceNamespaceID = big.NewInt(1 << 1)
+	namespaceForkBasisFieldForkPointSeq      = big.NewInt(1 << 0)
+	namespaceForkBasisFieldRebasedFrom       = big.NewInt(1 << 1)
+	namespaceForkBasisFieldSourceNamespaceID = big.NewInt(1 << 2)
+	namespaceForkBasisFieldSourceSnapshotID  = big.NewInt(1 << 3)
 )
 
 type NamespaceForkBasis struct {
 	// The source namespace's sequence that the fork captured.
-	SourceHeadSeq ChangeSeq `json:"source_head_seq" url:"source_head_seq"`
+	ForkPointSeq CommitSeq `json:"fork_point_seq" url:"fork_point_seq"`
+	// The fork whose unmerged commits a rebase replays into this namespace. Only a namespace that
+	// a rebase created has this field.
+	RebasedFrom *NamespaceRebasedFrom `json:"rebased_from,omitempty" url:"rebased_from,omitempty"`
 	// The namespace that the fork was taken from.
 	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"source_namespace_id"`
+	// The fork snapshot that keeps the source's state at `fork_point_seq` readable. A read of the
+	// source namespace accepts it as `snapshot_id`.
+	SourceSnapshotID SnapshotID `json:"source_snapshot_id" url:"source_snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -6624,11 +4981,18 @@ type NamespaceForkBasis struct {
 	rawJSON         json.RawMessage
 }
 
-func (n *NamespaceForkBasis) GetSourceHeadSeq() ChangeSeq {
+func (n *NamespaceForkBasis) GetForkPointSeq() CommitSeq {
 	if n == nil {
 		return 0
 	}
-	return n.SourceHeadSeq
+	return n.ForkPointSeq
+}
+
+func (n *NamespaceForkBasis) GetRebasedFrom() *NamespaceRebasedFrom {
+	if n == nil {
+		return nil
+	}
+	return n.RebasedFrom
 }
 
 func (n *NamespaceForkBasis) GetSourceNamespaceID() NamespaceID {
@@ -6636,6 +5000,13 @@ func (n *NamespaceForkBasis) GetSourceNamespaceID() NamespaceID {
 		return ""
 	}
 	return n.SourceNamespaceID
+}
+
+func (n *NamespaceForkBasis) GetSourceSnapshotID() SnapshotID {
+	if n == nil {
+		return ""
+	}
+	return n.SourceSnapshotID
 }
 
 func (n *NamespaceForkBasis) GetExtraProperties() map[string]interface{} {
@@ -6652,11 +5023,18 @@ func (n *NamespaceForkBasis) require(field *big.Int) {
 	n.explicitFields.Or(n.explicitFields, field)
 }
 
-// SetSourceHeadSeq sets the SourceHeadSeq field and marks it as non-optional;
+// SetForkPointSeq sets the ForkPointSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceForkBasis) SetSourceHeadSeq(sourceHeadSeq ChangeSeq) {
-	n.SourceHeadSeq = sourceHeadSeq
-	n.require(namespaceForkBasisFieldSourceHeadSeq)
+func (n *NamespaceForkBasis) SetForkPointSeq(forkPointSeq CommitSeq) {
+	n.ForkPointSeq = forkPointSeq
+	n.require(namespaceForkBasisFieldForkPointSeq)
+}
+
+// SetRebasedFrom sets the RebasedFrom field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceForkBasis) SetRebasedFrom(rebasedFrom *NamespaceRebasedFrom) {
+	n.RebasedFrom = rebasedFrom
+	n.require(namespaceForkBasisFieldRebasedFrom)
 }
 
 // SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
@@ -6664,6 +5042,13 @@ func (n *NamespaceForkBasis) SetSourceHeadSeq(sourceHeadSeq ChangeSeq) {
 func (n *NamespaceForkBasis) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
 	n.SourceNamespaceID = sourceNamespaceID
 	n.require(namespaceForkBasisFieldSourceNamespaceID)
+}
+
+// SetSourceSnapshotID sets the SourceSnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceForkBasis) SetSourceSnapshotID(sourceSnapshotID SnapshotID) {
+	n.SourceSnapshotID = sourceSnapshotID
+	n.require(namespaceForkBasisFieldSourceSnapshotID)
 }
 
 func (n *NamespaceForkBasis) UnmarshalJSON(data []byte) error {
@@ -6715,29 +5100,133 @@ func (n *NamespaceForkBasis) String() string {
 // and it starts with a letter or digit. The `loonfs-` prefix is reserved for system use.
 type NamespaceID = string
 
-// A capability that lets a client transfer bytes directly to or from object storage.
-type ObjectTransferAccess struct {
+// The fork whose unmerged commits a rebase replays into the namespace that the rebase created.
+var (
+	namespaceRebasedFromFieldResumeAfterSeq    = big.NewInt(1 << 0)
+	namespaceRebasedFromFieldSourceNamespaceID = big.NewInt(1 << 1)
+)
+
+type NamespaceRebasedFrom struct {
+	// The fork sequence that the fork's next merge would have started after when the rebase
+	// created the namespace. The namespace's first replay commit starts after it.
+	ResumeAfterSeq CommitSeq `json:"resume_after_seq" url:"resume_after_seq"`
+	// The fork whose commits the namespace's replay commits apply.
+	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"source_namespace_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NamespaceRebasedFrom) GetResumeAfterSeq() CommitSeq {
+	if n == nil {
+		return 0
+	}
+	return n.ResumeAfterSeq
+}
+
+func (n *NamespaceRebasedFrom) GetSourceNamespaceID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.SourceNamespaceID
+}
+
+func (n *NamespaceRebasedFrom) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NamespaceRebasedFrom) require(field *big.Int) {
+	if n.explicitFields == nil {
+		n.explicitFields = big.NewInt(0)
+	}
+	n.explicitFields.Or(n.explicitFields, field)
+}
+
+// SetResumeAfterSeq sets the ResumeAfterSeq field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceRebasedFrom) SetResumeAfterSeq(resumeAfterSeq CommitSeq) {
+	n.ResumeAfterSeq = resumeAfterSeq
+	n.require(namespaceRebasedFromFieldResumeAfterSeq)
+}
+
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceRebasedFrom) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
+	n.SourceNamespaceID = sourceNamespaceID
+	n.require(namespaceRebasedFromFieldSourceNamespaceID)
+}
+
+func (n *NamespaceRebasedFrom) UnmarshalJSON(data []byte) error {
+	type unmarshaler NamespaceRebasedFrom
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NamespaceRebasedFrom(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NamespaceRebasedFrom) MarshalJSON() ([]byte, error) {
+	type embed NamespaceRebasedFrom
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NamespaceRebasedFrom) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+// How a client transfers bytes directly to or from object storage.
+type ObjectTransfer struct {
 	Kind         string
-	PresignedURL *ObjectTransferAccessPresignedURL
+	PresignedURL *ObjectTransferPresignedURL
 
 	rawJSON json.RawMessage
 }
 
-func (o *ObjectTransferAccess) GetKind() string {
+func (o *ObjectTransfer) GetKind() string {
 	if o == nil {
 		return ""
 	}
 	return o.Kind
 }
 
-func (o *ObjectTransferAccess) GetPresignedURL() *ObjectTransferAccessPresignedURL {
+func (o *ObjectTransfer) GetPresignedURL() *ObjectTransferPresignedURL {
 	if o == nil {
 		return nil
 	}
 	return o.PresignedURL
 }
 
-func (o *ObjectTransferAccess) UnmarshalJSON(data []byte) error {
+func (o *ObjectTransfer) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Kind string `json:"kind"`
 	}
@@ -6750,7 +5239,7 @@ func (o *ObjectTransferAccess) UnmarshalJSON(data []byte) error {
 	}
 	switch unmarshaler.Kind {
 	case "presigned_url":
-		value := new(ObjectTransferAccessPresignedURL)
+		value := new(ObjectTransferPresignedURL)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
@@ -6760,7 +5249,7 @@ func (o *ObjectTransferAccess) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (o ObjectTransferAccess) MarshalJSON() ([]byte, error) {
+func (o ObjectTransfer) MarshalJSON() ([]byte, error) {
 	if err := o.validate(); err != nil {
 		return nil, err
 	}
@@ -6773,18 +5262,18 @@ func (o ObjectTransferAccess) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not define a non-empty union type", o)
 }
 
-type ObjectTransferAccessVisitor interface {
-	VisitPresignedURL(*ObjectTransferAccessPresignedURL) error
+type ObjectTransferVisitor interface {
+	VisitPresignedURL(*ObjectTransferPresignedURL) error
 }
 
-func (o *ObjectTransferAccess) Accept(visitor ObjectTransferAccessVisitor) error {
+func (o *ObjectTransfer) Accept(visitor ObjectTransferVisitor) error {
 	if o.PresignedURL != nil {
 		return visitor.VisitPresignedURL(o.PresignedURL)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", o)
 }
 
-func (o *ObjectTransferAccess) validate() error {
+func (o *ObjectTransfer) validate() error {
 	if o == nil {
 		return fmt.Errorf("type %T is nil", o)
 	}
@@ -6820,13 +5309,13 @@ func (o *ObjectTransferAccess) validate() error {
 
 // A short-lived URL, with the headers that one object store read or write requires.
 var (
-	objectTransferAccessPresignedURLFieldExpiresAtMs = big.NewInt(1 << 0)
-	objectTransferAccessPresignedURLFieldHeaders     = big.NewInt(1 << 1)
-	objectTransferAccessPresignedURLFieldMethod      = big.NewInt(1 << 2)
-	objectTransferAccessPresignedURLFieldURL         = big.NewInt(1 << 3)
+	objectTransferPresignedURLFieldExpiresAtMs = big.NewInt(1 << 0)
+	objectTransferPresignedURLFieldHeaders     = big.NewInt(1 << 1)
+	objectTransferPresignedURLFieldMethod      = big.NewInt(1 << 2)
+	objectTransferPresignedURLFieldURL         = big.NewInt(1 << 3)
 )
 
-type ObjectTransferAccessPresignedURL struct {
+type ObjectTransferPresignedURL struct {
 	// The time the URL expires, in Unix milliseconds.
 	ExpiresAtMs int64 `json:"expires_at_ms" url:"expires_at_ms"`
 	// The headers that the signature covers, which the client must send.
@@ -6843,42 +5332,42 @@ type ObjectTransferAccessPresignedURL struct {
 	rawJSON         json.RawMessage
 }
 
-func (o *ObjectTransferAccessPresignedURL) GetExpiresAtMs() int64 {
+func (o *ObjectTransferPresignedURL) GetExpiresAtMs() int64 {
 	if o == nil {
 		return 0
 	}
 	return o.ExpiresAtMs
 }
 
-func (o *ObjectTransferAccessPresignedURL) GetHeaders() map[string]string {
+func (o *ObjectTransferPresignedURL) GetHeaders() map[string]string {
 	if o == nil {
 		return nil
 	}
 	return o.Headers
 }
 
-func (o *ObjectTransferAccessPresignedURL) GetMethod() string {
+func (o *ObjectTransferPresignedURL) GetMethod() string {
 	if o == nil {
 		return ""
 	}
 	return o.Method
 }
 
-func (o *ObjectTransferAccessPresignedURL) GetURL() string {
+func (o *ObjectTransferPresignedURL) GetURL() string {
 	if o == nil {
 		return ""
 	}
 	return o.URL
 }
 
-func (o *ObjectTransferAccessPresignedURL) GetExtraProperties() map[string]interface{} {
+func (o *ObjectTransferPresignedURL) GetExtraProperties() map[string]interface{} {
 	if o == nil {
 		return nil
 	}
 	return o.extraProperties
 }
 
-func (o *ObjectTransferAccessPresignedURL) require(field *big.Int) {
+func (o *ObjectTransferPresignedURL) require(field *big.Int) {
 	if o.explicitFields == nil {
 		o.explicitFields = big.NewInt(0)
 	}
@@ -6887,39 +5376,39 @@ func (o *ObjectTransferAccessPresignedURL) require(field *big.Int) {
 
 // SetExpiresAtMs sets the ExpiresAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (o *ObjectTransferAccessPresignedURL) SetExpiresAtMs(expiresAtMs int64) {
+func (o *ObjectTransferPresignedURL) SetExpiresAtMs(expiresAtMs int64) {
 	o.ExpiresAtMs = expiresAtMs
-	o.require(objectTransferAccessPresignedURLFieldExpiresAtMs)
+	o.require(objectTransferPresignedURLFieldExpiresAtMs)
 }
 
 // SetHeaders sets the Headers field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (o *ObjectTransferAccessPresignedURL) SetHeaders(headers map[string]string) {
+func (o *ObjectTransferPresignedURL) SetHeaders(headers map[string]string) {
 	o.Headers = headers
-	o.require(objectTransferAccessPresignedURLFieldHeaders)
+	o.require(objectTransferPresignedURLFieldHeaders)
 }
 
 // SetMethod sets the Method field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (o *ObjectTransferAccessPresignedURL) SetMethod(method string) {
+func (o *ObjectTransferPresignedURL) SetMethod(method string) {
 	o.Method = method
-	o.require(objectTransferAccessPresignedURLFieldMethod)
+	o.require(objectTransferPresignedURLFieldMethod)
 }
 
 // SetURL sets the URL field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (o *ObjectTransferAccessPresignedURL) SetURL(url string) {
+func (o *ObjectTransferPresignedURL) SetURL(url string) {
 	o.URL = url
-	o.require(objectTransferAccessPresignedURLFieldURL)
+	o.require(objectTransferPresignedURLFieldURL)
 }
 
-func (o *ObjectTransferAccessPresignedURL) UnmarshalJSON(data []byte) error {
-	type unmarshaler ObjectTransferAccessPresignedURL
+func (o *ObjectTransferPresignedURL) UnmarshalJSON(data []byte) error {
+	type unmarshaler ObjectTransferPresignedURL
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*o = ObjectTransferAccessPresignedURL(value)
+	*o = ObjectTransferPresignedURL(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *o)
 	if err != nil {
 		return err
@@ -6929,8 +5418,8 @@ func (o *ObjectTransferAccessPresignedURL) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (o *ObjectTransferAccessPresignedURL) MarshalJSON() ([]byte, error) {
-	type embed ObjectTransferAccessPresignedURL
+func (o *ObjectTransferPresignedURL) MarshalJSON() ([]byte, error) {
+	type embed ObjectTransferPresignedURL
 	var marshaler = struct {
 		embed
 	}{
@@ -6940,7 +5429,7 @@ func (o *ObjectTransferAccessPresignedURL) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (o *ObjectTransferAccessPresignedURL) String() string {
+func (o *ObjectTransferPresignedURL) String() string {
 	if o == nil {
 		return "<nil>"
 	}
@@ -6963,7 +5452,7 @@ func (o *ObjectTransferAccessPresignedURL) String() string {
 // fields that every entry includes.
 type PathEntry struct {
 	InodeKind string
-	Dir       *PathEntryDirectory
+	Directory *PathEntryDirectory
 	File      *PathEntryFile
 
 	rawJSON json.RawMessage
@@ -6976,11 +5465,11 @@ func (p *PathEntry) GetInodeKind() string {
 	return p.InodeKind
 }
 
-func (p *PathEntry) GetDir() *PathEntryDirectory {
+func (p *PathEntry) GetDirectory() *PathEntryDirectory {
 	if p == nil {
 		return nil
 	}
-	return p.Dir
+	return p.Directory
 }
 
 func (p *PathEntry) GetFile() *PathEntryFile {
@@ -7002,12 +5491,12 @@ func (p *PathEntry) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant inode_kind", p)
 	}
 	switch unmarshaler.InodeKind {
-	case "dir":
+	case "directory":
 		value := new(PathEntryDirectory)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		p.Dir = value
+		p.Directory = value
 	case "file":
 		value := new(PathEntryFile)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -7023,8 +5512,8 @@ func (p PathEntry) MarshalJSON() ([]byte, error) {
 	if err := p.validate(); err != nil {
 		return nil, err
 	}
-	if p.Dir != nil {
-		return internal.MarshalJSONWithExtraProperty(p.Dir, "inode_kind", "dir")
+	if p.Directory != nil {
+		return internal.MarshalJSONWithExtraProperty(p.Directory, "inode_kind", "directory")
 	}
 	if p.File != nil {
 		return internal.MarshalJSONWithExtraProperty(p.File, "inode_kind", "file")
@@ -7036,13 +5525,13 @@ func (p PathEntry) MarshalJSON() ([]byte, error) {
 }
 
 type PathEntryVisitor interface {
-	VisitDir(*PathEntryDirectory) error
+	VisitDirectory(*PathEntryDirectory) error
 	VisitFile(*PathEntryFile) error
 }
 
 func (p *PathEntry) Accept(visitor PathEntryVisitor) error {
-	if p.Dir != nil {
-		return visitor.VisitDir(p.Dir)
+	if p.Directory != nil {
+		return visitor.VisitDirectory(p.Directory)
 	}
 	if p.File != nil {
 		return visitor.VisitFile(p.File)
@@ -7055,8 +5544,8 @@ func (p *PathEntry) validate() error {
 		return fmt.Errorf("type %T is nil", p)
 	}
 	var fields []string
-	if p.Dir != nil {
-		fields = append(fields, "dir")
+	if p.Directory != nil {
+		fields = append(fields, "directory")
 	}
 	if p.File != nil {
 		fields = append(fields, "file")
@@ -7125,7 +5614,7 @@ type PathEntryDirectory struct {
 	// The stored display name of this path component. It's absent for the root, which has no name.
 	DisplayName *DisplayName `json:"display_name,omitempty" url:"display_name,omitempty"`
 	// The namespace head sequence that this response was read at.
-	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
+	HeadSeq CommitSeq `json:"head_seq" url:"head_seq"`
 	// The entry's stable inode ID.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// The namespace that was read.
@@ -7198,7 +5687,7 @@ func (p *PathEntryDirectory) GetDisplayName() *DisplayName {
 	return p.DisplayName
 }
 
-func (p *PathEntryDirectory) GetHeadSeq() ChangeSeq {
+func (p *PathEntryDirectory) GetHeadSeq() CommitSeq {
 	if p == nil {
 		return 0
 	}
@@ -7305,7 +5794,7 @@ func (p *PathEntryDirectory) SetDisplayName(displayName *DisplayName) {
 
 // SetHeadSeq sets the HeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PathEntryDirectory) SetHeadSeq(headSeq ChangeSeq) {
+func (p *PathEntryDirectory) SetHeadSeq(headSeq CommitSeq) {
 	p.HeadSeq = headSeq
 	p.require(pathEntryDirectoryFieldHeadSeq)
 }
@@ -7416,8 +5905,9 @@ type PathEntryFile struct {
 	// The opaque ID of the current binding of the entry's parent and name. It's absent for the
 	// namespace root.
 	BindingVersion *BindingVersion `json:"binding_version,omitempty" url:"binding_version,omitempty"`
-	// The file's current content.
-	ContentRef *ContentRef `json:"content_ref" url:"content_ref"`
+	// The file's current content. It's present on entry reads (a stat by
+	// path or by inode) and absent from directory listings.
+	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The time the inode was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
 	// The actor that created this inode, as the application supplied it.
@@ -7425,7 +5915,7 @@ type PathEntryFile struct {
 	// The stored display name of this path component. It's absent for the root, which has no name.
 	DisplayName *DisplayName `json:"display_name,omitempty" url:"display_name,omitempty"`
 	// The namespace head sequence that this response was read at.
-	HeadSeq ChangeSeq `json:"head_seq" url:"head_seq"`
+	HeadSeq CommitSeq `json:"head_seq" url:"head_seq"`
 	// The entry's stable inode ID.
 	InodeID InodeID `json:"inode_id" url:"inode_id"`
 	// The namespace that was read.
@@ -7513,7 +6003,7 @@ func (p *PathEntryFile) GetDisplayName() *DisplayName {
 	return p.DisplayName
 }
 
-func (p *PathEntryFile) GetHeadSeq() ChangeSeq {
+func (p *PathEntryFile) GetHeadSeq() CommitSeq {
 	if p == nil {
 		return 0
 	}
@@ -7655,7 +6145,7 @@ func (p *PathEntryFile) SetDisplayName(displayName *DisplayName) {
 
 // SetHeadSeq sets the HeadSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PathEntryFile) SetHeadSeq(headSeq ChangeSeq) {
+func (p *PathEntryFile) SetHeadSeq(headSeq CommitSeq) {
 	p.HeadSeq = headSeq
 	p.require(pathEntryFileFieldHeadSeq)
 }
@@ -7758,43 +6248,155 @@ func (p *PathEntryFile) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
-// The durable ID of one pin.
-//
-// The manifest number in the ID determines which namespace manifest the pin protects.
-type PinID = string
-
-// A stable, opaque principal ID of 1 to 256 visible ASCII characters other than the comma.
-type PrincipalID = string
-
-// The ID of one run of the store contract probe.
-//
-// The probe stores its temporary objects under a key prefix that includes this ID.
-type ProbeRunID = string
-
-// The candidates that one garbage collection pass inspected but didn't delete, counted by reason.
+// The number of objects that one garbage collection of a pool deleted, grouped by object
+// family.
 var (
-	retainedCandidatesFieldCheckpointNotDeletable = big.NewInt(1 << 0)
-	retainedCandidatesFieldNoProviderTimestamp    = big.NewInt(1 << 1)
-	retainedCandidatesFieldReferenced             = big.NewInt(1 << 2)
-	retainedCandidatesFieldUnrecognizedKey        = big.NewInt(1 << 3)
-	retainedCandidatesFieldUploadSessionUndecided = big.NewInt(1 << 4)
-	retainedCandidatesFieldUploadSessionWindow    = big.NewInt(1 << 5)
-	retainedCandidatesFieldWithinGraceWindow      = big.NewInt(1 << 6)
+	poolDeletedObjectCountsFieldContentObjects   = big.NewInt(1 << 0)
+	poolDeletedObjectCountsFieldTemporaryObjects = big.NewInt(1 << 1)
+	poolDeletedObjectCountsFieldUploadSessions   = big.NewInt(1 << 2)
 )
 
-type RetainedCandidates struct {
-	// The checkpoint records that the pass couldn't delete because of their owner or their grace
+type PoolDeletedObjectCounts struct {
+	// The content objects the collection deleted because no member's retained view referenced them
+	// and they were older than the grace window.
+	ContentObjects int64 `json:"content_objects" url:"content_objects"`
+	// The temporary objects that the collection deleted because they were older than the grace
 	// window.
-	CheckpointNotDeletable int64 `json:"checkpoint_not_deletable" url:"checkpoint_not_deletable"`
+	TemporaryObjects int64 `json:"temporary_objects" url:"temporary_objects"`
+	// The upload sessions whose records the collection deleted after their grace windows passed.
+	UploadSessions int64 `json:"upload_sessions" url:"upload_sessions"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PoolDeletedObjectCounts) GetContentObjects() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.ContentObjects
+}
+
+func (p *PoolDeletedObjectCounts) GetTemporaryObjects() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.TemporaryObjects
+}
+
+func (p *PoolDeletedObjectCounts) GetUploadSessions() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.UploadSessions
+}
+
+func (p *PoolDeletedObjectCounts) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PoolDeletedObjectCounts) require(field *big.Int) {
+	if p.explicitFields == nil {
+		p.explicitFields = big.NewInt(0)
+	}
+	p.explicitFields.Or(p.explicitFields, field)
+}
+
+// SetContentObjects sets the ContentObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolDeletedObjectCounts) SetContentObjects(contentObjects int64) {
+	p.ContentObjects = contentObjects
+	p.require(poolDeletedObjectCountsFieldContentObjects)
+}
+
+// SetTemporaryObjects sets the TemporaryObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolDeletedObjectCounts) SetTemporaryObjects(temporaryObjects int64) {
+	p.TemporaryObjects = temporaryObjects
+	p.require(poolDeletedObjectCountsFieldTemporaryObjects)
+}
+
+// SetUploadSessions sets the UploadSessions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolDeletedObjectCounts) SetUploadSessions(uploadSessions int64) {
+	p.UploadSessions = uploadSessions
+	p.require(poolDeletedObjectCountsFieldUploadSessions)
+}
+
+func (p *PoolDeletedObjectCounts) UnmarshalJSON(data []byte) error {
+	type unmarshaler PoolDeletedObjectCounts
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PoolDeletedObjectCounts(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PoolDeletedObjectCounts) MarshalJSON() ([]byte, error) {
+	type embed PoolDeletedObjectCounts
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PoolDeletedObjectCounts) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+// The ID of one pool, the set of namespaces that share one set of content objects. See
+// [Pools](https://github.com/loonfs/loonfs/blob/main/docs/design/pools.md).
+type PoolID = string
+
+// The candidates that one garbage collection of a pool inspected but didn't delete, counted
+// by reason.
+var (
+	poolRetainedCandidatesFieldNoProviderTimestamp    = big.NewInt(1 << 0)
+	poolRetainedCandidatesFieldReferenced             = big.NewInt(1 << 1)
+	poolRetainedCandidatesFieldUnrecognizedKey        = big.NewInt(1 << 2)
+	poolRetainedCandidatesFieldUploadSessionUndecided = big.NewInt(1 << 3)
+	poolRetainedCandidatesFieldUploadSessionWindow    = big.NewInt(1 << 4)
+	poolRetainedCandidatesFieldWithinGraceWindow      = big.NewInt(1 << 5)
+)
+
+type PoolRetainedCandidates struct {
 	// The unreferenced candidates that had no provider timestamp, so their age was unknown.
 	NoProviderTimestamp int64 `json:"no_provider_timestamp" url:"no_provider_timestamp"`
-	// The candidates that a current root or the shared base filter protected, or that manifest
-	// discovery needed.
+	// The content objects that the roots of a pool member protected. A content object is
+	// protected when an extent filter of a rooted layout segment matches it, and a false match
+	// keeps the object until no rooted view lists that segment.
 	Referenced int64 `json:"referenced" url:"referenced"`
 	// The keys that garbage collection didn't recognize in the object families it scanned. The
-	// pass keeps these objects.
+	// collection keeps these objects.
 	UnrecognizedKey int64 `json:"unrecognized_key" url:"unrecognized_key"`
-	// The upload sessions that the pass couldn't prove safe to delete.
+	// The upload sessions that the collection couldn't prove safe to delete.
 	UploadSessionUndecided int64 `json:"upload_session_undecided" url:"upload_session_undecided"`
 	// The upload sessions that a lease or grace window still protected.
 	UploadSessionWindow int64 `json:"upload_session_window" url:"upload_session_window"`
@@ -7809,11 +6411,224 @@ type RetainedCandidates struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RetainedCandidates) GetCheckpointNotDeletable() int64 {
+func (p *PoolRetainedCandidates) GetNoProviderTimestamp() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.NoProviderTimestamp
+}
+
+func (p *PoolRetainedCandidates) GetReferenced() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.Referenced
+}
+
+func (p *PoolRetainedCandidates) GetUnrecognizedKey() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.UnrecognizedKey
+}
+
+func (p *PoolRetainedCandidates) GetUploadSessionUndecided() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.UploadSessionUndecided
+}
+
+func (p *PoolRetainedCandidates) GetUploadSessionWindow() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.UploadSessionWindow
+}
+
+func (p *PoolRetainedCandidates) GetWithinGraceWindow() int64 {
+	if p == nil {
+		return 0
+	}
+	return p.WithinGraceWindow
+}
+
+func (p *PoolRetainedCandidates) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PoolRetainedCandidates) require(field *big.Int) {
+	if p.explicitFields == nil {
+		p.explicitFields = big.NewInt(0)
+	}
+	p.explicitFields.Or(p.explicitFields, field)
+}
+
+// SetNoProviderTimestamp sets the NoProviderTimestamp field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetNoProviderTimestamp(noProviderTimestamp int64) {
+	p.NoProviderTimestamp = noProviderTimestamp
+	p.require(poolRetainedCandidatesFieldNoProviderTimestamp)
+}
+
+// SetReferenced sets the Referenced field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetReferenced(referenced int64) {
+	p.Referenced = referenced
+	p.require(poolRetainedCandidatesFieldReferenced)
+}
+
+// SetUnrecognizedKey sets the UnrecognizedKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetUnrecognizedKey(unrecognizedKey int64) {
+	p.UnrecognizedKey = unrecognizedKey
+	p.require(poolRetainedCandidatesFieldUnrecognizedKey)
+}
+
+// SetUploadSessionUndecided sets the UploadSessionUndecided field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetUploadSessionUndecided(uploadSessionUndecided int64) {
+	p.UploadSessionUndecided = uploadSessionUndecided
+	p.require(poolRetainedCandidatesFieldUploadSessionUndecided)
+}
+
+// SetUploadSessionWindow sets the UploadSessionWindow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetUploadSessionWindow(uploadSessionWindow int64) {
+	p.UploadSessionWindow = uploadSessionWindow
+	p.require(poolRetainedCandidatesFieldUploadSessionWindow)
+}
+
+// SetWithinGraceWindow sets the WithinGraceWindow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PoolRetainedCandidates) SetWithinGraceWindow(withinGraceWindow int64) {
+	p.WithinGraceWindow = withinGraceWindow
+	p.require(poolRetainedCandidatesFieldWithinGraceWindow)
+}
+
+func (p *PoolRetainedCandidates) UnmarshalJSON(data []byte) error {
+	type unmarshaler PoolRetainedCandidates
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PoolRetainedCandidates(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PoolRetainedCandidates) MarshalJSON() ([]byte, error) {
+	type embed PoolRetainedCandidates
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PoolRetainedCandidates) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+// A stable, opaque principal ID of 1 to 256 visible ASCII characters other than the comma.
+type PrincipalID = string
+
+// The ID of one run of the store contract probe.
+//
+// The probe stores its temporary objects under a key prefix that includes this ID.
+type ProbeID = string
+
+// How recently a live read confirms the namespace head, without a maximum
+// staleness.
+//
+// A runtime's default consistency and the `consistency` field of a download
+// request take one of these values. `eventual` reads at the head that was
+// confirmed last while that confirmation is younger than the maximum
+// staleness, and `strong` confirms the head before the read.
+type ReadConsistency string
+
+const (
+	ReadConsistencyEventual ReadConsistency = "eventual"
+	ReadConsistencyStrong   ReadConsistency = "strong"
+)
+
+func NewReadConsistencyFromString(s string) (ReadConsistency, error) {
+	switch s {
+	case "eventual":
+		return ReadConsistencyEventual, nil
+	case "strong":
+		return ReadConsistencyStrong, nil
+	}
+	var t ReadConsistency
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r ReadConsistency) Ptr() *ReadConsistency {
+	return &r
+}
+
+// The candidates that one garbage collection of a namespace inspected but didn't delete,
+// counted by reason.
+var (
+	retainedCandidatesFieldFencesAndFloorObjects = big.NewInt(1 << 0)
+	retainedCandidatesFieldNoProviderTimestamp   = big.NewInt(1 << 1)
+	retainedCandidatesFieldReferenced            = big.NewInt(1 << 2)
+	retainedCandidatesFieldSnapshotNotDeletable  = big.NewInt(1 << 3)
+	retainedCandidatesFieldUnrecognizedKey       = big.NewInt(1 << 4)
+	retainedCandidatesFieldWithinGraceWindow     = big.NewInt(1 << 5)
+)
+
+type RetainedCandidates struct {
+	// The fences and floor objects, which no collection deletes. The collection tells them from
+	// data WAL objects by their listed size.
+	FencesAndFloorObjects int64 `json:"fences_and_floor_objects" url:"fences_and_floor_objects"`
+	// The unreferenced candidates that had no provider timestamp, so their age was unknown.
+	NoProviderTimestamp int64 `json:"no_provider_timestamp" url:"no_provider_timestamp"`
+	// The candidates that a current root protected, or that manifest discovery needed.
+	Referenced int64 `json:"referenced" url:"referenced"`
+	// The snapshot records that the collection couldn't delete because of their owner or their
+	// grace window.
+	SnapshotNotDeletable int64 `json:"snapshot_not_deletable" url:"snapshot_not_deletable"`
+	// The keys that garbage collection didn't recognize in the object families it scanned. The
+	// collection keeps these objects.
+	UnrecognizedKey int64 `json:"unrecognized_key" url:"unrecognized_key"`
+	// The unreferenced candidates that were younger than the grace window, according to their
+	// provider timestamps.
+	WithinGraceWindow int64 `json:"within_grace_window" url:"within_grace_window"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RetainedCandidates) GetFencesAndFloorObjects() int64 {
 	if r == nil {
 		return 0
 	}
-	return r.CheckpointNotDeletable
+	return r.FencesAndFloorObjects
 }
 
 func (r *RetainedCandidates) GetNoProviderTimestamp() int64 {
@@ -7830,25 +6645,18 @@ func (r *RetainedCandidates) GetReferenced() int64 {
 	return r.Referenced
 }
 
+func (r *RetainedCandidates) GetSnapshotNotDeletable() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.SnapshotNotDeletable
+}
+
 func (r *RetainedCandidates) GetUnrecognizedKey() int64 {
 	if r == nil {
 		return 0
 	}
 	return r.UnrecognizedKey
-}
-
-func (r *RetainedCandidates) GetUploadSessionUndecided() int64 {
-	if r == nil {
-		return 0
-	}
-	return r.UploadSessionUndecided
-}
-
-func (r *RetainedCandidates) GetUploadSessionWindow() int64 {
-	if r == nil {
-		return 0
-	}
-	return r.UploadSessionWindow
 }
 
 func (r *RetainedCandidates) GetWithinGraceWindow() int64 {
@@ -7872,11 +6680,11 @@ func (r *RetainedCandidates) require(field *big.Int) {
 	r.explicitFields.Or(r.explicitFields, field)
 }
 
-// SetCheckpointNotDeletable sets the CheckpointNotDeletable field and marks it as non-optional;
+// SetFencesAndFloorObjects sets the FencesAndFloorObjects field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RetainedCandidates) SetCheckpointNotDeletable(checkpointNotDeletable int64) {
-	r.CheckpointNotDeletable = checkpointNotDeletable
-	r.require(retainedCandidatesFieldCheckpointNotDeletable)
+func (r *RetainedCandidates) SetFencesAndFloorObjects(fencesAndFloorObjects int64) {
+	r.FencesAndFloorObjects = fencesAndFloorObjects
+	r.require(retainedCandidatesFieldFencesAndFloorObjects)
 }
 
 // SetNoProviderTimestamp sets the NoProviderTimestamp field and marks it as non-optional;
@@ -7893,25 +6701,18 @@ func (r *RetainedCandidates) SetReferenced(referenced int64) {
 	r.require(retainedCandidatesFieldReferenced)
 }
 
+// SetSnapshotNotDeletable sets the SnapshotNotDeletable field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RetainedCandidates) SetSnapshotNotDeletable(snapshotNotDeletable int64) {
+	r.SnapshotNotDeletable = snapshotNotDeletable
+	r.require(retainedCandidatesFieldSnapshotNotDeletable)
+}
+
 // SetUnrecognizedKey sets the UnrecognizedKey field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (r *RetainedCandidates) SetUnrecognizedKey(unrecognizedKey int64) {
 	r.UnrecognizedKey = unrecognizedKey
 	r.require(retainedCandidatesFieldUnrecognizedKey)
-}
-
-// SetUploadSessionUndecided sets the UploadSessionUndecided field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RetainedCandidates) SetUploadSessionUndecided(uploadSessionUndecided int64) {
-	r.UploadSessionUndecided = uploadSessionUndecided
-	r.require(retainedCandidatesFieldUploadSessionUndecided)
-}
-
-// SetUploadSessionWindow sets the UploadSessionWindow field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RetainedCandidates) SetUploadSessionWindow(uploadSessionWindow int64) {
-	r.UploadSessionWindow = uploadSessionWindow
-	r.require(retainedCandidatesFieldUploadSessionWindow)
 }
 
 // SetWithinGraceWindow sets the WithinGraceWindow field and marks it as non-optional;
@@ -7967,68 +6768,60 @@ func (r *RetainedCandidates) String() string {
 type RevisionNo = int64
 
 // One maintenance job for one namespace.
-type RunMaintenanceRequest struct {
+type RunMaintenanceJobRequest struct {
 	Kind                 string
-	Gc                   *RunMaintenanceRequestGc
-	GrepGc               *RunMaintenanceRequestGrepGc
-	Metadata             *RunMaintenanceRequestMetadata
-	MetadataCompaction   *RunMaintenanceRequestMetadataCompaction
-	RecoverAdministrator *RunMaintenanceRequestRecoverAdministrator
-	Retention            *RunMaintenanceRequestRetention
+	Gc                   *RunMaintenanceJobRequestGc
+	Metadata             *RunMaintenanceJobRequestMetadata
+	RecoverAdministrator *RunMaintenanceJobRequestRecoverAdministrator
+	Retention            *RunMaintenanceJobRequestRetention
+	RetentionWindow      *RunMaintenanceJobRequestRetentionWindow
 
 	rawJSON json.RawMessage
 }
 
-func (r *RunMaintenanceRequest) GetKind() string {
+func (r *RunMaintenanceJobRequest) GetKind() string {
 	if r == nil {
 		return ""
 	}
 	return r.Kind
 }
 
-func (r *RunMaintenanceRequest) GetGc() *RunMaintenanceRequestGc {
+func (r *RunMaintenanceJobRequest) GetGc() *RunMaintenanceJobRequestGc {
 	if r == nil {
 		return nil
 	}
 	return r.Gc
 }
 
-func (r *RunMaintenanceRequest) GetGrepGc() *RunMaintenanceRequestGrepGc {
-	if r == nil {
-		return nil
-	}
-	return r.GrepGc
-}
-
-func (r *RunMaintenanceRequest) GetMetadata() *RunMaintenanceRequestMetadata {
+func (r *RunMaintenanceJobRequest) GetMetadata() *RunMaintenanceJobRequestMetadata {
 	if r == nil {
 		return nil
 	}
 	return r.Metadata
 }
 
-func (r *RunMaintenanceRequest) GetMetadataCompaction() *RunMaintenanceRequestMetadataCompaction {
-	if r == nil {
-		return nil
-	}
-	return r.MetadataCompaction
-}
-
-func (r *RunMaintenanceRequest) GetRecoverAdministrator() *RunMaintenanceRequestRecoverAdministrator {
+func (r *RunMaintenanceJobRequest) GetRecoverAdministrator() *RunMaintenanceJobRequestRecoverAdministrator {
 	if r == nil {
 		return nil
 	}
 	return r.RecoverAdministrator
 }
 
-func (r *RunMaintenanceRequest) GetRetention() *RunMaintenanceRequestRetention {
+func (r *RunMaintenanceJobRequest) GetRetention() *RunMaintenanceJobRequestRetention {
 	if r == nil {
 		return nil
 	}
 	return r.Retention
 }
 
-func (r *RunMaintenanceRequest) UnmarshalJSON(data []byte) error {
+func (r *RunMaintenanceJobRequest) GetRetentionWindow() *RunMaintenanceJobRequestRetentionWindow {
+	if r == nil {
+		return nil
+	}
+	return r.RetentionWindow
+}
+
+func (r *RunMaintenanceJobRequest) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Kind string `json:"kind"`
 	}
@@ -8041,61 +6834,49 @@ func (r *RunMaintenanceRequest) UnmarshalJSON(data []byte) error {
 	}
 	switch unmarshaler.Kind {
 	case "gc":
-		value := new(RunMaintenanceRequestGc)
+		value := new(RunMaintenanceJobRequestGc)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		r.Gc = value
-	case "grep_gc":
-		value := new(RunMaintenanceRequestGrepGc)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.GrepGc = value
 	case "metadata":
-		value := new(RunMaintenanceRequestMetadata)
+		value := new(RunMaintenanceJobRequestMetadata)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		r.Metadata = value
-	case "metadata_compaction":
-		value := new(RunMaintenanceRequestMetadataCompaction)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.MetadataCompaction = value
 	case "recover_administrator":
-		value := new(RunMaintenanceRequestRecoverAdministrator)
+		value := new(RunMaintenanceJobRequestRecoverAdministrator)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		r.RecoverAdministrator = value
 	case "retention":
-		value := new(RunMaintenanceRequestRetention)
+		value := new(RunMaintenanceJobRequestRetention)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		r.Retention = value
+	case "retention_window":
+		value := new(RunMaintenanceJobRequestRetentionWindow)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.RetentionWindow = value
 	}
 	r.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (r RunMaintenanceRequest) MarshalJSON() ([]byte, error) {
+func (r RunMaintenanceJobRequest) MarshalJSON() ([]byte, error) {
 	if err := r.validate(); err != nil {
 		return nil, err
 	}
 	if r.Gc != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
 	}
-	if r.GrepGc != nil {
-		return internal.MarshalJSONWithExtraProperty(r.GrepGc, "kind", "grep_gc")
-	}
 	if r.Metadata != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Metadata, "kind", "metadata")
-	}
-	if r.MetadataCompaction != nil {
-		return internal.MarshalJSONWithExtraProperty(r.MetadataCompaction, "kind", "metadata_compaction")
 	}
 	if r.RecoverAdministrator != nil {
 		return internal.MarshalJSONWithExtraProperty(r.RecoverAdministrator, "kind", "recover_administrator")
@@ -8103,33 +6884,29 @@ func (r RunMaintenanceRequest) MarshalJSON() ([]byte, error) {
 	if r.Retention != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Retention, "kind", "retention")
 	}
+	if r.RetentionWindow != nil {
+		return internal.MarshalJSONWithExtraProperty(r.RetentionWindow, "kind", "retention_window")
+	}
 	if len(r.rawJSON) > 0 {
 		return r.rawJSON, nil
 	}
 	return nil, fmt.Errorf("type %T does not define a non-empty union type", r)
 }
 
-type RunMaintenanceRequestVisitor interface {
-	VisitGc(*RunMaintenanceRequestGc) error
-	VisitGrepGc(*RunMaintenanceRequestGrepGc) error
-	VisitMetadata(*RunMaintenanceRequestMetadata) error
-	VisitMetadataCompaction(*RunMaintenanceRequestMetadataCompaction) error
-	VisitRecoverAdministrator(*RunMaintenanceRequestRecoverAdministrator) error
-	VisitRetention(*RunMaintenanceRequestRetention) error
+type RunMaintenanceJobRequestVisitor interface {
+	VisitGc(*RunMaintenanceJobRequestGc) error
+	VisitMetadata(*RunMaintenanceJobRequestMetadata) error
+	VisitRecoverAdministrator(*RunMaintenanceJobRequestRecoverAdministrator) error
+	VisitRetention(*RunMaintenanceJobRequestRetention) error
+	VisitRetentionWindow(*RunMaintenanceJobRequestRetentionWindow) error
 }
 
-func (r *RunMaintenanceRequest) Accept(visitor RunMaintenanceRequestVisitor) error {
+func (r *RunMaintenanceJobRequest) Accept(visitor RunMaintenanceJobRequestVisitor) error {
 	if r.Gc != nil {
 		return visitor.VisitGc(r.Gc)
 	}
-	if r.GrepGc != nil {
-		return visitor.VisitGrepGc(r.GrepGc)
-	}
 	if r.Metadata != nil {
 		return visitor.VisitMetadata(r.Metadata)
-	}
-	if r.MetadataCompaction != nil {
-		return visitor.VisitMetadataCompaction(r.MetadataCompaction)
 	}
 	if r.RecoverAdministrator != nil {
 		return visitor.VisitRecoverAdministrator(r.RecoverAdministrator)
@@ -8137,10 +6914,13 @@ func (r *RunMaintenanceRequest) Accept(visitor RunMaintenanceRequestVisitor) err
 	if r.Retention != nil {
 		return visitor.VisitRetention(r.Retention)
 	}
+	if r.RetentionWindow != nil {
+		return visitor.VisitRetentionWindow(r.RetentionWindow)
+	}
 	return fmt.Errorf("type %T does not define a non-empty union type", r)
 }
 
-func (r *RunMaintenanceRequest) validate() error {
+func (r *RunMaintenanceJobRequest) validate() error {
 	if r == nil {
 		return fmt.Errorf("type %T is nil", r)
 	}
@@ -8148,20 +6928,17 @@ func (r *RunMaintenanceRequest) validate() error {
 	if r.Gc != nil {
 		fields = append(fields, "gc")
 	}
-	if r.GrepGc != nil {
-		fields = append(fields, "grep_gc")
-	}
 	if r.Metadata != nil {
 		fields = append(fields, "metadata")
-	}
-	if r.MetadataCompaction != nil {
-		fields = append(fields, "metadata_compaction")
 	}
 	if r.RecoverAdministrator != nil {
 		fields = append(fields, "recover_administrator")
 	}
 	if r.Retention != nil {
 		fields = append(fields, "retention")
+	}
+	if r.RetentionWindow != nil {
+		fields = append(fields, "retention_window")
 	}
 	if len(fields) == 0 {
 		if r.Kind != "" {
@@ -8189,15 +6966,9 @@ func (r *RunMaintenanceRequest) validate() error {
 	return nil
 }
 
-// A garbage collection job for aged, unreferenced objects.
-var (
-	runMaintenanceRequestGcFieldGraceWindowMs = big.NewInt(1 << 0)
-)
-
-type RunMaintenanceRequestGc struct {
-	// The minimum age, in milliseconds, that an object must reach before the pass can delete it.
-	// The value must be at least the server's advertised safety floor.
-	GraceWindowMs *int64 `json:"grace_window_ms,omitempty" url:"grace_window_ms,omitempty"`
+// A garbage collection job for aged, unreferenced objects, which also collects the grep
+// index's objects when the deployment maintains a grep index.
+type RunMaintenanceJobRequestGc struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -8206,41 +6977,27 @@ type RunMaintenanceRequestGc struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceRequestGc) GetGraceWindowMs() *int64 {
-	if r == nil {
-		return nil
-	}
-	return r.GraceWindowMs
-}
-
-func (r *RunMaintenanceRequestGc) GetExtraProperties() map[string]interface{} {
+func (r *RunMaintenanceJobRequestGc) GetExtraProperties() map[string]interface{} {
 	if r == nil {
 		return nil
 	}
 	return r.extraProperties
 }
 
-func (r *RunMaintenanceRequestGc) require(field *big.Int) {
+func (r *RunMaintenanceJobRequestGc) require(field *big.Int) {
 	if r.explicitFields == nil {
 		r.explicitFields = big.NewInt(0)
 	}
 	r.explicitFields.Or(r.explicitFields, field)
 }
 
-// SetGraceWindowMs sets the GraceWindowMs field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceRequestGc) SetGraceWindowMs(graceWindowMs *int64) {
-	r.GraceWindowMs = graceWindowMs
-	r.require(runMaintenanceRequestGcFieldGraceWindowMs)
-}
-
-func (r *RunMaintenanceRequestGc) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceRequestGc
+func (r *RunMaintenanceJobRequestGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobRequestGc
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*r = RunMaintenanceRequestGc(value)
+	*r = RunMaintenanceJobRequestGc(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *r)
 	if err != nil {
 		return err
@@ -8250,8 +7007,8 @@ func (r *RunMaintenanceRequestGc) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *RunMaintenanceRequestGc) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceRequestGc
+func (r *RunMaintenanceJobRequestGc) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobRequestGc
 	var marshaler = struct {
 		embed
 	}{
@@ -8261,7 +7018,7 @@ func (r *RunMaintenanceRequestGc) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (r *RunMaintenanceRequestGc) String() string {
+func (r *RunMaintenanceJobRequestGc) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -8276,78 +7033,13 @@ func (r *RunMaintenanceRequestGc) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// A garbage collection job for aged, unreferenced grep index objects.
-type RunMaintenanceRequestGrepGc struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *RunMaintenanceRequestGrepGc) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *RunMaintenanceRequestGrepGc) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-func (r *RunMaintenanceRequestGrepGc) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceRequestGrepGc
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = RunMaintenanceRequestGrepGc(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *RunMaintenanceRequestGrepGc) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceRequestGrepGc
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *RunMaintenanceRequestGrepGc) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// A job that folds the WAL tail and runs one bounded compaction step.
+// A job that folds the WAL tail and compacts metadata until nothing is due, or until the job
+// reaches its work limit.
 var (
-	runMaintenanceRequestMetadataFieldMaxWalTailObjects = big.NewInt(1 << 0)
+	runMaintenanceJobRequestMetadataFieldMaxWalTailObjects = big.NewInt(1 << 0)
 )
 
-type RunMaintenanceRequestMetadata struct {
+type RunMaintenanceJobRequestMetadata struct {
 	// The WAL tail length, in WAL objects, that triggers a fold. Omit it to use the server
 	// default.
 	MaxWalTailObjects *int64 `json:"max_wal_tail_objects,omitempty" url:"max_wal_tail_objects,omitempty"`
@@ -8359,21 +7051,21 @@ type RunMaintenanceRequestMetadata struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceRequestMetadata) GetMaxWalTailObjects() *int64 {
+func (r *RunMaintenanceJobRequestMetadata) GetMaxWalTailObjects() *int64 {
 	if r == nil {
 		return nil
 	}
 	return r.MaxWalTailObjects
 }
 
-func (r *RunMaintenanceRequestMetadata) GetExtraProperties() map[string]interface{} {
+func (r *RunMaintenanceJobRequestMetadata) GetExtraProperties() map[string]interface{} {
 	if r == nil {
 		return nil
 	}
 	return r.extraProperties
 }
 
-func (r *RunMaintenanceRequestMetadata) require(field *big.Int) {
+func (r *RunMaintenanceJobRequestMetadata) require(field *big.Int) {
 	if r.explicitFields == nil {
 		r.explicitFields = big.NewInt(0)
 	}
@@ -8382,18 +7074,18 @@ func (r *RunMaintenanceRequestMetadata) require(field *big.Int) {
 
 // SetMaxWalTailObjects sets the MaxWalTailObjects field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceRequestMetadata) SetMaxWalTailObjects(maxWalTailObjects *int64) {
+func (r *RunMaintenanceJobRequestMetadata) SetMaxWalTailObjects(maxWalTailObjects *int64) {
 	r.MaxWalTailObjects = maxWalTailObjects
-	r.require(runMaintenanceRequestMetadataFieldMaxWalTailObjects)
+	r.require(runMaintenanceJobRequestMetadataFieldMaxWalTailObjects)
 }
 
-func (r *RunMaintenanceRequestMetadata) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceRequestMetadata
+func (r *RunMaintenanceJobRequestMetadata) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobRequestMetadata
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*r = RunMaintenanceRequestMetadata(value)
+	*r = RunMaintenanceJobRequestMetadata(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *r)
 	if err != nil {
 		return err
@@ -8403,8 +7095,8 @@ func (r *RunMaintenanceRequestMetadata) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *RunMaintenanceRequestMetadata) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceRequestMetadata
+func (r *RunMaintenanceJobRequestMetadata) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobRequestMetadata
 	var marshaler = struct {
 		embed
 	}{
@@ -8414,74 +7106,7 @@ func (r *RunMaintenanceRequestMetadata) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (r *RunMaintenanceRequestMetadata) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// A job that runs one unit of metadata compaction, which is either one bounded merge or one
-// streaming compaction of a family group.
-type RunMaintenanceRequestMetadataCompaction struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *RunMaintenanceRequestMetadataCompaction) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *RunMaintenanceRequestMetadataCompaction) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-func (r *RunMaintenanceRequestMetadataCompaction) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceRequestMetadataCompaction
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = RunMaintenanceRequestMetadataCompaction(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *RunMaintenanceRequestMetadataCompaction) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceRequestMetadataCompaction
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *RunMaintenanceRequestMetadataCompaction) String() string {
+func (r *RunMaintenanceJobRequestMetadata) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -8498,10 +7123,10 @@ func (r *RunMaintenanceRequestMetadataCompaction) String() string {
 
 // A job that restores a root administrator.
 var (
-	runMaintenanceRequestRecoverAdministratorFieldPrincipalID = big.NewInt(1 << 0)
+	runMaintenanceJobRequestRecoverAdministratorFieldPrincipalID = big.NewInt(1 << 0)
 )
 
-type RunMaintenanceRequestRecoverAdministrator struct {
+type RunMaintenanceJobRequestRecoverAdministrator struct {
 	// The principal that receives administrator rights.
 	PrincipalID PrincipalID `json:"principal_id" url:"principal_id"`
 
@@ -8512,21 +7137,21 @@ type RunMaintenanceRequestRecoverAdministrator struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceRequestRecoverAdministrator) GetPrincipalID() PrincipalID {
+func (r *RunMaintenanceJobRequestRecoverAdministrator) GetPrincipalID() PrincipalID {
 	if r == nil {
 		return ""
 	}
 	return r.PrincipalID
 }
 
-func (r *RunMaintenanceRequestRecoverAdministrator) GetExtraProperties() map[string]interface{} {
+func (r *RunMaintenanceJobRequestRecoverAdministrator) GetExtraProperties() map[string]interface{} {
 	if r == nil {
 		return nil
 	}
 	return r.extraProperties
 }
 
-func (r *RunMaintenanceRequestRecoverAdministrator) require(field *big.Int) {
+func (r *RunMaintenanceJobRequestRecoverAdministrator) require(field *big.Int) {
 	if r.explicitFields == nil {
 		r.explicitFields = big.NewInt(0)
 	}
@@ -8535,18 +7160,18 @@ func (r *RunMaintenanceRequestRecoverAdministrator) require(field *big.Int) {
 
 // SetPrincipalID sets the PrincipalID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceRequestRecoverAdministrator) SetPrincipalID(principalID PrincipalID) {
+func (r *RunMaintenanceJobRequestRecoverAdministrator) SetPrincipalID(principalID PrincipalID) {
 	r.PrincipalID = principalID
-	r.require(runMaintenanceRequestRecoverAdministratorFieldPrincipalID)
+	r.require(runMaintenanceJobRequestRecoverAdministratorFieldPrincipalID)
 }
 
-func (r *RunMaintenanceRequestRecoverAdministrator) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceRequestRecoverAdministrator
+func (r *RunMaintenanceJobRequestRecoverAdministrator) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobRequestRecoverAdministrator
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*r = RunMaintenanceRequestRecoverAdministrator(value)
+	*r = RunMaintenanceJobRequestRecoverAdministrator(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *r)
 	if err != nil {
 		return err
@@ -8556,8 +7181,8 @@ func (r *RunMaintenanceRequestRecoverAdministrator) UnmarshalJSON(data []byte) e
 	return nil
 }
 
-func (r *RunMaintenanceRequestRecoverAdministrator) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceRequestRecoverAdministrator
+func (r *RunMaintenanceJobRequestRecoverAdministrator) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobRequestRecoverAdministrator
 	var marshaler = struct {
 		embed
 	}{
@@ -8567,7 +7192,7 @@ func (r *RunMaintenanceRequestRecoverAdministrator) MarshalJSON() ([]byte, error
 	return json.Marshal(explicitMarshaler)
 }
 
-func (r *RunMaintenanceRequestRecoverAdministrator) String() string {
+func (r *RunMaintenanceJobRequestRecoverAdministrator) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -8582,21 +7207,23 @@ func (r *RunMaintenanceRequestRecoverAdministrator) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// A job that advances the retention floor to the folded manifest head, or to the target that
-// the request sets.
+// A job that advances the retention floor toward the folded manifest head, or toward the
+// target that the request sets.
+//
+// The floor doesn't pass a commit that's less than 24 hours old.
 var (
-	runMaintenanceRequestRetentionFieldCutoffAtMs = big.NewInt(1 << 0)
-	runMaintenanceRequestRetentionFieldToSeq      = big.NewInt(1 << 1)
+	runMaintenanceJobRequestRetentionFieldCutoffAtMs = big.NewInt(1 << 0)
+	runMaintenanceJobRequestRetentionFieldToSeq      = big.NewInt(1 << 1)
 )
 
-type RunMaintenanceRequestRetention struct {
+type RunMaintenanceJobRequestRetention struct {
 	// A Unix time in milliseconds. The floor advances to the last commit made at or before this
 	// time. LoonFS reads commits upward from the floor, and the first commit made after this time
 	// ends the advance. This field can't be combined with `to_seq`.
 	CutoffAtMs *int64 `json:"cutoff_at_ms,omitempty" url:"cutoff_at_ms,omitempty"`
 	// The sequence to advance the floor to. If the folded manifest head is lower, the floor
 	// advances to the head instead. This field can't be combined with `cutoff_at_ms`.
-	ToSeq *ChangeSeq `json:"to_seq,omitempty" url:"to_seq,omitempty"`
+	ToSeq *CommitSeq `json:"to_seq,omitempty" url:"to_seq,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -8605,28 +7232,28 @@ type RunMaintenanceRequestRetention struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceRequestRetention) GetCutoffAtMs() *int64 {
+func (r *RunMaintenanceJobRequestRetention) GetCutoffAtMs() *int64 {
 	if r == nil {
 		return nil
 	}
 	return r.CutoffAtMs
 }
 
-func (r *RunMaintenanceRequestRetention) GetToSeq() *ChangeSeq {
+func (r *RunMaintenanceJobRequestRetention) GetToSeq() *CommitSeq {
 	if r == nil {
 		return nil
 	}
 	return r.ToSeq
 }
 
-func (r *RunMaintenanceRequestRetention) GetExtraProperties() map[string]interface{} {
+func (r *RunMaintenanceJobRequestRetention) GetExtraProperties() map[string]interface{} {
 	if r == nil {
 		return nil
 	}
 	return r.extraProperties
 }
 
-func (r *RunMaintenanceRequestRetention) require(field *big.Int) {
+func (r *RunMaintenanceJobRequestRetention) require(field *big.Int) {
 	if r.explicitFields == nil {
 		r.explicitFields = big.NewInt(0)
 	}
@@ -8635,25 +7262,25 @@ func (r *RunMaintenanceRequestRetention) require(field *big.Int) {
 
 // SetCutoffAtMs sets the CutoffAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceRequestRetention) SetCutoffAtMs(cutoffAtMs *int64) {
+func (r *RunMaintenanceJobRequestRetention) SetCutoffAtMs(cutoffAtMs *int64) {
 	r.CutoffAtMs = cutoffAtMs
-	r.require(runMaintenanceRequestRetentionFieldCutoffAtMs)
+	r.require(runMaintenanceJobRequestRetentionFieldCutoffAtMs)
 }
 
 // SetToSeq sets the ToSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceRequestRetention) SetToSeq(toSeq *ChangeSeq) {
+func (r *RunMaintenanceJobRequestRetention) SetToSeq(toSeq *CommitSeq) {
 	r.ToSeq = toSeq
-	r.require(runMaintenanceRequestRetentionFieldToSeq)
+	r.require(runMaintenanceJobRequestRetentionFieldToSeq)
 }
 
-func (r *RunMaintenanceRequestRetention) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceRequestRetention
+func (r *RunMaintenanceJobRequestRetention) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobRequestRetention
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*r = RunMaintenanceRequestRetention(value)
+	*r = RunMaintenanceJobRequestRetention(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *r)
 	if err != nil {
 		return err
@@ -8663,8 +7290,8 @@ func (r *RunMaintenanceRequestRetention) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *RunMaintenanceRequestRetention) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceRequestRetention
+func (r *RunMaintenanceJobRequestRetention) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobRequestRetention
 	var marshaler = struct {
 		embed
 	}{
@@ -8674,7 +7301,95 @@ func (r *RunMaintenanceRequestRetention) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (r *RunMaintenanceRequestRetention) String() string {
+func (r *RunMaintenanceJobRequestRetention) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// A job that sets or clears the namespace's retention window.
+var (
+	runMaintenanceJobRequestRetentionWindowFieldRetentionWindowMs = big.NewInt(1 << 0)
+)
+
+type RunMaintenanceJobRequestRetentionWindow struct {
+	// The namespace's new retention window, in milliseconds, which must be at least the grace
+	// window (86400000, which is 24 hours). Without it, the job clears the namespace's window,
+	// and the reference server's maintenance sweep no longer advances the namespace's floor.
+	RetentionWindowMs *int64 `json:"retention_window_ms,omitempty" url:"retention_window_ms,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceJobRequestRetentionWindow) GetRetentionWindowMs() *int64 {
+	if r == nil {
+		return nil
+	}
+	return r.RetentionWindowMs
+}
+
+func (r *RunMaintenanceJobRequestRetentionWindow) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunMaintenanceJobRequestRetentionWindow) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetRetentionWindowMs sets the RetentionWindowMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceJobRequestRetentionWindow) SetRetentionWindowMs(retentionWindowMs *int64) {
+	r.RetentionWindowMs = retentionWindowMs
+	r.require(runMaintenanceJobRequestRetentionWindowFieldRetentionWindowMs)
+}
+
+func (r *RunMaintenanceJobRequestRetentionWindow) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobRequestRetentionWindow
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunMaintenanceJobRequestRetentionWindow(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunMaintenanceJobRequestRetentionWindow) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobRequestRetentionWindow
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunMaintenanceJobRequestRetentionWindow) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -8692,68 +7407,60 @@ func (r *RunMaintenanceRequestRetention) String() string {
 // The result of one maintenance job.
 //
 // The `kind` matches the request.
-type RunMaintenanceResponse struct {
+type RunMaintenanceJobResponse struct {
 	Kind                 string
-	Gc                   *RunMaintenanceResponseGc
-	GrepGc               *RunMaintenanceResponseGrepGc
-	Metadata             *RunMaintenanceResponseMetadata
-	MetadataCompaction   *RunMaintenanceResponseMetadataCompaction
-	RecoverAdministrator *RunMaintenanceResponseRecoverAdministrator
-	Retention            *RunMaintenanceResponseRetention
+	Gc                   *RunMaintenanceJobResponseGc
+	Metadata             *RunMaintenanceJobResponseMetadata
+	RecoverAdministrator *RunMaintenanceJobResponseRecoverAdministrator
+	Retention            *RunMaintenanceJobResponseRetention
+	RetentionWindow      *RunMaintenanceJobResponseRetentionWindow
 
 	rawJSON json.RawMessage
 }
 
-func (r *RunMaintenanceResponse) GetKind() string {
+func (r *RunMaintenanceJobResponse) GetKind() string {
 	if r == nil {
 		return ""
 	}
 	return r.Kind
 }
 
-func (r *RunMaintenanceResponse) GetGc() *RunMaintenanceResponseGc {
+func (r *RunMaintenanceJobResponse) GetGc() *RunMaintenanceJobResponseGc {
 	if r == nil {
 		return nil
 	}
 	return r.Gc
 }
 
-func (r *RunMaintenanceResponse) GetGrepGc() *RunMaintenanceResponseGrepGc {
-	if r == nil {
-		return nil
-	}
-	return r.GrepGc
-}
-
-func (r *RunMaintenanceResponse) GetMetadata() *RunMaintenanceResponseMetadata {
+func (r *RunMaintenanceJobResponse) GetMetadata() *RunMaintenanceJobResponseMetadata {
 	if r == nil {
 		return nil
 	}
 	return r.Metadata
 }
 
-func (r *RunMaintenanceResponse) GetMetadataCompaction() *RunMaintenanceResponseMetadataCompaction {
-	if r == nil {
-		return nil
-	}
-	return r.MetadataCompaction
-}
-
-func (r *RunMaintenanceResponse) GetRecoverAdministrator() *RunMaintenanceResponseRecoverAdministrator {
+func (r *RunMaintenanceJobResponse) GetRecoverAdministrator() *RunMaintenanceJobResponseRecoverAdministrator {
 	if r == nil {
 		return nil
 	}
 	return r.RecoverAdministrator
 }
 
-func (r *RunMaintenanceResponse) GetRetention() *RunMaintenanceResponseRetention {
+func (r *RunMaintenanceJobResponse) GetRetention() *RunMaintenanceJobResponseRetention {
 	if r == nil {
 		return nil
 	}
 	return r.Retention
 }
 
-func (r *RunMaintenanceResponse) UnmarshalJSON(data []byte) error {
+func (r *RunMaintenanceJobResponse) GetRetentionWindow() *RunMaintenanceJobResponseRetentionWindow {
+	if r == nil {
+		return nil
+	}
+	return r.RetentionWindow
+}
+
+func (r *RunMaintenanceJobResponse) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Kind string `json:"kind"`
 	}
@@ -8766,61 +7473,49 @@ func (r *RunMaintenanceResponse) UnmarshalJSON(data []byte) error {
 	}
 	switch unmarshaler.Kind {
 	case "gc":
-		value := new(RunMaintenanceResponseGc)
+		value := new(RunMaintenanceJobResponseGc)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		r.Gc = value
-	case "grep_gc":
-		value := new(RunMaintenanceResponseGrepGc)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.GrepGc = value
 	case "metadata":
-		value := new(RunMaintenanceResponseMetadata)
+		value := new(RunMaintenanceJobResponseMetadata)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		r.Metadata = value
-	case "metadata_compaction":
-		value := new(RunMaintenanceResponseMetadataCompaction)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.MetadataCompaction = value
 	case "recover_administrator":
-		value := new(RunMaintenanceResponseRecoverAdministrator)
+		value := new(RunMaintenanceJobResponseRecoverAdministrator)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		r.RecoverAdministrator = value
 	case "retention":
-		value := new(RunMaintenanceResponseRetention)
+		value := new(RunMaintenanceJobResponseRetention)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		r.Retention = value
+	case "retention_window":
+		value := new(RunMaintenanceJobResponseRetentionWindow)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.RetentionWindow = value
 	}
 	r.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (r RunMaintenanceResponse) MarshalJSON() ([]byte, error) {
+func (r RunMaintenanceJobResponse) MarshalJSON() ([]byte, error) {
 	if err := r.validate(); err != nil {
 		return nil, err
 	}
 	if r.Gc != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
 	}
-	if r.GrepGc != nil {
-		return internal.MarshalJSONWithExtraProperty(r.GrepGc, "kind", "grep_gc")
-	}
 	if r.Metadata != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Metadata, "kind", "metadata")
-	}
-	if r.MetadataCompaction != nil {
-		return internal.MarshalJSONWithExtraProperty(r.MetadataCompaction, "kind", "metadata_compaction")
 	}
 	if r.RecoverAdministrator != nil {
 		return internal.MarshalJSONWithExtraProperty(r.RecoverAdministrator, "kind", "recover_administrator")
@@ -8828,33 +7523,29 @@ func (r RunMaintenanceResponse) MarshalJSON() ([]byte, error) {
 	if r.Retention != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Retention, "kind", "retention")
 	}
+	if r.RetentionWindow != nil {
+		return internal.MarshalJSONWithExtraProperty(r.RetentionWindow, "kind", "retention_window")
+	}
 	if len(r.rawJSON) > 0 {
 		return r.rawJSON, nil
 	}
 	return nil, fmt.Errorf("type %T does not define a non-empty union type", r)
 }
 
-type RunMaintenanceResponseVisitor interface {
-	VisitGc(*RunMaintenanceResponseGc) error
-	VisitGrepGc(*RunMaintenanceResponseGrepGc) error
-	VisitMetadata(*RunMaintenanceResponseMetadata) error
-	VisitMetadataCompaction(*RunMaintenanceResponseMetadataCompaction) error
-	VisitRecoverAdministrator(*RunMaintenanceResponseRecoverAdministrator) error
-	VisitRetention(*RunMaintenanceResponseRetention) error
+type RunMaintenanceJobResponseVisitor interface {
+	VisitGc(*RunMaintenanceJobResponseGc) error
+	VisitMetadata(*RunMaintenanceJobResponseMetadata) error
+	VisitRecoverAdministrator(*RunMaintenanceJobResponseRecoverAdministrator) error
+	VisitRetention(*RunMaintenanceJobResponseRetention) error
+	VisitRetentionWindow(*RunMaintenanceJobResponseRetentionWindow) error
 }
 
-func (r *RunMaintenanceResponse) Accept(visitor RunMaintenanceResponseVisitor) error {
+func (r *RunMaintenanceJobResponse) Accept(visitor RunMaintenanceJobResponseVisitor) error {
 	if r.Gc != nil {
 		return visitor.VisitGc(r.Gc)
 	}
-	if r.GrepGc != nil {
-		return visitor.VisitGrepGc(r.GrepGc)
-	}
 	if r.Metadata != nil {
 		return visitor.VisitMetadata(r.Metadata)
-	}
-	if r.MetadataCompaction != nil {
-		return visitor.VisitMetadataCompaction(r.MetadataCompaction)
 	}
 	if r.RecoverAdministrator != nil {
 		return visitor.VisitRecoverAdministrator(r.RecoverAdministrator)
@@ -8862,10 +7553,13 @@ func (r *RunMaintenanceResponse) Accept(visitor RunMaintenanceResponseVisitor) e
 	if r.Retention != nil {
 		return visitor.VisitRetention(r.Retention)
 	}
+	if r.RetentionWindow != nil {
+		return visitor.VisitRetentionWindow(r.RetentionWindow)
+	}
 	return fmt.Errorf("type %T does not define a non-empty union type", r)
 }
 
-func (r *RunMaintenanceResponse) validate() error {
+func (r *RunMaintenanceJobResponse) validate() error {
 	if r == nil {
 		return fmt.Errorf("type %T is nil", r)
 	}
@@ -8873,20 +7567,17 @@ func (r *RunMaintenanceResponse) validate() error {
 	if r.Gc != nil {
 		fields = append(fields, "gc")
 	}
-	if r.GrepGc != nil {
-		fields = append(fields, "grep_gc")
-	}
 	if r.Metadata != nil {
 		fields = append(fields, "metadata")
-	}
-	if r.MetadataCompaction != nil {
-		fields = append(fields, "metadata_compaction")
 	}
 	if r.RecoverAdministrator != nil {
 		fields = append(fields, "recover_administrator")
 	}
 	if r.Retention != nil {
 		fields = append(fields, "retention")
+	}
+	if r.RetentionWindow != nil {
+		fields = append(fields, "retention_window")
 	}
 	if len(fields) == 0 {
 		if r.Kind != "" {
@@ -8916,27 +7607,31 @@ func (r *RunMaintenanceResponse) validate() error {
 
 // The counts and deadlines from one garbage collection call.
 var (
-	runMaintenanceResponseGcFieldDeleted                   = big.NewInt(1 << 0)
-	runMaintenanceResponseGcFieldDeletedCheckpointsByOwner = big.NewInt(1 << 1)
-	runMaintenanceResponseGcFieldNamespaceID               = big.NewInt(1 << 2)
-	runMaintenanceResponseGcFieldNextReclamationAtMs       = big.NewInt(1 << 3)
-	runMaintenanceResponseGcFieldReclaimableAtMs           = big.NewInt(1 << 4)
-	runMaintenanceResponseGcFieldRetained                  = big.NewInt(1 << 5)
+	runMaintenanceJobResponseGcFieldDeleted                 = big.NewInt(1 << 0)
+	runMaintenanceJobResponseGcFieldDeletedSnapshotsByOwner = big.NewInt(1 << 1)
+	runMaintenanceJobResponseGcFieldListedBytes             = big.NewInt(1 << 2)
+	runMaintenanceJobResponseGcFieldNamespaceID             = big.NewInt(1 << 3)
+	runMaintenanceJobResponseGcFieldNextReclamationAtMs     = big.NewInt(1 << 4)
+	runMaintenanceJobResponseGcFieldRetained                = big.NewInt(1 << 5)
+	runMaintenanceJobResponseGcFieldRetiresAtMs             = big.NewInt(1 << 6)
 )
 
-type RunMaintenanceResponseGc struct {
-	// The objects that the pass deleted, counted by object family.
+type RunMaintenanceJobResponseGc struct {
+	// The objects that the collection deleted, counted by object family.
 	Deleted *DeletedObjectCounts `json:"deleted" url:"deleted"`
-	// The checkpoint records that the pass deleted, counted by owner.
-	DeletedCheckpointsByOwner *DeletedCheckpointsByOwner `json:"deleted_checkpoints_by_owner" url:"deleted_checkpoints_by_owner"`
-	// The namespace that the pass ran against.
+	// The snapshot records that the collection deleted, counted by owner.
+	DeletedSnapshotsByOwner *DeletedSnapshotsByOwner `json:"deleted_snapshots_by_owner" url:"deleted_snapshots_by_owner"`
+	// The bytes of every object that the collection listed under the namespace, each object once,
+	// before the collection's deletes.
+	ListedBytes int64 `json:"listed_bytes" url:"listed_bytes"`
+	// The namespace that the collection ran against.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The earliest future retirement deadline, pin deletion time, or upload cleanup time.
+	// The earliest future retirement deadline or snapshot deletion time.
 	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
-	// The deletion time of the current tombstone plus the configured retirement grace.
-	ReclaimableAtMs *int64 `json:"reclaimable_at_ms,omitempty" url:"reclaimable_at_ms,omitempty"`
-	// The candidates that the pass kept at deletion time, counted by reason.
+	// The candidates that the collection kept at deletion time, counted by reason.
 	Retained *RetainedCandidates `json:"retained" url:"retained"`
+	// The deletion time of the current tombstone plus the grace window.
+	RetiresAtMs *int64 `json:"retires_at_ms,omitempty" url:"retires_at_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -8945,56 +7640,63 @@ type RunMaintenanceResponseGc struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceResponseGc) GetDeleted() *DeletedObjectCounts {
+func (r *RunMaintenanceJobResponseGc) GetDeleted() *DeletedObjectCounts {
 	if r == nil {
 		return nil
 	}
 	return r.Deleted
 }
 
-func (r *RunMaintenanceResponseGc) GetDeletedCheckpointsByOwner() *DeletedCheckpointsByOwner {
+func (r *RunMaintenanceJobResponseGc) GetDeletedSnapshotsByOwner() *DeletedSnapshotsByOwner {
 	if r == nil {
 		return nil
 	}
-	return r.DeletedCheckpointsByOwner
+	return r.DeletedSnapshotsByOwner
 }
 
-func (r *RunMaintenanceResponseGc) GetNamespaceID() NamespaceID {
+func (r *RunMaintenanceJobResponseGc) GetListedBytes() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.ListedBytes
+}
+
+func (r *RunMaintenanceJobResponseGc) GetNamespaceID() NamespaceID {
 	if r == nil {
 		return ""
 	}
 	return r.NamespaceID
 }
 
-func (r *RunMaintenanceResponseGc) GetNextReclamationAtMs() *int64 {
+func (r *RunMaintenanceJobResponseGc) GetNextReclamationAtMs() *int64 {
 	if r == nil {
 		return nil
 	}
 	return r.NextReclamationAtMs
 }
 
-func (r *RunMaintenanceResponseGc) GetReclaimableAtMs() *int64 {
-	if r == nil {
-		return nil
-	}
-	return r.ReclaimableAtMs
-}
-
-func (r *RunMaintenanceResponseGc) GetRetained() *RetainedCandidates {
+func (r *RunMaintenanceJobResponseGc) GetRetained() *RetainedCandidates {
 	if r == nil {
 		return nil
 	}
 	return r.Retained
 }
 
-func (r *RunMaintenanceResponseGc) GetExtraProperties() map[string]interface{} {
+func (r *RunMaintenanceJobResponseGc) GetRetiresAtMs() *int64 {
+	if r == nil {
+		return nil
+	}
+	return r.RetiresAtMs
+}
+
+func (r *RunMaintenanceJobResponseGc) GetExtraProperties() map[string]interface{} {
 	if r == nil {
 		return nil
 	}
 	return r.extraProperties
 }
 
-func (r *RunMaintenanceResponseGc) require(field *big.Int) {
+func (r *RunMaintenanceJobResponseGc) require(field *big.Int) {
 	if r.explicitFields == nil {
 		r.explicitFields = big.NewInt(0)
 	}
@@ -9003,53 +7705,60 @@ func (r *RunMaintenanceResponseGc) require(field *big.Int) {
 
 // SetDeleted sets the Deleted field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetDeleted(deleted *DeletedObjectCounts) {
+func (r *RunMaintenanceJobResponseGc) SetDeleted(deleted *DeletedObjectCounts) {
 	r.Deleted = deleted
-	r.require(runMaintenanceResponseGcFieldDeleted)
+	r.require(runMaintenanceJobResponseGcFieldDeleted)
 }
 
-// SetDeletedCheckpointsByOwner sets the DeletedCheckpointsByOwner field and marks it as non-optional;
+// SetDeletedSnapshotsByOwner sets the DeletedSnapshotsByOwner field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetDeletedCheckpointsByOwner(deletedCheckpointsByOwner *DeletedCheckpointsByOwner) {
-	r.DeletedCheckpointsByOwner = deletedCheckpointsByOwner
-	r.require(runMaintenanceResponseGcFieldDeletedCheckpointsByOwner)
+func (r *RunMaintenanceJobResponseGc) SetDeletedSnapshotsByOwner(deletedSnapshotsByOwner *DeletedSnapshotsByOwner) {
+	r.DeletedSnapshotsByOwner = deletedSnapshotsByOwner
+	r.require(runMaintenanceJobResponseGcFieldDeletedSnapshotsByOwner)
+}
+
+// SetListedBytes sets the ListedBytes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceJobResponseGc) SetListedBytes(listedBytes int64) {
+	r.ListedBytes = listedBytes
+	r.require(runMaintenanceJobResponseGcFieldListedBytes)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetNamespaceID(namespaceID NamespaceID) {
+func (r *RunMaintenanceJobResponseGc) SetNamespaceID(namespaceID NamespaceID) {
 	r.NamespaceID = namespaceID
-	r.require(runMaintenanceResponseGcFieldNamespaceID)
+	r.require(runMaintenanceJobResponseGcFieldNamespaceID)
 }
 
 // SetNextReclamationAtMs sets the NextReclamationAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetNextReclamationAtMs(nextReclamationAtMs *int64) {
+func (r *RunMaintenanceJobResponseGc) SetNextReclamationAtMs(nextReclamationAtMs *int64) {
 	r.NextReclamationAtMs = nextReclamationAtMs
-	r.require(runMaintenanceResponseGcFieldNextReclamationAtMs)
-}
-
-// SetReclaimableAtMs sets the ReclaimableAtMs field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetReclaimableAtMs(reclaimableAtMs *int64) {
-	r.ReclaimableAtMs = reclaimableAtMs
-	r.require(runMaintenanceResponseGcFieldReclaimableAtMs)
+	r.require(runMaintenanceJobResponseGcFieldNextReclamationAtMs)
 }
 
 // SetRetained sets the Retained field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGc) SetRetained(retained *RetainedCandidates) {
+func (r *RunMaintenanceJobResponseGc) SetRetained(retained *RetainedCandidates) {
 	r.Retained = retained
-	r.require(runMaintenanceResponseGcFieldRetained)
+	r.require(runMaintenanceJobResponseGcFieldRetained)
 }
 
-func (r *RunMaintenanceResponseGc) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceResponseGc
+// SetRetiresAtMs sets the RetiresAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceJobResponseGc) SetRetiresAtMs(retiresAtMs *int64) {
+	r.RetiresAtMs = retiresAtMs
+	r.require(runMaintenanceJobResponseGcFieldRetiresAtMs)
+}
+
+func (r *RunMaintenanceJobResponseGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobResponseGc
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*r = RunMaintenanceResponseGc(value)
+	*r = RunMaintenanceJobResponseGc(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *r)
 	if err != nil {
 		return err
@@ -9059,8 +7768,8 @@ func (r *RunMaintenanceResponseGc) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *RunMaintenanceResponseGc) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceResponseGc
+func (r *RunMaintenanceJobResponseGc) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobResponseGc
 	var marshaler = struct {
 		embed
 	}{
@@ -9070,7 +7779,7 @@ func (r *RunMaintenanceResponseGc) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (r *RunMaintenanceResponseGc) String() string {
+func (r *RunMaintenanceJobResponseGc) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -9085,29 +7794,23 @@ func (r *RunMaintenanceResponseGc) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// The counts from one garbage collection pass over the grep index.
+// Whether metadata maintenance is caught up, and the compaction units that the job published.
 var (
-	runMaintenanceResponseGrepGcFieldDeletedOtherObjects = big.NewInt(1 << 0)
-	runMaintenanceResponseGrepGcFieldDeletedSegments     = big.NewInt(1 << 1)
-	runMaintenanceResponseGrepGcFieldNamespaceID         = big.NewInt(1 << 2)
-	runMaintenanceResponseGrepGcFieldNamespaceReaped     = big.NewInt(1 << 3)
-	runMaintenanceResponseGrepGcFieldRetainedCandidates  = big.NewInt(1 << 4)
+	runMaintenanceJobResponseMetadataFieldCompactionUnits = big.NewInt(1 << 0)
+	runMaintenanceJobResponseMetadataFieldNamespaceID     = big.NewInt(1 << 1)
+	runMaintenanceJobResponseMetadataFieldOutcome         = big.NewInt(1 << 2)
+	runMaintenanceJobResponseMetadataFieldSkipped         = big.NewInt(1 << 3)
 )
 
-type RunMaintenanceResponseGrepGc struct {
-	// The other unreferenced grep objects that the pass deleted after the grace window.
-	DeletedOtherObjects int64 `json:"deleted_other_objects" url:"deleted_other_objects"`
-	// The unreferenced grep segments that the pass deleted because they were older than the
-	// minimum segment age.
-	DeletedSegments int64 `json:"deleted_segments" url:"deleted_segments"`
-	// The namespace whose grep keyspace the pass inspected.
+type RunMaintenanceJobResponseMetadata struct {
+	// The compaction units that this job published. A unit compacts one family group's window.
+	CompactionUnits int64 `json:"compaction_units" url:"compaction_units"`
+	// The namespace that this job maintained.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// Whether the pass deleted the grep extension state of a namespace that is missing or
-	// deleted.
-	NamespaceReaped bool `json:"namespace_reaped" url:"namespace_reaped"`
-	// The candidates that the pass kept because they were referenced, too young, or
-	// unrecognized.
-	RetainedCandidates int64 `json:"retained_candidates" url:"retained_candidates"`
+	// Whether work is still due when the job returns.
+	Outcome MetadataMaintenanceOutcome `json:"outcome" url:"outcome"`
+	// The work that this job skipped at a limit, by reason. Empty when the job skipped nothing.
+	Skipped []MetadataSkippedWork `json:"skipped,omitempty" url:"skipped,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -9116,97 +7819,83 @@ type RunMaintenanceResponseGrepGc struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceResponseGrepGc) GetDeletedOtherObjects() int64 {
+func (r *RunMaintenanceJobResponseMetadata) GetCompactionUnits() int64 {
 	if r == nil {
 		return 0
 	}
-	return r.DeletedOtherObjects
+	return r.CompactionUnits
 }
 
-func (r *RunMaintenanceResponseGrepGc) GetDeletedSegments() int64 {
-	if r == nil {
-		return 0
-	}
-	return r.DeletedSegments
-}
-
-func (r *RunMaintenanceResponseGrepGc) GetNamespaceID() NamespaceID {
+func (r *RunMaintenanceJobResponseMetadata) GetNamespaceID() NamespaceID {
 	if r == nil {
 		return ""
 	}
 	return r.NamespaceID
 }
 
-func (r *RunMaintenanceResponseGrepGc) GetNamespaceReaped() bool {
+func (r *RunMaintenanceJobResponseMetadata) GetOutcome() MetadataMaintenanceOutcome {
 	if r == nil {
-		return false
+		return ""
 	}
-	return r.NamespaceReaped
+	return r.Outcome
 }
 
-func (r *RunMaintenanceResponseGrepGc) GetRetainedCandidates() int64 {
+func (r *RunMaintenanceJobResponseMetadata) GetSkipped() []MetadataSkippedWork {
 	if r == nil {
-		return 0
+		return nil
 	}
-	return r.RetainedCandidates
+	return r.Skipped
 }
 
-func (r *RunMaintenanceResponseGrepGc) GetExtraProperties() map[string]interface{} {
+func (r *RunMaintenanceJobResponseMetadata) GetExtraProperties() map[string]interface{} {
 	if r == nil {
 		return nil
 	}
 	return r.extraProperties
 }
 
-func (r *RunMaintenanceResponseGrepGc) require(field *big.Int) {
+func (r *RunMaintenanceJobResponseMetadata) require(field *big.Int) {
 	if r.explicitFields == nil {
 		r.explicitFields = big.NewInt(0)
 	}
 	r.explicitFields.Or(r.explicitFields, field)
 }
 
-// SetDeletedOtherObjects sets the DeletedOtherObjects field and marks it as non-optional;
+// SetCompactionUnits sets the CompactionUnits field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGrepGc) SetDeletedOtherObjects(deletedOtherObjects int64) {
-	r.DeletedOtherObjects = deletedOtherObjects
-	r.require(runMaintenanceResponseGrepGcFieldDeletedOtherObjects)
-}
-
-// SetDeletedSegments sets the DeletedSegments field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGrepGc) SetDeletedSegments(deletedSegments int64) {
-	r.DeletedSegments = deletedSegments
-	r.require(runMaintenanceResponseGrepGcFieldDeletedSegments)
+func (r *RunMaintenanceJobResponseMetadata) SetCompactionUnits(compactionUnits int64) {
+	r.CompactionUnits = compactionUnits
+	r.require(runMaintenanceJobResponseMetadataFieldCompactionUnits)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGrepGc) SetNamespaceID(namespaceID NamespaceID) {
+func (r *RunMaintenanceJobResponseMetadata) SetNamespaceID(namespaceID NamespaceID) {
 	r.NamespaceID = namespaceID
-	r.require(runMaintenanceResponseGrepGcFieldNamespaceID)
+	r.require(runMaintenanceJobResponseMetadataFieldNamespaceID)
 }
 
-// SetNamespaceReaped sets the NamespaceReaped field and marks it as non-optional;
+// SetOutcome sets the Outcome field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGrepGc) SetNamespaceReaped(namespaceReaped bool) {
-	r.NamespaceReaped = namespaceReaped
-	r.require(runMaintenanceResponseGrepGcFieldNamespaceReaped)
+func (r *RunMaintenanceJobResponseMetadata) SetOutcome(outcome MetadataMaintenanceOutcome) {
+	r.Outcome = outcome
+	r.require(runMaintenanceJobResponseMetadataFieldOutcome)
 }
 
-// SetRetainedCandidates sets the RetainedCandidates field and marks it as non-optional;
+// SetSkipped sets the Skipped field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseGrepGc) SetRetainedCandidates(retainedCandidates int64) {
-	r.RetainedCandidates = retainedCandidates
-	r.require(runMaintenanceResponseGrepGcFieldRetainedCandidates)
+func (r *RunMaintenanceJobResponseMetadata) SetSkipped(skipped []MetadataSkippedWork) {
+	r.Skipped = skipped
+	r.require(runMaintenanceJobResponseMetadataFieldSkipped)
 }
 
-func (r *RunMaintenanceResponseGrepGc) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceResponseGrepGc
+func (r *RunMaintenanceJobResponseMetadata) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobResponseMetadata
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*r = RunMaintenanceResponseGrepGc(value)
+	*r = RunMaintenanceJobResponseMetadata(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *r)
 	if err != nil {
 		return err
@@ -9216,8 +7905,8 @@ func (r *RunMaintenanceResponseGrepGc) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *RunMaintenanceResponseGrepGc) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceResponseGrepGc
+func (r *RunMaintenanceJobResponseMetadata) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobResponseMetadata
 	var marshaler = struct {
 		embed
 	}{
@@ -9227,230 +7916,7 @@ func (r *RunMaintenanceResponseGrepGc) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (r *RunMaintenanceResponseGrepGc) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// The result of the WAL fold and one bounded compaction step.
-var (
-	runMaintenanceResponseMetadataFieldCompaction  = big.NewInt(1 << 0)
-	runMaintenanceResponseMetadataFieldNamespaceID = big.NewInt(1 << 1)
-	runMaintenanceResponseMetadataFieldWalFold     = big.NewInt(1 << 2)
-)
-
-type RunMaintenanceResponseMetadata struct {
-	// What the bounded compaction step did.
-	Compaction *CompactionStepOutcome `json:"compaction" url:"compaction"`
-	// The namespace that this run maintained.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// What the WAL fold did.
-	WalFold *WalFoldStepOutcome `json:"wal_fold" url:"wal_fold"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *RunMaintenanceResponseMetadata) GetCompaction() *CompactionStepOutcome {
-	if r == nil {
-		return nil
-	}
-	return r.Compaction
-}
-
-func (r *RunMaintenanceResponseMetadata) GetNamespaceID() NamespaceID {
-	if r == nil {
-		return ""
-	}
-	return r.NamespaceID
-}
-
-func (r *RunMaintenanceResponseMetadata) GetWalFold() *WalFoldStepOutcome {
-	if r == nil {
-		return nil
-	}
-	return r.WalFold
-}
-
-func (r *RunMaintenanceResponseMetadata) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *RunMaintenanceResponseMetadata) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-// SetCompaction sets the Compaction field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseMetadata) SetCompaction(compaction *CompactionStepOutcome) {
-	r.Compaction = compaction
-	r.require(runMaintenanceResponseMetadataFieldCompaction)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseMetadata) SetNamespaceID(namespaceID NamespaceID) {
-	r.NamespaceID = namespaceID
-	r.require(runMaintenanceResponseMetadataFieldNamespaceID)
-}
-
-// SetWalFold sets the WalFold field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseMetadata) SetWalFold(walFold *WalFoldStepOutcome) {
-	r.WalFold = walFold
-	r.require(runMaintenanceResponseMetadataFieldWalFold)
-}
-
-func (r *RunMaintenanceResponseMetadata) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceResponseMetadata
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = RunMaintenanceResponseMetadata(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *RunMaintenanceResponseMetadata) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceResponseMetadata
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *RunMaintenanceResponseMetadata) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// The result of one unit of metadata compaction.
-var (
-	runMaintenanceResponseMetadataCompactionFieldCompaction  = big.NewInt(1 << 0)
-	runMaintenanceResponseMetadataCompactionFieldNamespaceID = big.NewInt(1 << 1)
-)
-
-type RunMaintenanceResponseMetadataCompaction struct {
-	// The outcome of the compaction.
-	Compaction *MetadataCompactionOutcome `json:"compaction" url:"compaction"`
-	// The namespace that this run compacted.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *RunMaintenanceResponseMetadataCompaction) GetCompaction() *MetadataCompactionOutcome {
-	if r == nil {
-		return nil
-	}
-	return r.Compaction
-}
-
-func (r *RunMaintenanceResponseMetadataCompaction) GetNamespaceID() NamespaceID {
-	if r == nil {
-		return ""
-	}
-	return r.NamespaceID
-}
-
-func (r *RunMaintenanceResponseMetadataCompaction) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *RunMaintenanceResponseMetadataCompaction) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-// SetCompaction sets the Compaction field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseMetadataCompaction) SetCompaction(compaction *MetadataCompactionOutcome) {
-	r.Compaction = compaction
-	r.require(runMaintenanceResponseMetadataCompactionFieldCompaction)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseMetadataCompaction) SetNamespaceID(namespaceID NamespaceID) {
-	r.NamespaceID = namespaceID
-	r.require(runMaintenanceResponseMetadataCompactionFieldNamespaceID)
-}
-
-func (r *RunMaintenanceResponseMetadataCompaction) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceResponseMetadataCompaction
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = RunMaintenanceResponseMetadataCompaction(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *RunMaintenanceResponseMetadataCompaction) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceResponseMetadataCompaction
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *RunMaintenanceResponseMetadataCompaction) String() string {
+func (r *RunMaintenanceJobResponseMetadata) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -9467,19 +7933,19 @@ func (r *RunMaintenanceResponseMetadataCompaction) String() string {
 
 // The committed administrator recovery.
 var (
-	runMaintenanceResponseRecoverAdministratorFieldAccessRevisionNo = big.NewInt(1 << 0)
-	runMaintenanceResponseRecoverAdministratorFieldCommitID         = big.NewInt(1 << 1)
-	runMaintenanceResponseRecoverAdministratorFieldCommittedSeq     = big.NewInt(1 << 2)
-	runMaintenanceResponseRecoverAdministratorFieldNamespaceID      = big.NewInt(1 << 3)
+	runMaintenanceJobResponseRecoverAdministratorFieldAccessRevisionNo = big.NewInt(1 << 0)
+	runMaintenanceJobResponseRecoverAdministratorFieldCommitID         = big.NewInt(1 << 1)
+	runMaintenanceJobResponseRecoverAdministratorFieldCommittedSeq     = big.NewInt(1 << 2)
+	runMaintenanceJobResponseRecoverAdministratorFieldNamespaceID      = big.NewInt(1 << 3)
 )
 
-type RunMaintenanceResponseRecoverAdministrator struct {
+type RunMaintenanceJobResponseRecoverAdministrator struct {
 	// The root's access revision after the recovery.
 	AccessRevisionNo AccessRevisionNo `json:"access_revision_no" url:"access_revision_no"`
 	// The ID of the recovery commit.
 	CommitID CommitID `json:"commit_id" url:"commit_id"`
 	// The sequence of the recovery commit.
-	CommittedSeq ChangeSeq `json:"committed_seq" url:"committed_seq"`
+	CommittedSeq CommitSeq `json:"committed_seq" url:"committed_seq"`
 	// The namespace whose root grants changed.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 
@@ -9490,42 +7956,42 @@ type RunMaintenanceResponseRecoverAdministrator struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceResponseRecoverAdministrator) GetAccessRevisionNo() AccessRevisionNo {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) GetAccessRevisionNo() AccessRevisionNo {
 	if r == nil {
 		return 0
 	}
 	return r.AccessRevisionNo
 }
 
-func (r *RunMaintenanceResponseRecoverAdministrator) GetCommitID() CommitID {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) GetCommitID() CommitID {
 	if r == nil {
 		return ""
 	}
 	return r.CommitID
 }
 
-func (r *RunMaintenanceResponseRecoverAdministrator) GetCommittedSeq() ChangeSeq {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) GetCommittedSeq() CommitSeq {
 	if r == nil {
 		return 0
 	}
 	return r.CommittedSeq
 }
 
-func (r *RunMaintenanceResponseRecoverAdministrator) GetNamespaceID() NamespaceID {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) GetNamespaceID() NamespaceID {
 	if r == nil {
 		return ""
 	}
 	return r.NamespaceID
 }
 
-func (r *RunMaintenanceResponseRecoverAdministrator) GetExtraProperties() map[string]interface{} {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) GetExtraProperties() map[string]interface{} {
 	if r == nil {
 		return nil
 	}
 	return r.extraProperties
 }
 
-func (r *RunMaintenanceResponseRecoverAdministrator) require(field *big.Int) {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) require(field *big.Int) {
 	if r.explicitFields == nil {
 		r.explicitFields = big.NewInt(0)
 	}
@@ -9534,39 +8000,39 @@ func (r *RunMaintenanceResponseRecoverAdministrator) require(field *big.Int) {
 
 // SetAccessRevisionNo sets the AccessRevisionNo field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseRecoverAdministrator) SetAccessRevisionNo(accessRevisionNo AccessRevisionNo) {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) SetAccessRevisionNo(accessRevisionNo AccessRevisionNo) {
 	r.AccessRevisionNo = accessRevisionNo
-	r.require(runMaintenanceResponseRecoverAdministratorFieldAccessRevisionNo)
+	r.require(runMaintenanceJobResponseRecoverAdministratorFieldAccessRevisionNo)
 }
 
 // SetCommitID sets the CommitID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseRecoverAdministrator) SetCommitID(commitID CommitID) {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) SetCommitID(commitID CommitID) {
 	r.CommitID = commitID
-	r.require(runMaintenanceResponseRecoverAdministratorFieldCommitID)
+	r.require(runMaintenanceJobResponseRecoverAdministratorFieldCommitID)
 }
 
 // SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseRecoverAdministrator) SetCommittedSeq(committedSeq ChangeSeq) {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) SetCommittedSeq(committedSeq CommitSeq) {
 	r.CommittedSeq = committedSeq
-	r.require(runMaintenanceResponseRecoverAdministratorFieldCommittedSeq)
+	r.require(runMaintenanceJobResponseRecoverAdministratorFieldCommittedSeq)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseRecoverAdministrator) SetNamespaceID(namespaceID NamespaceID) {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) SetNamespaceID(namespaceID NamespaceID) {
 	r.NamespaceID = namespaceID
-	r.require(runMaintenanceResponseRecoverAdministratorFieldNamespaceID)
+	r.require(runMaintenanceJobResponseRecoverAdministratorFieldNamespaceID)
 }
 
-func (r *RunMaintenanceResponseRecoverAdministrator) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceResponseRecoverAdministrator
+func (r *RunMaintenanceJobResponseRecoverAdministrator) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobResponseRecoverAdministrator
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*r = RunMaintenanceResponseRecoverAdministrator(value)
+	*r = RunMaintenanceJobResponseRecoverAdministrator(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *r)
 	if err != nil {
 		return err
@@ -9576,8 +8042,8 @@ func (r *RunMaintenanceResponseRecoverAdministrator) UnmarshalJSON(data []byte) 
 	return nil
 }
 
-func (r *RunMaintenanceResponseRecoverAdministrator) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceResponseRecoverAdministrator
+func (r *RunMaintenanceJobResponseRecoverAdministrator) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobResponseRecoverAdministrator
 	var marshaler = struct {
 		embed
 	}{
@@ -9587,7 +8053,7 @@ func (r *RunMaintenanceResponseRecoverAdministrator) MarshalJSON() ([]byte, erro
 	return json.Marshal(explicitMarshaler)
 }
 
-func (r *RunMaintenanceResponseRecoverAdministrator) String() string {
+func (r *RunMaintenanceJobResponseRecoverAdministrator) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -9604,15 +8070,17 @@ func (r *RunMaintenanceResponseRecoverAdministrator) String() string {
 
 // The result of advancing the retention floor.
 var (
-	runMaintenanceResponseRetentionFieldNamespaceID       = big.NewInt(1 << 0)
-	runMaintenanceResponseRetentionFieldRetentionFloorSeq = big.NewInt(1 << 1)
+	runMaintenanceJobResponseRetentionFieldNamespaceID       = big.NewInt(1 << 0)
+	runMaintenanceJobResponseRetentionFieldRetentionFloorSeq = big.NewInt(1 << 1)
 )
 
-type RunMaintenanceResponseRetention struct {
+type RunMaintenanceJobResponseRetention struct {
 	// The namespace whose retention floor was advanced.
 	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-	// The new retention floor, which is the minimum sequence for incremental replay.
-	RetentionFloorSeq ChangeSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
+	// The retention floor that the advance reached, which is the minimum sequence for incremental
+	// replay. It's below the target when LoonFS reads a commit that's less than 24 hours old
+	// before it reaches the target.
+	RetentionFloorSeq CommitSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -9621,28 +8089,28 @@ type RunMaintenanceResponseRetention struct {
 	rawJSON         json.RawMessage
 }
 
-func (r *RunMaintenanceResponseRetention) GetNamespaceID() NamespaceID {
+func (r *RunMaintenanceJobResponseRetention) GetNamespaceID() NamespaceID {
 	if r == nil {
 		return ""
 	}
 	return r.NamespaceID
 }
 
-func (r *RunMaintenanceResponseRetention) GetRetentionFloorSeq() ChangeSeq {
+func (r *RunMaintenanceJobResponseRetention) GetRetentionFloorSeq() CommitSeq {
 	if r == nil {
 		return 0
 	}
 	return r.RetentionFloorSeq
 }
 
-func (r *RunMaintenanceResponseRetention) GetExtraProperties() map[string]interface{} {
+func (r *RunMaintenanceJobResponseRetention) GetExtraProperties() map[string]interface{} {
 	if r == nil {
 		return nil
 	}
 	return r.extraProperties
 }
 
-func (r *RunMaintenanceResponseRetention) require(field *big.Int) {
+func (r *RunMaintenanceJobResponseRetention) require(field *big.Int) {
 	if r.explicitFields == nil {
 		r.explicitFields = big.NewInt(0)
 	}
@@ -9651,25 +8119,25 @@ func (r *RunMaintenanceResponseRetention) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseRetention) SetNamespaceID(namespaceID NamespaceID) {
+func (r *RunMaintenanceJobResponseRetention) SetNamespaceID(namespaceID NamespaceID) {
 	r.NamespaceID = namespaceID
-	r.require(runMaintenanceResponseRetentionFieldNamespaceID)
+	r.require(runMaintenanceJobResponseRetentionFieldNamespaceID)
 }
 
 // SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceResponseRetention) SetRetentionFloorSeq(retentionFloorSeq ChangeSeq) {
+func (r *RunMaintenanceJobResponseRetention) SetRetentionFloorSeq(retentionFloorSeq CommitSeq) {
 	r.RetentionFloorSeq = retentionFloorSeq
-	r.require(runMaintenanceResponseRetentionFieldRetentionFloorSeq)
+	r.require(runMaintenanceJobResponseRetentionFieldRetentionFloorSeq)
 }
 
-func (r *RunMaintenanceResponseRetention) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceResponseRetention
+func (r *RunMaintenanceJobResponseRetention) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobResponseRetention
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*r = RunMaintenanceResponseRetention(value)
+	*r = RunMaintenanceJobResponseRetention(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *r)
 	if err != nil {
 		return err
@@ -9679,8 +8147,8 @@ func (r *RunMaintenanceResponseRetention) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *RunMaintenanceResponseRetention) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceResponseRetention
+func (r *RunMaintenanceJobResponseRetention) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobResponseRetention
 	var marshaler = struct {
 		embed
 	}{
@@ -9690,7 +8158,7 @@ func (r *RunMaintenanceResponseRetention) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (r *RunMaintenanceResponseRetention) String() string {
+func (r *RunMaintenanceJobResponseRetention) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -9705,8 +8173,557 @@ func (r *RunMaintenanceResponseRetention) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// The number of one run among the runs that a manifest lists. A run is the set of segments that one producer wrote together.
-type RunNo = int64
+// The namespace's retention window after the job.
+var (
+	runMaintenanceJobResponseRetentionWindowFieldNamespaceID       = big.NewInt(1 << 0)
+	runMaintenanceJobResponseRetentionWindowFieldRetentionWindowMs = big.NewInt(1 << 1)
+)
+
+type RunMaintenanceJobResponseRetentionWindow struct {
+	// The namespace whose retention window the job set or cleared.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// The namespace's retention window, in milliseconds. It's absent when the namespace has no
+	// window.
+	RetentionWindowMs *int64 `json:"retention_window_ms,omitempty" url:"retention_window_ms,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunMaintenanceJobResponseRetentionWindow) GetNamespaceID() NamespaceID {
+	if r == nil {
+		return ""
+	}
+	return r.NamespaceID
+}
+
+func (r *RunMaintenanceJobResponseRetentionWindow) GetRetentionWindowMs() *int64 {
+	if r == nil {
+		return nil
+	}
+	return r.RetentionWindowMs
+}
+
+func (r *RunMaintenanceJobResponseRetentionWindow) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunMaintenanceJobResponseRetentionWindow) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceJobResponseRetentionWindow) SetNamespaceID(namespaceID NamespaceID) {
+	r.NamespaceID = namespaceID
+	r.require(runMaintenanceJobResponseRetentionWindowFieldNamespaceID)
+}
+
+// SetRetentionWindowMs sets the RetentionWindowMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunMaintenanceJobResponseRetentionWindow) SetRetentionWindowMs(retentionWindowMs *int64) {
+	r.RetentionWindowMs = retentionWindowMs
+	r.require(runMaintenanceJobResponseRetentionWindowFieldRetentionWindowMs)
+}
+
+func (r *RunMaintenanceJobResponseRetentionWindow) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunMaintenanceJobResponseRetentionWindow
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunMaintenanceJobResponseRetentionWindow(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunMaintenanceJobResponseRetentionWindow) MarshalJSON() ([]byte, error) {
+	type embed RunMaintenanceJobResponseRetentionWindow
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunMaintenanceJobResponseRetentionWindow) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// One maintenance job for one pool.
+type RunPoolMaintenanceJobRequest struct {
+	Kind string
+	Gc   *RunPoolMaintenanceJobRequestGc
+
+	rawJSON json.RawMessage
+}
+
+func (r *RunPoolMaintenanceJobRequest) GetKind() string {
+	if r == nil {
+		return ""
+	}
+	return r.Kind
+}
+
+func (r *RunPoolMaintenanceJobRequest) GetGc() *RunPoolMaintenanceJobRequestGc {
+	if r == nil {
+		return nil
+	}
+	return r.Gc
+}
+
+func (r *RunPoolMaintenanceJobRequest) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Kind string `json:"kind"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	r.Kind = unmarshaler.Kind
+	if unmarshaler.Kind == "" {
+		return fmt.Errorf("%T did not include discriminant kind", r)
+	}
+	switch unmarshaler.Kind {
+	case "gc":
+		value := new(RunPoolMaintenanceJobRequestGc)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.Gc = value
+	}
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r RunPoolMaintenanceJobRequest) MarshalJSON() ([]byte, error) {
+	if err := r.validate(); err != nil {
+		return nil, err
+	}
+	if r.Gc != nil {
+		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
+	}
+	if len(r.rawJSON) > 0 {
+		return r.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", r)
+}
+
+type RunPoolMaintenanceJobRequestVisitor interface {
+	VisitGc(*RunPoolMaintenanceJobRequestGc) error
+}
+
+func (r *RunPoolMaintenanceJobRequest) Accept(visitor RunPoolMaintenanceJobRequestVisitor) error {
+	if r.Gc != nil {
+		return visitor.VisitGc(r.Gc)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", r)
+}
+
+func (r *RunPoolMaintenanceJobRequest) validate() error {
+	if r == nil {
+		return fmt.Errorf("type %T is nil", r)
+	}
+	var fields []string
+	if r.Gc != nil {
+		fields = append(fields, "gc")
+	}
+	if len(fields) == 0 {
+		if r.Kind != "" {
+			if len(r.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", r, r.Kind)
+		}
+		return fmt.Errorf("type %T is empty", r)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", r, fields)
+	}
+	if r.Kind != "" {
+		field := fields[0]
+		if r.Kind != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				r,
+				r.Kind,
+				r,
+			)
+		}
+	}
+	return nil
+}
+
+// A garbage collection job for the pool's aged, unreferenced content objects, upload records,
+// and temporary objects.
+type RunPoolMaintenanceJobRequestGc struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunPoolMaintenanceJobRequestGc) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunPoolMaintenanceJobRequestGc) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+func (r *RunPoolMaintenanceJobRequestGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunPoolMaintenanceJobRequestGc
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunPoolMaintenanceJobRequestGc(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunPoolMaintenanceJobRequestGc) MarshalJSON() ([]byte, error) {
+	type embed RunPoolMaintenanceJobRequestGc
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunPoolMaintenanceJobRequestGc) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// The result of one maintenance job on a pool.
+//
+// The `kind` matches the request.
+type RunPoolMaintenanceJobResponse struct {
+	Kind string
+	Gc   *RunPoolMaintenanceJobResponseGc
+
+	rawJSON json.RawMessage
+}
+
+func (r *RunPoolMaintenanceJobResponse) GetKind() string {
+	if r == nil {
+		return ""
+	}
+	return r.Kind
+}
+
+func (r *RunPoolMaintenanceJobResponse) GetGc() *RunPoolMaintenanceJobResponseGc {
+	if r == nil {
+		return nil
+	}
+	return r.Gc
+}
+
+func (r *RunPoolMaintenanceJobResponse) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Kind string `json:"kind"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	r.Kind = unmarshaler.Kind
+	if unmarshaler.Kind == "" {
+		return fmt.Errorf("%T did not include discriminant kind", r)
+	}
+	switch unmarshaler.Kind {
+	case "gc":
+		value := new(RunPoolMaintenanceJobResponseGc)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		r.Gc = value
+	}
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r RunPoolMaintenanceJobResponse) MarshalJSON() ([]byte, error) {
+	if err := r.validate(); err != nil {
+		return nil, err
+	}
+	if r.Gc != nil {
+		return internal.MarshalJSONWithExtraProperty(r.Gc, "kind", "gc")
+	}
+	if len(r.rawJSON) > 0 {
+		return r.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", r)
+}
+
+type RunPoolMaintenanceJobResponseVisitor interface {
+	VisitGc(*RunPoolMaintenanceJobResponseGc) error
+}
+
+func (r *RunPoolMaintenanceJobResponse) Accept(visitor RunPoolMaintenanceJobResponseVisitor) error {
+	if r.Gc != nil {
+		return visitor.VisitGc(r.Gc)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", r)
+}
+
+func (r *RunPoolMaintenanceJobResponse) validate() error {
+	if r == nil {
+		return fmt.Errorf("type %T is nil", r)
+	}
+	var fields []string
+	if r.Gc != nil {
+		fields = append(fields, "gc")
+	}
+	if len(fields) == 0 {
+		if r.Kind != "" {
+			if len(r.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", r, r.Kind)
+		}
+		return fmt.Errorf("type %T is empty", r)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", r, fields)
+	}
+	if r.Kind != "" {
+		field := fields[0]
+		if r.Kind != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				r,
+				r.Kind,
+				r,
+			)
+		}
+	}
+	return nil
+}
+
+// The counts and deadlines from one garbage collection call on the pool.
+var (
+	runPoolMaintenanceJobResponseGcFieldDeleted             = big.NewInt(1 << 0)
+	runPoolMaintenanceJobResponseGcFieldListedBytes         = big.NewInt(1 << 1)
+	runPoolMaintenanceJobResponseGcFieldNextReclamationAtMs = big.NewInt(1 << 2)
+	runPoolMaintenanceJobResponseGcFieldPoolID              = big.NewInt(1 << 3)
+	runPoolMaintenanceJobResponseGcFieldRetained            = big.NewInt(1 << 4)
+	runPoolMaintenanceJobResponseGcFieldSkipped             = big.NewInt(1 << 5)
+)
+
+type RunPoolMaintenanceJobResponseGc struct {
+	// The objects that the collection deleted, counted by object family.
+	Deleted *PoolDeletedObjectCounts `json:"deleted" url:"deleted"`
+	// The bytes of every object that the collection listed under the pool, each object once,
+	// before the collection's deletes.
+	ListedBytes int64 `json:"listed_bytes" url:"listed_bytes"`
+	// The earliest future upload cleanup time.
+	NextReclamationAtMs *int64 `json:"next_reclamation_at_ms,omitempty" url:"next_reclamation_at_ms,omitempty"`
+	// The pool that the collection ran against.
+	PoolID PoolID `json:"pool_id" url:"pool_id"`
+	// The candidates that the collection kept at deletion time, counted by reason.
+	Retained *PoolRetainedCandidates `json:"retained" url:"retained"`
+	// The work that this collection skipped at a limit, by reason. Empty when the collection
+	// skipped nothing.
+	Skipped []GcSkippedWork `json:"skipped,omitempty" url:"skipped,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) GetDeleted() *PoolDeletedObjectCounts {
+	if r == nil {
+		return nil
+	}
+	return r.Deleted
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) GetListedBytes() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.ListedBytes
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) GetNextReclamationAtMs() *int64 {
+	if r == nil {
+		return nil
+	}
+	return r.NextReclamationAtMs
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) GetPoolID() PoolID {
+	if r == nil {
+		return ""
+	}
+	return r.PoolID
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) GetRetained() *PoolRetainedCandidates {
+	if r == nil {
+		return nil
+	}
+	return r.Retained
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) GetSkipped() []GcSkippedWork {
+	if r == nil {
+		return nil
+	}
+	return r.Skipped
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetDeleted sets the Deleted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceJobResponseGc) SetDeleted(deleted *PoolDeletedObjectCounts) {
+	r.Deleted = deleted
+	r.require(runPoolMaintenanceJobResponseGcFieldDeleted)
+}
+
+// SetListedBytes sets the ListedBytes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceJobResponseGc) SetListedBytes(listedBytes int64) {
+	r.ListedBytes = listedBytes
+	r.require(runPoolMaintenanceJobResponseGcFieldListedBytes)
+}
+
+// SetNextReclamationAtMs sets the NextReclamationAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceJobResponseGc) SetNextReclamationAtMs(nextReclamationAtMs *int64) {
+	r.NextReclamationAtMs = nextReclamationAtMs
+	r.require(runPoolMaintenanceJobResponseGcFieldNextReclamationAtMs)
+}
+
+// SetPoolID sets the PoolID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceJobResponseGc) SetPoolID(poolID PoolID) {
+	r.PoolID = poolID
+	r.require(runPoolMaintenanceJobResponseGcFieldPoolID)
+}
+
+// SetRetained sets the Retained field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceJobResponseGc) SetRetained(retained *PoolRetainedCandidates) {
+	r.Retained = retained
+	r.require(runPoolMaintenanceJobResponseGcFieldRetained)
+}
+
+// SetSkipped sets the Skipped field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunPoolMaintenanceJobResponseGc) SetSkipped(skipped []GcSkippedWork) {
+	r.Skipped = skipped
+	r.require(runPoolMaintenanceJobResponseGcFieldSkipped)
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunPoolMaintenanceJobResponseGc
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunPoolMaintenanceJobResponseGc(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) MarshalJSON() ([]byte, error) {
+	type embed RunPoolMaintenanceJobResponseGc
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunPoolMaintenanceJobResponseGc) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
 
 // The JSON body that LoonFS APIs return with an HTTP error status.
 var (
@@ -9879,46 +8896,42 @@ func (s *ServiceUnavailableErrorBody) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// What one contract check found about the store.
-type StoreProbeCheckOutcome string
+// The durable ID of one snapshot.
+//
+// The manifest number in the ID determines which namespace manifest the snapshot protects.
+type SnapshotID = string
 
-const (
-	StoreProbeCheckOutcomePassed      StoreProbeCheckOutcome = "passed"
-	StoreProbeCheckOutcomeUnsupported StoreProbeCheckOutcome = "unsupported"
-	StoreProbeCheckOutcomeFailed      StoreProbeCheckOutcome = "failed"
-)
-
-func NewStoreProbeCheckOutcomeFromString(s string) (StoreProbeCheckOutcome, error) {
-	switch s {
-	case "passed":
-		return StoreProbeCheckOutcomePassed, nil
-	case "unsupported":
-		return StoreProbeCheckOutcomeUnsupported, nil
-	case "failed":
-		return StoreProbeCheckOutcomeFailed, nil
-	}
-	var t StoreProbeCheckOutcome
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (s StoreProbeCheckOutcome) Ptr() *StoreProbeCheckOutcome {
-	return &s
-}
-
-// The result of one contract check.
+// One snapshot, as its durable record stores it.
 var (
-	storeProbeCheckResultFieldMessage = big.NewInt(1 << 0)
-	storeProbeCheckResultFieldName    = big.NewInt(1 << 1)
-	storeProbeCheckResultFieldOutcome = big.NewInt(1 << 2)
+	snapshotRecordFieldCapturedSeq = big.NewInt(1 << 0)
+	snapshotRecordFieldCreatedAtMs = big.NewInt(1 << 1)
+	snapshotRecordFieldDeletedAtMs = big.NewInt(1 << 2)
+	snapshotRecordFieldExpiresAtMs = big.NewInt(1 << 3)
+	snapshotRecordFieldManifestNo  = big.NewInt(1 << 4)
+	snapshotRecordFieldNamespaceID = big.NewInt(1 << 5)
+	snapshotRecordFieldOwner       = big.NewInt(1 << 6)
+	snapshotRecordFieldSnapshotID  = big.NewInt(1 << 7)
 )
 
-type StoreProbeCheckResult struct {
-	// The expected and actual behavior for a failed check.
-	Message *string `json:"message,omitempty" url:"message,omitempty"`
-	// The check's stable name.
-	Name string `json:"name" url:"name"`
-	// Whether the store passed the check, failed it, or doesn't support the capability.
-	Outcome StoreProbeCheckOutcome `json:"outcome" url:"outcome"`
+type SnapshotRecord struct {
+	// The namespace sequence that the snapshot captured.
+	CapturedSeq CommitSeq `json:"captured_seq" url:"captured_seq"`
+	// The time the snapshot record was created, in Unix milliseconds.
+	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
+	// The time a caller deleted the snapshot, in Unix milliseconds. Garbage collection waits
+	// one more grace window before it deletes the record.
+	DeletedAtMs *int64 `json:"deleted_at_ms,omitempty" url:"deleted_at_ms,omitempty"`
+	// The time the snapshot expires, in Unix milliseconds. Garbage collection waits one more
+	// grace window before it deletes the record.
+	ExpiresAtMs *int64 `json:"expires_at_ms,omitempty" url:"expires_at_ms,omitempty"`
+	// The manifest that the snapshot keeps.
+	ManifestNo ManifestNo `json:"manifest_no" url:"manifest_no"`
+	// The namespace that the snapshot belongs to.
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
+	// The snapshot's owner. For a user snapshot with a label, the owner includes the label.
+	Owner *SnapshotRecordOwner `json:"owner" url:"owner"`
+	// The snapshot's durable ID.
+	SnapshotID SnapshotID `json:"snapshot_id" url:"snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -9927,69 +8940,139 @@ type StoreProbeCheckResult struct {
 	rawJSON         json.RawMessage
 }
 
-func (s *StoreProbeCheckResult) GetMessage() *string {
+func (s *SnapshotRecord) GetCapturedSeq() CommitSeq {
+	if s == nil {
+		return 0
+	}
+	return s.CapturedSeq
+}
+
+func (s *SnapshotRecord) GetCreatedAtMs() int64 {
+	if s == nil {
+		return 0
+	}
+	return s.CreatedAtMs
+}
+
+func (s *SnapshotRecord) GetDeletedAtMs() *int64 {
 	if s == nil {
 		return nil
 	}
-	return s.Message
+	return s.DeletedAtMs
 }
 
-func (s *StoreProbeCheckResult) GetName() string {
+func (s *SnapshotRecord) GetExpiresAtMs() *int64 {
+	if s == nil {
+		return nil
+	}
+	return s.ExpiresAtMs
+}
+
+func (s *SnapshotRecord) GetManifestNo() ManifestNo {
+	if s == nil {
+		return 0
+	}
+	return s.ManifestNo
+}
+
+func (s *SnapshotRecord) GetNamespaceID() NamespaceID {
 	if s == nil {
 		return ""
 	}
-	return s.Name
+	return s.NamespaceID
 }
 
-func (s *StoreProbeCheckResult) GetOutcome() StoreProbeCheckOutcome {
+func (s *SnapshotRecord) GetOwner() *SnapshotRecordOwner {
+	if s == nil {
+		return nil
+	}
+	return s.Owner
+}
+
+func (s *SnapshotRecord) GetSnapshotID() SnapshotID {
 	if s == nil {
 		return ""
 	}
-	return s.Outcome
+	return s.SnapshotID
 }
 
-func (s *StoreProbeCheckResult) GetExtraProperties() map[string]interface{} {
+func (s *SnapshotRecord) GetExtraProperties() map[string]interface{} {
 	if s == nil {
 		return nil
 	}
 	return s.extraProperties
 }
 
-func (s *StoreProbeCheckResult) require(field *big.Int) {
+func (s *SnapshotRecord) require(field *big.Int) {
 	if s.explicitFields == nil {
 		s.explicitFields = big.NewInt(0)
 	}
 	s.explicitFields.Or(s.explicitFields, field)
 }
 
-// SetMessage sets the Message field and marks it as non-optional;
+// SetCapturedSeq sets the CapturedSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StoreProbeCheckResult) SetMessage(message *string) {
-	s.Message = message
-	s.require(storeProbeCheckResultFieldMessage)
+func (s *SnapshotRecord) SetCapturedSeq(capturedSeq CommitSeq) {
+	s.CapturedSeq = capturedSeq
+	s.require(snapshotRecordFieldCapturedSeq)
 }
 
-// SetName sets the Name field and marks it as non-optional;
+// SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StoreProbeCheckResult) SetName(name string) {
-	s.Name = name
-	s.require(storeProbeCheckResultFieldName)
+func (s *SnapshotRecord) SetCreatedAtMs(createdAtMs int64) {
+	s.CreatedAtMs = createdAtMs
+	s.require(snapshotRecordFieldCreatedAtMs)
 }
 
-// SetOutcome sets the Outcome field and marks it as non-optional;
+// SetDeletedAtMs sets the DeletedAtMs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StoreProbeCheckResult) SetOutcome(outcome StoreProbeCheckOutcome) {
-	s.Outcome = outcome
-	s.require(storeProbeCheckResultFieldOutcome)
+func (s *SnapshotRecord) SetDeletedAtMs(deletedAtMs *int64) {
+	s.DeletedAtMs = deletedAtMs
+	s.require(snapshotRecordFieldDeletedAtMs)
 }
 
-func (s *StoreProbeCheckResult) UnmarshalJSON(data []byte) error {
-	type unmarshaler StoreProbeCheckResult
+// SetExpiresAtMs sets the ExpiresAtMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SnapshotRecord) SetExpiresAtMs(expiresAtMs *int64) {
+	s.ExpiresAtMs = expiresAtMs
+	s.require(snapshotRecordFieldExpiresAtMs)
+}
+
+// SetManifestNo sets the ManifestNo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SnapshotRecord) SetManifestNo(manifestNo ManifestNo) {
+	s.ManifestNo = manifestNo
+	s.require(snapshotRecordFieldManifestNo)
+}
+
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SnapshotRecord) SetNamespaceID(namespaceID NamespaceID) {
+	s.NamespaceID = namespaceID
+	s.require(snapshotRecordFieldNamespaceID)
+}
+
+// SetOwner sets the Owner field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SnapshotRecord) SetOwner(owner *SnapshotRecordOwner) {
+	s.Owner = owner
+	s.require(snapshotRecordFieldOwner)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SnapshotRecord) SetSnapshotID(snapshotID SnapshotID) {
+	s.SnapshotID = snapshotID
+	s.require(snapshotRecordFieldSnapshotID)
+}
+
+func (s *SnapshotRecord) UnmarshalJSON(data []byte) error {
+	type unmarshaler SnapshotRecord
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*s = StoreProbeCheckResult(value)
+	*s = SnapshotRecord(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *s)
 	if err != nil {
 		return err
@@ -9999,8 +9082,8 @@ func (s *StoreProbeCheckResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s *StoreProbeCheckResult) MarshalJSON() ([]byte, error) {
-	type embed StoreProbeCheckResult
+func (s *SnapshotRecord) MarshalJSON() ([]byte, error) {
+	type embed SnapshotRecord
 	var marshaler = struct {
 		embed
 	}{
@@ -10010,7 +9093,733 @@ func (s *StoreProbeCheckResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (s *StoreProbeCheckResult) String() string {
+func (s *SnapshotRecord) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// The owner of a snapshot record.
+type SnapshotRecordOwner struct {
+	Kind string
+	Fork *SnapshotRecordOwnerFork
+	User *SnapshotRecordOwnerUser
+
+	rawJSON json.RawMessage
+}
+
+func (s *SnapshotRecordOwner) GetKind() string {
+	if s == nil {
+		return ""
+	}
+	return s.Kind
+}
+
+func (s *SnapshotRecordOwner) GetFork() *SnapshotRecordOwnerFork {
+	if s == nil {
+		return nil
+	}
+	return s.Fork
+}
+
+func (s *SnapshotRecordOwner) GetUser() *SnapshotRecordOwnerUser {
+	if s == nil {
+		return nil
+	}
+	return s.User
+}
+
+func (s *SnapshotRecordOwner) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Kind string `json:"kind"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	s.Kind = unmarshaler.Kind
+	if unmarshaler.Kind == "" {
+		return fmt.Errorf("%T did not include discriminant kind", s)
+	}
+	switch unmarshaler.Kind {
+	case "fork":
+		value := new(SnapshotRecordOwnerFork)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.Fork = value
+	case "user":
+		value := new(SnapshotRecordOwnerUser)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.User = value
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s SnapshotRecordOwner) MarshalJSON() ([]byte, error) {
+	if err := s.validate(); err != nil {
+		return nil, err
+	}
+	if s.Fork != nil {
+		return internal.MarshalJSONWithExtraProperty(s.Fork, "kind", "fork")
+	}
+	if s.User != nil {
+		return internal.MarshalJSONWithExtraProperty(s.User, "kind", "user")
+	}
+	if len(s.rawJSON) > 0 {
+		return s.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+type SnapshotRecordOwnerVisitor interface {
+	VisitFork(*SnapshotRecordOwnerFork) error
+	VisitUser(*SnapshotRecordOwnerUser) error
+}
+
+func (s *SnapshotRecordOwner) Accept(visitor SnapshotRecordOwnerVisitor) error {
+	if s.Fork != nil {
+		return visitor.VisitFork(s.Fork)
+	}
+	if s.User != nil {
+		return visitor.VisitUser(s.User)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+func (s *SnapshotRecordOwner) validate() error {
+	if s == nil {
+		return fmt.Errorf("type %T is nil", s)
+	}
+	var fields []string
+	if s.Fork != nil {
+		fields = append(fields, "fork")
+	}
+	if s.User != nil {
+		fields = append(fields, "user")
+	}
+	if len(fields) == 0 {
+		if s.Kind != "" {
+			if len(s.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", s, s.Kind)
+		}
+		return fmt.Errorf("type %T is empty", s)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", s, fields)
+	}
+	if s.Kind != "" {
+		field := fields[0]
+		if s.Kind != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				s,
+				s.Kind,
+				s,
+			)
+		}
+	}
+	return nil
+}
+
+// A snapshot that keeps the source state that one fork attempt starts from.
+var (
+	snapshotRecordOwnerForkFieldTargetNamespaceID = big.NewInt(1 << 0)
+)
+
+type SnapshotRecordOwnerFork struct {
+	// The fork's target namespace. Garbage collection keeps this snapshot while that
+	// namespace exists.
+	TargetNamespaceID NamespaceID `json:"target_namespace_id" url:"target_namespace_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SnapshotRecordOwnerFork) GetTargetNamespaceID() NamespaceID {
+	if s == nil {
+		return ""
+	}
+	return s.TargetNamespaceID
+}
+
+func (s *SnapshotRecordOwnerFork) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SnapshotRecordOwnerFork) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetTargetNamespaceID sets the TargetNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SnapshotRecordOwnerFork) SetTargetNamespaceID(targetNamespaceID NamespaceID) {
+	s.TargetNamespaceID = targetNamespaceID
+	s.require(snapshotRecordOwnerForkFieldTargetNamespaceID)
+}
+
+func (s *SnapshotRecordOwnerFork) UnmarshalJSON(data []byte) error {
+	type unmarshaler SnapshotRecordOwnerFork
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SnapshotRecordOwnerFork(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SnapshotRecordOwnerFork) MarshalJSON() ([]byte, error) {
+	type embed SnapshotRecordOwnerFork
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SnapshotRecordOwnerFork) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// A snapshot, which a caller created. It's deleted by its ID or after it expires.
+var (
+	snapshotRecordOwnerUserFieldName = big.NewInt(1 << 0)
+)
+
+type SnapshotRecordOwnerUser struct {
+	// The label that the creator recorded, if any. Labels don't need to be unique.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SnapshotRecordOwnerUser) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Name
+}
+
+func (s *SnapshotRecordOwnerUser) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SnapshotRecordOwnerUser) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SnapshotRecordOwnerUser) SetName(name *string) {
+	s.Name = name
+	s.require(snapshotRecordOwnerUserFieldName)
+}
+
+func (s *SnapshotRecordOwnerUser) UnmarshalJSON(data []byte) error {
+	type unmarshaler SnapshotRecordOwnerUser
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SnapshotRecordOwnerUser(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SnapshotRecordOwnerUser) MarshalJSON() ([]byte, error) {
+	type embed SnapshotRecordOwnerUser
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SnapshotRecordOwnerUser) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// The result of one contract check.
+type StoreProbeCheck struct {
+	Outcome     string
+	Failed      *StoreProbeCheckFailed
+	Passed      *StoreProbeCheckPassed
+	Unsupported *StoreProbeCheckUnsupported
+
+	rawJSON json.RawMessage
+}
+
+func (s *StoreProbeCheck) GetOutcome() string {
+	if s == nil {
+		return ""
+	}
+	return s.Outcome
+}
+
+func (s *StoreProbeCheck) GetFailed() *StoreProbeCheckFailed {
+	if s == nil {
+		return nil
+	}
+	return s.Failed
+}
+
+func (s *StoreProbeCheck) GetPassed() *StoreProbeCheckPassed {
+	if s == nil {
+		return nil
+	}
+	return s.Passed
+}
+
+func (s *StoreProbeCheck) GetUnsupported() *StoreProbeCheckUnsupported {
+	if s == nil {
+		return nil
+	}
+	return s.Unsupported
+}
+
+func (s *StoreProbeCheck) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Outcome string `json:"outcome"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	s.Outcome = unmarshaler.Outcome
+	if unmarshaler.Outcome == "" {
+		return fmt.Errorf("%T did not include discriminant outcome", s)
+	}
+	switch unmarshaler.Outcome {
+	case "failed":
+		value := new(StoreProbeCheckFailed)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.Failed = value
+	case "passed":
+		value := new(StoreProbeCheckPassed)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.Passed = value
+	case "unsupported":
+		value := new(StoreProbeCheckUnsupported)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.Unsupported = value
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s StoreProbeCheck) MarshalJSON() ([]byte, error) {
+	if err := s.validate(); err != nil {
+		return nil, err
+	}
+	if s.Failed != nil {
+		return internal.MarshalJSONWithExtraProperty(s.Failed, "outcome", "failed")
+	}
+	if s.Passed != nil {
+		return internal.MarshalJSONWithExtraProperty(s.Passed, "outcome", "passed")
+	}
+	if s.Unsupported != nil {
+		return internal.MarshalJSONWithExtraProperty(s.Unsupported, "outcome", "unsupported")
+	}
+	if len(s.rawJSON) > 0 {
+		return s.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+type StoreProbeCheckVisitor interface {
+	VisitFailed(*StoreProbeCheckFailed) error
+	VisitPassed(*StoreProbeCheckPassed) error
+	VisitUnsupported(*StoreProbeCheckUnsupported) error
+}
+
+func (s *StoreProbeCheck) Accept(visitor StoreProbeCheckVisitor) error {
+	if s.Failed != nil {
+		return visitor.VisitFailed(s.Failed)
+	}
+	if s.Passed != nil {
+		return visitor.VisitPassed(s.Passed)
+	}
+	if s.Unsupported != nil {
+		return visitor.VisitUnsupported(s.Unsupported)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+func (s *StoreProbeCheck) validate() error {
+	if s == nil {
+		return fmt.Errorf("type %T is nil", s)
+	}
+	var fields []string
+	if s.Failed != nil {
+		fields = append(fields, "failed")
+	}
+	if s.Passed != nil {
+		fields = append(fields, "passed")
+	}
+	if s.Unsupported != nil {
+		fields = append(fields, "unsupported")
+	}
+	if len(fields) == 0 {
+		if s.Outcome != "" {
+			if len(s.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", s, s.Outcome)
+		}
+		return fmt.Errorf("type %T is empty", s)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", s, fields)
+	}
+	if s.Outcome != "" {
+		field := fields[0]
+		if s.Outcome != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				s,
+				s.Outcome,
+				s,
+			)
+		}
+	}
+	return nil
+}
+
+// The store violated the contract or the operation failed.
+var (
+	storeProbeCheckFailedFieldMessage = big.NewInt(1 << 0)
+	storeProbeCheckFailedFieldName    = big.NewInt(1 << 1)
+)
+
+type StoreProbeCheckFailed struct {
+	// The expected and actual behavior for a failed check.
+	Message string `json:"message" url:"message"`
+	// The check's stable name.
+	Name string `json:"name" url:"name"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *StoreProbeCheckFailed) GetMessage() string {
+	if s == nil {
+		return ""
+	}
+	return s.Message
+}
+
+func (s *StoreProbeCheckFailed) GetName() string {
+	if s == nil {
+		return ""
+	}
+	return s.Name
+}
+
+func (s *StoreProbeCheckFailed) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *StoreProbeCheckFailed) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *StoreProbeCheckFailed) SetMessage(message string) {
+	s.Message = message
+	s.require(storeProbeCheckFailedFieldMessage)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *StoreProbeCheckFailed) SetName(name string) {
+	s.Name = name
+	s.require(storeProbeCheckFailedFieldName)
+}
+
+func (s *StoreProbeCheckFailed) UnmarshalJSON(data []byte) error {
+	type unmarshaler StoreProbeCheckFailed
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = StoreProbeCheckFailed(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *StoreProbeCheckFailed) MarshalJSON() ([]byte, error) {
+	type embed StoreProbeCheckFailed
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *StoreProbeCheckFailed) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// The store behaved as the contract requires.
+var (
+	storeProbeCheckPassedFieldName = big.NewInt(1 << 0)
+)
+
+type StoreProbeCheckPassed struct {
+	// The check's stable name.
+	Name string `json:"name" url:"name"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *StoreProbeCheckPassed) GetName() string {
+	if s == nil {
+		return ""
+	}
+	return s.Name
+}
+
+func (s *StoreProbeCheckPassed) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *StoreProbeCheckPassed) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *StoreProbeCheckPassed) SetName(name string) {
+	s.Name = name
+	s.require(storeProbeCheckPassedFieldName)
+}
+
+func (s *StoreProbeCheckPassed) UnmarshalJSON(data []byte) error {
+	type unmarshaler StoreProbeCheckPassed
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = StoreProbeCheckPassed(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *StoreProbeCheckPassed) MarshalJSON() ([]byte, error) {
+	type embed StoreProbeCheckPassed
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *StoreProbeCheckPassed) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// The store doesn't support this optional capability.
+var (
+	storeProbeCheckUnsupportedFieldName = big.NewInt(1 << 0)
+)
+
+type StoreProbeCheckUnsupported struct {
+	// The check's stable name.
+	Name string `json:"name" url:"name"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *StoreProbeCheckUnsupported) GetName() string {
+	if s == nil {
+		return ""
+	}
+	return s.Name
+}
+
+func (s *StoreProbeCheckUnsupported) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *StoreProbeCheckUnsupported) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *StoreProbeCheckUnsupported) SetName(name string) {
+	s.Name = name
+	s.require(storeProbeCheckUnsupportedFieldName)
+}
+
+func (s *StoreProbeCheckUnsupported) UnmarshalJSON(data []byte) error {
+	type unmarshaler StoreProbeCheckUnsupported
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = StoreProbeCheckUnsupported(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *StoreProbeCheckUnsupported) MarshalJSON() ([]byte, error) {
+	type embed StoreProbeCheckUnsupported
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *StoreProbeCheckUnsupported) String() string {
 	if s == nil {
 		return "<nil>"
 	}
@@ -10030,16 +9839,16 @@ type StoreProbeRequest = map[string]any
 
 // The results of one store contract probe, in order.
 var (
-	storeProbeResponseFieldChecks = big.NewInt(1 << 0)
-	storeProbeResponseFieldRunID  = big.NewInt(1 << 1)
+	storeProbeResponseFieldChecks  = big.NewInt(1 << 0)
+	storeProbeResponseFieldProbeID = big.NewInt(1 << 1)
 )
 
 type StoreProbeResponse struct {
 	// The check results, in the order that the checks ran.
-	Checks []*StoreProbeCheckResult `json:"checks" url:"checks"`
+	Checks []*StoreProbeCheck `json:"checks" url:"checks"`
 	// The ID of this probe run. The server generates the ID and writes the probe's temporary
 	// objects under it.
-	RunID ProbeRunID `json:"run_id" url:"run_id"`
+	ProbeID ProbeID `json:"probe_id" url:"probe_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -10048,18 +9857,18 @@ type StoreProbeResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (s *StoreProbeResponse) GetChecks() []*StoreProbeCheckResult {
+func (s *StoreProbeResponse) GetChecks() []*StoreProbeCheck {
 	if s == nil {
 		return nil
 	}
 	return s.Checks
 }
 
-func (s *StoreProbeResponse) GetRunID() ProbeRunID {
+func (s *StoreProbeResponse) GetProbeID() ProbeID {
 	if s == nil {
 		return ""
 	}
-	return s.RunID
+	return s.ProbeID
 }
 
 func (s *StoreProbeResponse) GetExtraProperties() map[string]interface{} {
@@ -10078,16 +9887,16 @@ func (s *StoreProbeResponse) require(field *big.Int) {
 
 // SetChecks sets the Checks field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StoreProbeResponse) SetChecks(checks []*StoreProbeCheckResult) {
+func (s *StoreProbeResponse) SetChecks(checks []*StoreProbeCheck) {
 	s.Checks = checks
 	s.require(storeProbeResponseFieldChecks)
 }
 
-// SetRunID sets the RunID field and marks it as non-optional;
+// SetProbeID sets the ProbeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StoreProbeResponse) SetRunID(runID ProbeRunID) {
-	s.RunID = runID
-	s.require(storeProbeResponseFieldRunID)
+func (s *StoreProbeResponse) SetProbeID(probeID ProbeID) {
+	s.ProbeID = probeID
+	s.require(storeProbeResponseFieldProbeID)
 }
 
 func (s *StoreProbeResponse) UnmarshalJSON(data []byte) error {
@@ -10130,523 +9939,6 @@ func (s *StoreProbeResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", s)
-}
-
-// What the WAL fold step of a maintenance pass did.
-type WalFoldStepOutcome struct {
-	Outcome          string
-	AlreadyPublished *WalFoldStepOutcomeAlreadyPublished
-	Folded           *WalFoldStepOutcomeFolded
-	NotNeeded        *WalFoldStepOutcomeNotNeeded
-	RetriesExhausted *WalFoldStepOutcomeRetriesExhausted
-
-	rawJSON json.RawMessage
-}
-
-func (w *WalFoldStepOutcome) GetOutcome() string {
-	if w == nil {
-		return ""
-	}
-	return w.Outcome
-}
-
-func (w *WalFoldStepOutcome) GetAlreadyPublished() *WalFoldStepOutcomeAlreadyPublished {
-	if w == nil {
-		return nil
-	}
-	return w.AlreadyPublished
-}
-
-func (w *WalFoldStepOutcome) GetFolded() *WalFoldStepOutcomeFolded {
-	if w == nil {
-		return nil
-	}
-	return w.Folded
-}
-
-func (w *WalFoldStepOutcome) GetNotNeeded() *WalFoldStepOutcomeNotNeeded {
-	if w == nil {
-		return nil
-	}
-	return w.NotNeeded
-}
-
-func (w *WalFoldStepOutcome) GetRetriesExhausted() *WalFoldStepOutcomeRetriesExhausted {
-	if w == nil {
-		return nil
-	}
-	return w.RetriesExhausted
-}
-
-func (w *WalFoldStepOutcome) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Outcome string `json:"outcome"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	w.Outcome = unmarshaler.Outcome
-	if unmarshaler.Outcome == "" {
-		return fmt.Errorf("%T did not include discriminant outcome", w)
-	}
-	switch unmarshaler.Outcome {
-	case "already_published":
-		value := new(WalFoldStepOutcomeAlreadyPublished)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		w.AlreadyPublished = value
-	case "folded":
-		value := new(WalFoldStepOutcomeFolded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		w.Folded = value
-	case "not_needed":
-		value := new(WalFoldStepOutcomeNotNeeded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		w.NotNeeded = value
-	case "retries_exhausted":
-		value := new(WalFoldStepOutcomeRetriesExhausted)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		w.RetriesExhausted = value
-	}
-	w.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (w WalFoldStepOutcome) MarshalJSON() ([]byte, error) {
-	if err := w.validate(); err != nil {
-		return nil, err
-	}
-	if w.AlreadyPublished != nil {
-		return internal.MarshalJSONWithExtraProperty(w.AlreadyPublished, "outcome", "already_published")
-	}
-	if w.Folded != nil {
-		return internal.MarshalJSONWithExtraProperty(w.Folded, "outcome", "folded")
-	}
-	if w.NotNeeded != nil {
-		return internal.MarshalJSONWithExtraProperty(w.NotNeeded, "outcome", "not_needed")
-	}
-	if w.RetriesExhausted != nil {
-		return internal.MarshalJSONWithExtraProperty(w.RetriesExhausted, "outcome", "retries_exhausted")
-	}
-	if len(w.rawJSON) > 0 {
-		return w.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", w)
-}
-
-type WalFoldStepOutcomeVisitor interface {
-	VisitAlreadyPublished(*WalFoldStepOutcomeAlreadyPublished) error
-	VisitFolded(*WalFoldStepOutcomeFolded) error
-	VisitNotNeeded(*WalFoldStepOutcomeNotNeeded) error
-	VisitRetriesExhausted(*WalFoldStepOutcomeRetriesExhausted) error
-}
-
-func (w *WalFoldStepOutcome) Accept(visitor WalFoldStepOutcomeVisitor) error {
-	if w.AlreadyPublished != nil {
-		return visitor.VisitAlreadyPublished(w.AlreadyPublished)
-	}
-	if w.Folded != nil {
-		return visitor.VisitFolded(w.Folded)
-	}
-	if w.NotNeeded != nil {
-		return visitor.VisitNotNeeded(w.NotNeeded)
-	}
-	if w.RetriesExhausted != nil {
-		return visitor.VisitRetriesExhausted(w.RetriesExhausted)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", w)
-}
-
-func (w *WalFoldStepOutcome) validate() error {
-	if w == nil {
-		return fmt.Errorf("type %T is nil", w)
-	}
-	var fields []string
-	if w.AlreadyPublished != nil {
-		fields = append(fields, "already_published")
-	}
-	if w.Folded != nil {
-		fields = append(fields, "folded")
-	}
-	if w.NotNeeded != nil {
-		fields = append(fields, "not_needed")
-	}
-	if w.RetriesExhausted != nil {
-		fields = append(fields, "retries_exhausted")
-	}
-	if len(fields) == 0 {
-		if w.Outcome != "" {
-			if len(w.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", w, w.Outcome)
-		}
-		return fmt.Errorf("type %T is empty", w)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", w, fields)
-	}
-	if w.Outcome != "" {
-		field := fields[0]
-		if w.Outcome != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				w,
-				w.Outcome,
-				w,
-			)
-		}
-	}
-	return nil
-}
-
-// The current manifest already included the captured WAL tail, so this step didn't publish a
-// manifest.
-var (
-	walFoldStepOutcomeAlreadyPublishedFieldAttemptedSeq      = big.NewInt(1 << 0)
-	walFoldStepOutcomeAlreadyPublishedFieldCurrentManifestNo = big.NewInt(1 << 1)
-)
-
-type WalFoldStepOutcomeAlreadyPublished struct {
-	// The sequence that this step tried to fold through.
-	AttemptedSeq ChangeSeq `json:"attempted_seq" url:"attempted_seq"`
-	// The number of the namespace's current manifest.
-	CurrentManifestNo ManifestNo `json:"current_manifest_no" url:"current_manifest_no"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (w *WalFoldStepOutcomeAlreadyPublished) GetAttemptedSeq() ChangeSeq {
-	if w == nil {
-		return 0
-	}
-	return w.AttemptedSeq
-}
-
-func (w *WalFoldStepOutcomeAlreadyPublished) GetCurrentManifestNo() ManifestNo {
-	if w == nil {
-		return 0
-	}
-	return w.CurrentManifestNo
-}
-
-func (w *WalFoldStepOutcomeAlreadyPublished) GetExtraProperties() map[string]interface{} {
-	if w == nil {
-		return nil
-	}
-	return w.extraProperties
-}
-
-func (w *WalFoldStepOutcomeAlreadyPublished) require(field *big.Int) {
-	if w.explicitFields == nil {
-		w.explicitFields = big.NewInt(0)
-	}
-	w.explicitFields.Or(w.explicitFields, field)
-}
-
-// SetAttemptedSeq sets the AttemptedSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (w *WalFoldStepOutcomeAlreadyPublished) SetAttemptedSeq(attemptedSeq ChangeSeq) {
-	w.AttemptedSeq = attemptedSeq
-	w.require(walFoldStepOutcomeAlreadyPublishedFieldAttemptedSeq)
-}
-
-// SetCurrentManifestNo sets the CurrentManifestNo field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (w *WalFoldStepOutcomeAlreadyPublished) SetCurrentManifestNo(currentManifestNo ManifestNo) {
-	w.CurrentManifestNo = currentManifestNo
-	w.require(walFoldStepOutcomeAlreadyPublishedFieldCurrentManifestNo)
-}
-
-func (w *WalFoldStepOutcomeAlreadyPublished) UnmarshalJSON(data []byte) error {
-	type unmarshaler WalFoldStepOutcomeAlreadyPublished
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*w = WalFoldStepOutcomeAlreadyPublished(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *w)
-	if err != nil {
-		return err
-	}
-	w.extraProperties = extraProperties
-	w.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (w *WalFoldStepOutcomeAlreadyPublished) MarshalJSON() ([]byte, error) {
-	type embed WalFoldStepOutcomeAlreadyPublished
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*w),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (w *WalFoldStepOutcomeAlreadyPublished) String() string {
-	if w == nil {
-		return "<nil>"
-	}
-	if len(w.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(w); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", w)
-}
-
-// The step folded the WAL tail and published the next current manifest.
-var (
-	walFoldStepOutcomeFoldedFieldManifestHeadSeq = big.NewInt(1 << 0)
-)
-
-type WalFoldStepOutcomeFolded struct {
-	// The last sequence that the published manifest includes.
-	ManifestHeadSeq ChangeSeq `json:"manifest_head_seq" url:"manifest_head_seq"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (w *WalFoldStepOutcomeFolded) GetManifestHeadSeq() ChangeSeq {
-	if w == nil {
-		return 0
-	}
-	return w.ManifestHeadSeq
-}
-
-func (w *WalFoldStepOutcomeFolded) GetExtraProperties() map[string]interface{} {
-	if w == nil {
-		return nil
-	}
-	return w.extraProperties
-}
-
-func (w *WalFoldStepOutcomeFolded) require(field *big.Int) {
-	if w.explicitFields == nil {
-		w.explicitFields = big.NewInt(0)
-	}
-	w.explicitFields.Or(w.explicitFields, field)
-}
-
-// SetManifestHeadSeq sets the ManifestHeadSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (w *WalFoldStepOutcomeFolded) SetManifestHeadSeq(manifestHeadSeq ChangeSeq) {
-	w.ManifestHeadSeq = manifestHeadSeq
-	w.require(walFoldStepOutcomeFoldedFieldManifestHeadSeq)
-}
-
-func (w *WalFoldStepOutcomeFolded) UnmarshalJSON(data []byte) error {
-	type unmarshaler WalFoldStepOutcomeFolded
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*w = WalFoldStepOutcomeFolded(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *w)
-	if err != nil {
-		return err
-	}
-	w.extraProperties = extraProperties
-	w.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (w *WalFoldStepOutcomeFolded) MarshalJSON() ([]byte, error) {
-	type embed WalFoldStepOutcomeFolded
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*w),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (w *WalFoldStepOutcomeFolded) String() string {
-	if w == nil {
-		return "<nil>"
-	}
-	if len(w.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(w); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", w)
-}
-
-// The tail was below the threshold, so there was nothing to fold.
-type WalFoldStepOutcomeNotNeeded struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (w *WalFoldStepOutcomeNotNeeded) GetExtraProperties() map[string]interface{} {
-	if w == nil {
-		return nil
-	}
-	return w.extraProperties
-}
-
-func (w *WalFoldStepOutcomeNotNeeded) require(field *big.Int) {
-	if w.explicitFields == nil {
-		w.explicitFields = big.NewInt(0)
-	}
-	w.explicitFields.Or(w.explicitFields, field)
-}
-
-func (w *WalFoldStepOutcomeNotNeeded) UnmarshalJSON(data []byte) error {
-	type unmarshaler WalFoldStepOutcomeNotNeeded
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*w = WalFoldStepOutcomeNotNeeded(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *w)
-	if err != nil {
-		return err
-	}
-	w.extraProperties = extraProperties
-	w.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (w *WalFoldStepOutcomeNotNeeded) MarshalJSON() ([]byte, error) {
-	type embed WalFoldStepOutcomeNotNeeded
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*w),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (w *WalFoldStepOutcomeNotNeeded) String() string {
-	if w == nil {
-		return "<nil>"
-	}
-	if len(w.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(w); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", w)
-}
-
-// Concurrent updates prevented every publication attempt.
-var (
-	walFoldStepOutcomeRetriesExhaustedFieldObservedHeadSeq = big.NewInt(1 << 0)
-)
-
-type WalFoldStepOutcomeRetriesExhausted struct {
-	// The head sequence observed before the step ran.
-	ObservedHeadSeq ChangeSeq `json:"observed_head_seq" url:"observed_head_seq"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (w *WalFoldStepOutcomeRetriesExhausted) GetObservedHeadSeq() ChangeSeq {
-	if w == nil {
-		return 0
-	}
-	return w.ObservedHeadSeq
-}
-
-func (w *WalFoldStepOutcomeRetriesExhausted) GetExtraProperties() map[string]interface{} {
-	if w == nil {
-		return nil
-	}
-	return w.extraProperties
-}
-
-func (w *WalFoldStepOutcomeRetriesExhausted) require(field *big.Int) {
-	if w.explicitFields == nil {
-		w.explicitFields = big.NewInt(0)
-	}
-	w.explicitFields.Or(w.explicitFields, field)
-}
-
-// SetObservedHeadSeq sets the ObservedHeadSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (w *WalFoldStepOutcomeRetriesExhausted) SetObservedHeadSeq(observedHeadSeq ChangeSeq) {
-	w.ObservedHeadSeq = observedHeadSeq
-	w.require(walFoldStepOutcomeRetriesExhaustedFieldObservedHeadSeq)
-}
-
-func (w *WalFoldStepOutcomeRetriesExhausted) UnmarshalJSON(data []byte) error {
-	type unmarshaler WalFoldStepOutcomeRetriesExhausted
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*w = WalFoldStepOutcomeRetriesExhausted(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *w)
-	if err != nil {
-		return err
-	}
-	w.extraProperties = extraProperties
-	w.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (w *WalFoldStepOutcomeRetriesExhausted) MarshalJSON() ([]byte, error) {
-	type embed WalFoldStepOutcomeRetriesExhausted
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*w),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (w *WalFoldStepOutcomeRetriesExhausted) String() string {
-	if w == nil {
-		return "<nil>"
-	}
-	if len(w.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(w); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", w)
 }
 
 // The counter that LoonFS uses to reject writes from an older writer.

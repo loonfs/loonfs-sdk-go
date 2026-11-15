@@ -36,15 +36,15 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Returns the path entry for a visible inode, from the current state or a live snapshot. An unknown or hidden inode returns `inode_not_found`.
+// Returns the path entry for a visible inode, from the current state or an unexpired snapshot. An unknown or hidden inode returns `inode_not_found`.
 //
 // Example:
 //
 //	request := &loonfs.GetInodeRequest{
 //	    NamespaceID: "namespace_id",
-//	    InodeID: "ino_123",
+//	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	    SnapshotID: loonfs.String(
-//	        "pin_00000000000000000001-0000000000000002",
+//	        "snp_00000000000000000001-00000000000000000000000002",
 //	    ),
 //	}
 //	client.Inodes.Retrieve(
@@ -67,15 +67,15 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Lists one page of a directory's children, in canonical name key order, from the current state or a live snapshot. The request identifies the directory by its inode ID, so a listing and its later pages stay on the same directory even if the directory is renamed or moved at the same time.
+// Lists one page of a directory's children, in canonical name key order, from the current state or an unexpired snapshot. The request identifies the directory by its inode ID, so a listing and its later pages stay on the same directory even if the directory is renamed or moved at the same time.
 //
 // Example:
 //
 //	request := &loonfs.ListInodeChildrenRequest{
 //	    NamespaceID: "namespace_id",
-//	    InodeID: "ino_123",
+//	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	    SnapshotID: loonfs.String(
-//	        "pin_00000000000000000001-0000000000000002",
+//	        "snp_00000000000000000001-00000000000000000000000002",
 //	    ),
 //	}
 //	client.Inodes.ListChildren(
@@ -146,7 +146,7 @@ func (c *Client) ListChildren(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Reads and verifies the current revision of a visible file inode, wherever the inode is bound, or the revision that a live snapshot captured. An unknown or hidden inode returns `inode_not_found`.
+// Reads and verifies the current revision of a visible file inode, wherever the inode is bound, or the revision that an unexpired snapshot captured. A `Range` header asks for one byte range of the file instead. An unknown or hidden inode returns `inode_not_found`.
 //
 // Example:
 //
@@ -174,13 +174,13 @@ func (c *Client) Content(
 	return response.Body, nil
 }
 
-// Authorizes a direct read of the current revision of a visible file inode, wherever the inode is bound, or of the revision that a live snapshot captured. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response doesn't include a path.
+// Authorizes a direct read of the current revision of a visible file inode, wherever the inode is bound, or of the revision that an unexpired snapshot captured. The presigned URLs read exactly `[start_offset, size_bytes)`, as on the path route. The response doesn't include a path.
 //
 // Example:
 //
 //	request := &loonfs.CreateDownloadByInodeRequest{
 //	    NamespaceID: "namespace_id",
-//	    InodeID: "ino_123",
+//	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	}
 //	client.Inodes.CreateDownload(
 //	    context.TODO(),
@@ -208,7 +208,7 @@ func (c *Client) CreateDownload(
 //
 //	request := &loonfs.ListFileRevisionsByInodeRequest{
 //	    NamespaceID: "namespace_id",
-//	    InodeID: "ino_123",
+//	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	}
 //	client.Inodes.ListRevisions(
 //	    context.TODO(),
@@ -278,7 +278,7 @@ func (c *Client) ListRevisions(
 	return pager.GetPage(ctx, request.Cursor)
 }
 
-// Reads and verifies one retained file revision by inode ID and revision number.
+// Reads and verifies one retained file revision by inode ID and revision number, at the live head or in the state that a snapshot or a fork snapshot keeps. A `Range` header asks for one byte range of the revision instead.
 //
 // Example:
 //
@@ -307,13 +307,13 @@ func (c *Client) RevisionContent(
 	return response.Body, nil
 }
 
-// Authorizes a direct read of one retained inode revision. The capability reads exactly `[start_offset, size_bytes)`, as on the path route. The response doesn't include a path.
+// Authorizes a direct read of one retained inode revision. The presigned URLs read exactly `[start_offset, size_bytes)`, as on the path route. The response doesn't include a path.
 //
 // Example:
 //
 //	request := &loonfs.CreateRevisionDownloadByInodeRequest{
 //	    NamespaceID: "namespace_id",
-//	    InodeID: "ino_123",
+//	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	    RevisionNo: int64(1000000),
 //	}
 //	client.Inodes.CreateRevisionDownload(
