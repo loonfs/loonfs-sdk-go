@@ -146,7 +146,7 @@ func (c *Client) Fork(
 //
 //	request := &loonfs.GetNextMergeRangeRequest{
 //	    NamespaceID: "namespace_id",
-//	    Source: "demo",
+//	    SourceNamespaceID: "demo",
 //	}
 //	client.Namespaces.NextMergeRange(
 //	    context.TODO(),
@@ -225,7 +225,7 @@ func (c *Client) ForkForRebase(
 	return response.Body, nil
 }
 
-// Replays a fork's unmerged commits into the namespace, a rebase's new fork for the fork, as one replay commit, which applies the changes that don't conflict with the new fork and reports the ones that do. Each request continues after the new fork's previous replay commit. The commit ID makes retries idempotent, and a retry of a committed replay commit returns the new fork without the conflict report.
+// Replays a fork's unmerged commits into the namespace, a rebase's new fork for the fork, as one replay commit, which applies the changes that don't conflict with the new fork and reports the ones that do. Each request continues after the new fork's previous replay commit. The commit ID makes retries idempotent, and a retry of a committed replay commit returns the new fork with the same conflict report. The report counts toward the replay commit's size, so a report that doesn't fit returns `merge_too_large` with a split hint.
 //
 // Example:
 //

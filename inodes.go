@@ -198,7 +198,8 @@ var (
 	createRevisionDownloadByInodeRequestFieldRevisionNo     = big.NewInt(1 << 2)
 	createRevisionDownloadByInodeRequestFieldConsistency    = big.NewInt(1 << 3)
 	createRevisionDownloadByInodeRequestFieldMaxStalenessMs = big.NewInt(1 << 4)
-	createRevisionDownloadByInodeRequestFieldStartOffset    = big.NewInt(1 << 5)
+	createRevisionDownloadByInodeRequestFieldSnapshotID     = big.NewInt(1 << 5)
+	createRevisionDownloadByInodeRequestFieldStartOffset    = big.NewInt(1 << 6)
 )
 
 type CreateRevisionDownloadByInodeRequest struct {
@@ -211,11 +212,15 @@ type CreateRevisionDownloadByInodeRequest struct {
 	// How recently the read confirms the namespace head that it finds the revision in. `eventual`
 	// (the default, unless the server's `consistency` setting is `strong`) reads at the head that
 	// the server confirmed last while that confirmation is younger than the maximum staleness,
-	// and `strong` confirms the head before the read.
+	// and `strong` confirms the head before the read. It can't be combined with `snapshot_id`.
 	Consistency *ReadConsistency `json:"consistency,omitempty" url:"-"`
 	// With `consistency` set to `eventual`, how old the server's last confirmation of the head can
 	// be, in milliseconds. The default is the server's `max_staleness_ms`.
 	MaxStalenessMs *int64 `json:"max_staleness_ms,omitempty" url:"-"`
+	// A snapshot to find the revision in instead of the live head. The snapshot keeps the
+	// revision readable after the namespace's retention floor passes it, and a revision committed
+	// after the snapshot returns `revision_not_found`.
+	SnapshotID *SnapshotID `json:"snapshot_id,omitempty" url:"-"`
 	// The first byte that the download reads. It defaults to 0 and must be less than the revision's
 	// size. For a revision of zero bytes, it must be 0.
 	StartOffset *int64 `json:"start_offset,omitempty" url:"-"`
@@ -264,6 +269,13 @@ func (c *CreateRevisionDownloadByInodeRequest) SetConsistency(consistency *ReadC
 func (c *CreateRevisionDownloadByInodeRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
 	c.MaxStalenessMs = maxStalenessMs
 	c.require(createRevisionDownloadByInodeRequestFieldMaxStalenessMs)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateRevisionDownloadByInodeRequest) SetSnapshotID(snapshotID *SnapshotID) {
+	c.SnapshotID = snapshotID
+	c.require(createRevisionDownloadByInodeRequestFieldSnapshotID)
 }
 
 // SetStartOffset sets the StartOffset field and marks it as non-optional;
@@ -502,7 +514,7 @@ type GetInodeRequest struct {
 	// The inode ID.
 	InodeID string `json:"-" url:"-"`
 	// Whether the response includes the inode's attribute map and attribute revision. The default
-	// is `true`, because a stat reads one path and a map is at most 64 KiB.
+	// is `false`, as on every route that takes this parameter.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// The snapshot whose captured path state to read.
 	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`

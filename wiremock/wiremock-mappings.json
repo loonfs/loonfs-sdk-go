@@ -46,7 +46,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\",\n    \"source_snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"fork_point_snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\",\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -82,7 +82,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\",\n    \"source_snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"fork_point_snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\",\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -154,7 +154,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\",\n    \"source_snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"fork_point_snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\",\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -188,7 +188,7 @@
           }
         },
         "queryParameters": {
-          "source": {
+          "source_namespace_id": {
             "equalTo": "demo"
           }
         }
@@ -267,7 +267,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"access\": {\n    \"principal_scope\": \"org_acme\",\n    \"kind\": \"acl\"\n  },\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\",\n    \"source_snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"fork_point_snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\",\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n  \"retention_floor_seq\": 1000000,\n  \"retention_window_ms\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -303,7 +303,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"conflicts\": [\n    {\n      \"base\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"kind\": \"content\",\n      \"ours\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"theirs\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      }\n    }\n  ],\n  \"namespace\": {\n    \"access\": {\n      \"principal_scope\": \"org_acme\",\n      \"kind\": \"acl\"\n    },\n    \"created_at_ms\": 1000000,\n    \"created_by\": \"usr_8f3c\",\n    \"fork_basis\": {\n      \"fork_point_seq\": 1000000,\n      \"rebased_from\": {\n        \"resume_after_seq\": 1000000,\n        \"source_namespace_id\": \"demo\"\n      },\n      \"source_namespace_id\": \"demo\",\n      \"source_snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n    },\n    \"head_seq\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n    \"retention_floor_seq\": 1000000,\n    \"retention_window_ms\": 1000000\n  }\n}",
+        "body": "{\n  \"conflicts\": [\n    {\n      \"base\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"kind\": \"content\",\n      \"ours\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"theirs\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      }\n    }\n  ],\n  \"namespace\": {\n    \"created_at_ms\": 1000000,\n    \"created_by\": \"usr_8f3c\",\n    \"fork_basis\": {\n      \"fork_point_seq\": 1000000,\n      \"fork_point_snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\",\n      \"rebased_from\": {\n        \"resume_after_seq\": 1000000,\n        \"source_namespace_id\": \"demo\"\n      },\n      \"source_namespace_id\": \"demo\"\n    },\n    \"head_seq\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n    \"retention_floor_seq\": 1000000,\n    \"retention_window_ms\": 1000000\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -341,7 +341,7 @@
             "equalTo": "1000000"
           },
           "snapshot_id": {
-            "equalTo": "snp_00000000000000000001-00000000000000000000000002"
+            "equalTo": "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx"
           }
         }
       },
@@ -539,7 +539,7 @@
             "equalTo": "path"
           },
           "snapshot_id": {
-            "equalTo": "snp_00000000000000000001-00000000000000000000000002"
+            "equalTo": "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx"
           }
         }
       },
@@ -583,7 +583,7 @@
             "equalTo": "path"
           },
           "snapshot_id": {
-            "equalTo": "snp_00000000000000000001-00000000000000000000000002"
+            "equalTo": "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx"
           }
         }
       },
@@ -748,7 +748,7 @@
         },
         "queryParameters": {
           "snapshot_id": {
-            "equalTo": "snp_00000000000000000001-00000000000000000000000002"
+            "equalTo": "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx"
           }
         }
       },
@@ -792,7 +792,7 @@
         },
         "queryParameters": {
           "snapshot_id": {
-            "equalTo": "snp_00000000000000000001-00000000000000000000000002"
+            "equalTo": "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx"
           }
         }
       },
@@ -1035,7 +1035,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"snapshots\": [\n    {\n      \"captured_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"name\": \"name\",\n      \"namespace_id\": \"demo\",\n      \"snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n    }\n  ]\n}",
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"snapshots\": [\n    {\n      \"captured_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"name\": \"name\",\n      \"namespace_id\": \"demo\",\n      \"snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1071,7 +1071,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n}",
+        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1104,13 +1104,13 @@
             "equalTo": "namespace_id"
           },
           "snapshot_id": {
-            "equalTo": "snp_00000000000000000001-00000000000000000000000002"
+            "equalTo": "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n}",
+        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1143,13 +1143,13 @@
             "equalTo": "namespace_id"
           },
           "snapshot_id": {
-            "equalTo": "snp_00000000000000000001-00000000000000000000000002"
+            "equalTo": "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n}",
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1182,13 +1182,13 @@
             "equalTo": "namespace_id"
           },
           "snapshot_id": {
-            "equalTo": "snp_00000000000000000001-00000000000000000000000002"
+            "equalTo": "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n}",
+        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"name\": \"name\",\n  \"namespace_id\": \"demo\",\n  \"snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1416,7 +1416,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"current_manifest_no\": 1000000,\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\",\n    \"source_snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n  },\n  \"head_seq\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_objects\": 1000000\n}",
+        "body": "{\n  \"created_at_ms\": 1000000,\n  \"created_by\": \"usr_8f3c\",\n  \"current_manifest_no\": 1000000,\n  \"fork_basis\": {\n    \"fork_point_seq\": 1000000,\n    \"fork_point_snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\",\n    \"rebased_from\": {\n      \"resume_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\"\n    },\n    \"source_namespace_id\": \"demo\"\n  },\n  \"head_seq\": 1000000,\n  \"live_snapshots\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"wal_tail_objects\": 1000000\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1596,7 +1596,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"snapshots\": [\n    {\n      \"captured_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"deleted_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"manifest_no\": 1000000,\n      \"namespace_id\": \"demo\",\n      \"owner\": {\n        \"target_namespace_id\": \"demo\",\n        \"kind\": \"fork\"\n      },\n      \"snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n    }\n  ]\n}",
+        "body": "{\n  \"namespace_id\": \"demo\",\n  \"next_cursor\": \"next_cursor\",\n  \"snapshots\": [\n    {\n      \"captured_seq\": 1000000,\n      \"created_at_ms\": 1000000,\n      \"deleted_at_ms\": 1000000,\n      \"expires_at_ms\": 1000000,\n      \"manifest_no\": 1000000,\n      \"namespace_id\": \"demo\",\n      \"owner\": {\n        \"target_namespace_id\": \"demo\",\n        \"kind\": \"fork\"\n      },\n      \"snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1635,7 +1635,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"deleted_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_no\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"owner\": {\n    \"target_namespace_id\": \"demo\",\n    \"kind\": \"fork\"\n  },\n  \"snapshot_id\": \"snp_00000000000000000001-00000000000000000000000002\"\n}",
+        "body": "{\n  \"captured_seq\": 1000000,\n  \"created_at_ms\": 1000000,\n  \"deleted_at_ms\": 1000000,\n  \"expires_at_ms\": 1000000,\n  \"manifest_no\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"owner\": {\n    \"target_namespace_id\": \"demo\",\n    \"kind\": \"fork\"\n  },\n  \"snapshot_id\": \"snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }

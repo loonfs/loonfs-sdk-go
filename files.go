@@ -219,12 +219,14 @@ var (
 	grepRequestFieldNamespaceID     = big.NewInt(1 << 0)
 	grepRequestFieldPattern         = big.NewInt(1 << 1)
 	grepRequestFieldCaseInsensitive = big.NewInt(1 << 2)
-	grepRequestFieldPathPrefix      = big.NewInt(1 << 3)
+	grepRequestFieldPath            = big.NewInt(1 << 3)
 	grepRequestFieldInodeID         = big.NewInt(1 << 4)
 	grepRequestFieldAllowScan       = big.NewInt(1 << 5)
 	grepRequestFieldAllowStale      = big.NewInt(1 << 6)
 	grepRequestFieldLimit           = big.NewInt(1 << 7)
 	grepRequestFieldCursor          = big.NewInt(1 << 8)
+	grepRequestFieldConsistency     = big.NewInt(1 << 9)
+	grepRequestFieldMaxStalenessMs  = big.NewInt(1 << 10)
 )
 
 type GrepRequest struct {
@@ -237,8 +239,8 @@ type GrepRequest struct {
 	CaseInsensitive *bool `json:"-" url:"case_insensitive,omitempty"`
 	// A complete absolute path that limits matches to its descendants. It can't be combined with
 	// `inode_id`.
-	PathPrefix *string `json:"-" url:"path_prefix,omitempty"`
-	// An inode that limits matches to its descendants. It can't be combined with `path_prefix`.
+	Path *string `json:"-" url:"path,omitempty"`
+	// An inode that limits matches to its descendants. It can't be combined with `path`.
 	InodeID *string `json:"-" url:"inode_id,omitempty"`
 	// Whether a pattern with no required literal bytes can use a capped exhaustive scan. The
 	// default is `false`.
@@ -250,6 +252,14 @@ type GrepRequest struct {
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
+	// How recently a first page confirms the namespace head that it reads. `eventual` (the
+	// default, unless the server's `consistency` setting is `strong`) reads at the head that the
+	// server confirmed last while that confirmation is younger than the maximum staleness, and
+	// `strong` confirms the head before the read. A later page reads at the first page's head.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -283,11 +293,11 @@ func (g *GrepRequest) SetCaseInsensitive(caseInsensitive *bool) {
 	g.require(grepRequestFieldCaseInsensitive)
 }
 
-// SetPathPrefix sets the PathPrefix field and marks it as non-optional;
+// SetPath sets the Path field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepRequest) SetPathPrefix(pathPrefix *string) {
-	g.PathPrefix = pathPrefix
-	g.require(grepRequestFieldPathPrefix)
+func (g *GrepRequest) SetPath(path *string) {
+	g.Path = path
+	g.require(grepRequestFieldPath)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
@@ -323,6 +333,20 @@ func (g *GrepRequest) SetLimit(limit *int) {
 func (g *GrepRequest) SetCursor(cursor *string) {
 	g.Cursor = cursor
 	g.require(grepRequestFieldCursor)
+}
+
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GrepRequest) SetConsistency(consistency *ReadConsistency) {
+	g.Consistency = consistency
+	g.require(grepRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GrepRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	g.MaxStalenessMs = maxStalenessMs
+	g.require(grepRequestFieldMaxStalenessMs)
 }
 
 var (
@@ -533,7 +557,7 @@ type GetPathEntryRequest struct {
 	// The absolute path to read.
 	Path string `json:"-" url:"path"`
 	// Whether the response includes the inode's attribute map and attribute revision. The default
-	// is `true`, because a stat reads one path and a map is at most 64 KiB.
+	// is `false`, as on every route that takes this parameter.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
 	// The snapshot whose captured path state to read.
 	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
