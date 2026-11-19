@@ -142,7 +142,7 @@ func (c *Client) Create(
 //
 //	request := &loonfs.GetSnapshotRequest{
 //	    NamespaceID: "namespace_id",
-//	    SnapshotID: "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+//	    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 //	}
 //	client.Snapshots.Retrieve(
 //	    context.TODO(),
@@ -170,7 +170,7 @@ func (c *Client) Retrieve(
 //
 //	request := &loonfs.DeleteSnapshotRequest{
 //	    NamespaceID: "namespace_id",
-//	    SnapshotID: "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+//	    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 //	}
 //	client.Snapshots.Delete(
 //	    context.TODO(),
@@ -198,7 +198,7 @@ func (c *Client) Delete(
 //
 //	request := &loonfs.ExtendSnapshotRequest{
 //	    NamespaceID: "namespace_id",
-//	    SnapshotID: "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+//	    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 //	    TTLMs: int64(1000000),
 //	}
 //	client.Snapshots.Extend(

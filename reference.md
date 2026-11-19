@@ -760,7 +760,7 @@ request := &loonfs.ListChangesRequest{
     NamespaceID: "namespace_id",
     AfterSeq: int64(1000000),
     SnapshotID: loonfs.String(
-        "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+        "snp_0000000000000tfy68ekkbj6bx",
     ),
 }
 client.Changes.List(
@@ -1408,7 +1408,7 @@ request := &loonfs.ListPathEntriesRequest{
     NamespaceID: "namespace_id",
     Path: "path",
     SnapshotID: loonfs.String(
-        "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+        "snp_0000000000000tfy68ekkbj6bx",
     ),
 }
 client.Files.List(
@@ -1551,7 +1551,7 @@ request := &loonfs.GetPathEntryRequest{
     NamespaceID: "namespace_id",
     Path: "path",
     SnapshotID: loonfs.String(
-        "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+        "snp_0000000000000tfy68ekkbj6bx",
     ),
 }
 client.Files.Retrieve(
@@ -2041,7 +2041,7 @@ request := &loonfs.GetInodeRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_000000r0000013kje0d47gc8kw",
     SnapshotID: loonfs.String(
-        "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+        "snp_0000000000000tfy68ekkbj6bx",
     ),
 }
 client.Inodes.Retrieve(
@@ -2156,7 +2156,7 @@ request := &loonfs.ListInodeChildrenRequest{
     NamespaceID: "namespace_id",
     InodeID: "ino_000000r0000013kje0d47gc8kw",
     SnapshotID: loonfs.String(
-        "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+        "snp_0000000000000tfy68ekkbj6bx",
     ),
 }
 client.Inodes.ListChildren(
@@ -3035,7 +3035,7 @@ Returns one snapshot, as the snapshot listing returns it. A missing ID, the ID o
 ```go
 request := &loonfs.GetSnapshotRequest{
     NamespaceID: "namespace_id",
-    SnapshotID: "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 }
 client.Snapshots.Retrieve(
     context.TODO(),
@@ -3104,7 +3104,7 @@ Deletes a snapshot by recording the server's current time as its delete time. Fr
 ```go
 request := &loonfs.DeleteSnapshotRequest{
     NamespaceID: "namespace_id",
-    SnapshotID: "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 }
 client.Snapshots.Delete(
     context.TODO(),
@@ -3173,7 +3173,7 @@ Moves an unexpired snapshot's expiry to `ttl_ms` from the server's current time.
 ```go
 request := &loonfs.ExtendSnapshotRequest{
     NamespaceID: "namespace_id",
-    SnapshotID: "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
     TTLMs: int64(1000000),
 }
 client.Snapshots.Extend(

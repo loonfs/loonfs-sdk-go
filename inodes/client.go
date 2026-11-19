@@ -44,7 +44,7 @@ func NewClient(options *core.RequestOptions) *Client {
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	    SnapshotID: loonfs.String(
-//	        "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+//	        "snp_0000000000000tfy68ekkbj6bx",
 //	    ),
 //	}
 //	client.Inodes.Retrieve(
@@ -75,7 +75,7 @@ func (c *Client) Retrieve(
 //	    NamespaceID: "namespace_id",
 //	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	    SnapshotID: loonfs.String(
-//	        "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+//	        "snp_0000000000000tfy68ekkbj6bx",
 //	    ),
 //	}
 //	client.Inodes.ListChildren(

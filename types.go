@@ -5956,7 +5956,8 @@ type PathEntryFile struct {
 	// namespace root.
 	BindingVersion *BindingVersion `json:"binding_version,omitempty" url:"binding_version,omitempty"`
 	// The file's current content. It's present on entry reads (a stat by
-	// path or by inode) and absent from directory listings.
+	// path or by inode) and on directory listings, and a listing leaves
+	// it out for a file that the subject can't read.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The time the inode was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
@@ -8674,7 +8675,9 @@ func (s *ServiceUnavailableErrorBody) String() string {
 
 // The durable ID of one snapshot.
 //
-// The manifest number in the ID determines which namespace manifest the snapshot protects.
+// A snapshot ID uses the spelling of every generated ID: `snp_` and the 26-character
+// body. The high 64 bits of the body's 128 bits are the number of the manifest that the
+// snapshot keeps, and the low 64 bits are random.
 type SnapshotID = string
 
 // One snapshot, as its durable record stores it.

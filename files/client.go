@@ -100,7 +100,7 @@ func (c *Client) CreateDownload(
 //	    NamespaceID: "namespace_id",
 //	    Path: "path",
 //	    SnapshotID: loonfs.String(
-//	        "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+//	        "snp_0000000000000tfy68ekkbj6bx",
 //	    ),
 //	}
 //	client.Files.List(
@@ -178,7 +178,7 @@ func (c *Client) List(
 //	    NamespaceID: "namespace_id",
 //	    Path: "path",
 //	    SnapshotID: loonfs.String(
-//	        "snp_00000000000000000001-1m55n87n588gnafy68ekkbj6bx",
+//	        "snp_0000000000000tfy68ekkbj6bx",
 //	    ),
 //	}
 //	client.Files.Retrieve(
