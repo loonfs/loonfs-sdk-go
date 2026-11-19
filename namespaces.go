@@ -10,23 +10,20 @@ import (
 )
 
 var (
-	createNamespaceRequestFieldAccess            = big.NewInt(1 << 0)
-	createNamespaceRequestFieldNamespaceID       = big.NewInt(1 << 1)
-	createNamespaceRequestFieldRetentionWindowMs = big.NewInt(1 << 2)
+	createNamespaceRequestFieldNamespaceID       = big.NewInt(1 << 0)
+	createNamespaceRequestFieldRetentionWindowMs = big.NewInt(1 << 1)
 )
 
 type CreateNamespaceRequest struct {
-	// The namespace's access mode, which can't be changed after the namespace is created. The
-	// default is unrestricted.
-	Access *NamespaceAccess `json:"access,omitempty" url:"-"`
 	// The durable ID of the new namespace. Without this field, LoonFS generates an ID. The
 	// response's `namespace_id` is the new namespace's ID.
 	NamespaceID *NamespaceID `json:"namespace_id,omitempty" url:"-"`
 	// The namespace's retention window, in milliseconds, which must be at least the grace window
 	// (86400000, which is 24 hours). The reference server's maintenance sweep uses this window
-	// for the namespace. Without this field, the namespace's window is the server's
-	// `retention_window_ms` setting, if the server has that setting. A `retention_window`
-	// maintenance job can change or clear the window later.
+	// for the namespace. Without this field, the namespace's window is the server's default
+	// window, if the server has one, which the capability document reports as
+	// `namespace.default_retention_window_ms`. A `retention_window` maintenance job can change
+	// or clear the window later.
 	RetentionWindowMs *int64 `json:"retention_window_ms,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -38,13 +35,6 @@ func (c *CreateNamespaceRequest) require(field *big.Int) {
 		c.explicitFields = big.NewInt(0)
 	}
 	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateNamespaceRequest) SetAccess(access *NamespaceAccess) {
-	c.Access = access
-	c.require(createNamespaceRequestFieldAccess)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
@@ -345,8 +335,10 @@ func (m *MergeForkRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	getNextMergeRangeRequestFieldNamespaceID = big.NewInt(1 << 0)
-	getNextMergeRangeRequestFieldSource      = big.NewInt(1 << 1)
+	getNextMergeRangeRequestFieldNamespaceID       = big.NewInt(1 << 0)
+	getNextMergeRangeRequestFieldSourceNamespaceID = big.NewInt(1 << 1)
+	getNextMergeRangeRequestFieldConsistency       = big.NewInt(1 << 2)
+	getNextMergeRangeRequestFieldMaxStalenessMs    = big.NewInt(1 << 3)
 )
 
 type GetNextMergeRangeRequest struct {
@@ -354,7 +346,15 @@ type GetNextMergeRangeRequest struct {
 	NamespaceID string `json:"-" url:"-"`
 	// The fork whose next merge into the namespace the query reads. It has to be a fork of the
 	// namespace, or the fork that a rebase replays into the namespace.
-	Source NamespaceID `json:"-" url:"source"`
+	SourceNamespaceID NamespaceID `json:"-" url:"source_namespace_id"`
+	// How recently the read confirms the heads of the namespace and the fork. `eventual` (the
+	// default, unless the server's `consistency` setting is `strong`) reads at the heads that the
+	// server confirmed last while those confirmations are younger than the maximum staleness, and
+	// `strong` confirms both heads before the read.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of a head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -374,11 +374,25 @@ func (g *GetNextMergeRangeRequest) SetNamespaceID(namespaceID string) {
 	g.require(getNextMergeRangeRequestFieldNamespaceID)
 }
 
-// SetSource sets the Source field and marks it as non-optional;
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetNextMergeRangeRequest) SetSource(source NamespaceID) {
-	g.Source = source
-	g.require(getNextMergeRangeRequestFieldSource)
+func (g *GetNextMergeRangeRequest) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
+	g.SourceNamespaceID = sourceNamespaceID
+	g.require(getNextMergeRangeRequestFieldSourceNamespaceID)
+}
+
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetNextMergeRangeRequest) SetConsistency(consistency *ReadConsistency) {
+	g.Consistency = consistency
+	g.require(getNextMergeRangeRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetNextMergeRangeRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	g.MaxStalenessMs = maxStalenessMs
+	g.require(getNextMergeRangeRequestFieldMaxStalenessMs)
 }
 
 var (
@@ -471,12 +485,22 @@ func (r *ReplayForkRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	getNamespaceRequestFieldNamespaceID = big.NewInt(1 << 0)
+	getNamespaceRequestFieldNamespaceID    = big.NewInt(1 << 0)
+	getNamespaceRequestFieldConsistency    = big.NewInt(1 << 1)
+	getNamespaceRequestFieldMaxStalenessMs = big.NewInt(1 << 2)
 )
 
 type GetNamespaceRequest struct {
 	// The namespace ID.
 	NamespaceID string `json:"-" url:"-"`
+	// How recently the read confirms the namespace head. `eventual` (the default, unless the
+	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
+	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
+	// head before the read.
+	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
+	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
+	// milliseconds. The default is the server's `max_staleness_ms`.
+	MaxStalenessMs *int64 `json:"-" url:"max_staleness_ms,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -494,6 +518,20 @@ func (g *GetNamespaceRequest) require(field *big.Int) {
 func (g *GetNamespaceRequest) SetNamespaceID(namespaceID string) {
 	g.NamespaceID = namespaceID
 	g.require(getNamespaceRequestFieldNamespaceID)
+}
+
+// SetConsistency sets the Consistency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetNamespaceRequest) SetConsistency(consistency *ReadConsistency) {
+	g.Consistency = consistency
+	g.require(getNamespaceRequestFieldConsistency)
+}
+
+// SetMaxStalenessMs sets the MaxStalenessMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetNamespaceRequest) SetMaxStalenessMs(maxStalenessMs *int64) {
+	g.MaxStalenessMs = maxStalenessMs
+	g.require(getNamespaceRequestFieldMaxStalenessMs)
 }
 
 // The result of deleting a namespace.
@@ -760,8 +798,6 @@ func (m *MergeConflict) String() string {
 }
 
 // Which check of the conflict rule a merge's change failed.
-//
-// A newer server can return a kind that isn't listed here.
 type MergeConflictKind string
 
 const (
@@ -923,598 +959,19 @@ func (m *MergeConflictVersion) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// A namespace's access mode, which can't be changed after the namespace is created.
-type NamespaceAccess struct {
-	Kind         string
-	ACL          *NamespaceAccessACL
-	Unrestricted *NamespaceAccessUnrestricted
-
-	rawJSON json.RawMessage
-}
-
-func (n *NamespaceAccess) GetKind() string {
-	if n == nil {
-		return ""
-	}
-	return n.Kind
-}
-
-func (n *NamespaceAccess) GetACL() *NamespaceAccessACL {
-	if n == nil {
-		return nil
-	}
-	return n.ACL
-}
-
-func (n *NamespaceAccess) GetUnrestricted() *NamespaceAccessUnrestricted {
-	if n == nil {
-		return nil
-	}
-	return n.Unrestricted
-}
-
-func (n *NamespaceAccess) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Kind string `json:"kind"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	n.Kind = unmarshaler.Kind
-	if unmarshaler.Kind == "" {
-		return fmt.Errorf("%T did not include discriminant kind", n)
-	}
-	switch unmarshaler.Kind {
-	case "acl":
-		value := new(NamespaceAccessACL)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		n.ACL = value
-	case "unrestricted":
-		value := new(NamespaceAccessUnrestricted)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		n.Unrestricted = value
-	}
-	n.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (n NamespaceAccess) MarshalJSON() ([]byte, error) {
-	if err := n.validate(); err != nil {
-		return nil, err
-	}
-	if n.ACL != nil {
-		return internal.MarshalJSONWithExtraProperty(n.ACL, "kind", "acl")
-	}
-	if n.Unrestricted != nil {
-		return internal.MarshalJSONWithExtraProperty(n.Unrestricted, "kind", "unrestricted")
-	}
-	if len(n.rawJSON) > 0 {
-		return n.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", n)
-}
-
-type NamespaceAccessVisitor interface {
-	VisitACL(*NamespaceAccessACL) error
-	VisitUnrestricted(*NamespaceAccessUnrestricted) error
-}
-
-func (n *NamespaceAccess) Accept(visitor NamespaceAccessVisitor) error {
-	if n.ACL != nil {
-		return visitor.VisitACL(n.ACL)
-	}
-	if n.Unrestricted != nil {
-		return visitor.VisitUnrestricted(n.Unrestricted)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", n)
-}
-
-func (n *NamespaceAccess) validate() error {
-	if n == nil {
-		return fmt.Errorf("type %T is nil", n)
-	}
-	var fields []string
-	if n.ACL != nil {
-		fields = append(fields, "acl")
-	}
-	if n.Unrestricted != nil {
-		fields = append(fields, "unrestricted")
-	}
-	if len(fields) == 0 {
-		if n.Kind != "" {
-			if len(n.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", n, n.Kind)
-		}
-		return fmt.Errorf("type %T is empty", n)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", n, fields)
-	}
-	if n.Kind != "" {
-		field := fields[0]
-		if n.Kind != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				n,
-				n.Kind,
-				n,
-			)
-		}
-	}
-	return nil
-}
-
-// Access rows control every operation.
-var (
-	namespaceAccessACLFieldPrincipalScope = big.NewInt(1 << 0)
-	namespaceAccessACLFieldRootGrants     = big.NewInt(1 << 1)
-)
-
-type NamespaceAccessACL struct {
-	// The identity domain that the namespace's principal IDs belong to.
-	PrincipalScope PrincipalScope `json:"principal_scope" url:"principal_scope"`
-	// The root inode's grants when the namespace is created. Usually each initial
-	// administrator has `admin`.
-	RootGrants AccessGrants `json:"root_grants" url:"root_grants"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (n *NamespaceAccessACL) GetPrincipalScope() PrincipalScope {
-	if n == nil {
-		return ""
-	}
-	return n.PrincipalScope
-}
-
-func (n *NamespaceAccessACL) GetRootGrants() AccessGrants {
-	if n == nil {
-		return nil
-	}
-	return n.RootGrants
-}
-
-func (n *NamespaceAccessACL) GetExtraProperties() map[string]interface{} {
-	if n == nil {
-		return nil
-	}
-	return n.extraProperties
-}
-
-func (n *NamespaceAccessACL) require(field *big.Int) {
-	if n.explicitFields == nil {
-		n.explicitFields = big.NewInt(0)
-	}
-	n.explicitFields.Or(n.explicitFields, field)
-}
-
-// SetPrincipalScope sets the PrincipalScope field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceAccessACL) SetPrincipalScope(principalScope PrincipalScope) {
-	n.PrincipalScope = principalScope
-	n.require(namespaceAccessACLFieldPrincipalScope)
-}
-
-// SetRootGrants sets the RootGrants field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceAccessACL) SetRootGrants(rootGrants AccessGrants) {
-	n.RootGrants = rootGrants
-	n.require(namespaceAccessACLFieldRootGrants)
-}
-
-func (n *NamespaceAccessACL) UnmarshalJSON(data []byte) error {
-	type unmarshaler NamespaceAccessACL
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*n = NamespaceAccessACL(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *n)
-	if err != nil {
-		return err
-	}
-	n.extraProperties = extraProperties
-	n.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (n *NamespaceAccessACL) MarshalJSON() ([]byte, error) {
-	type embed NamespaceAccessACL
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*n),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (n *NamespaceAccessACL) String() string {
-	if n == nil {
-		return "<nil>"
-	}
-	if len(n.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(n); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", n)
-}
-
-// A namespace's access mode, without the grants that the namespace was created with.
-type NamespaceAccessMode struct {
-	Kind         string
-	ACL          *NamespaceAccessModeACL
-	Unrestricted *NamespaceAccessModeUnrestricted
-
-	rawJSON json.RawMessage
-}
-
-func (n *NamespaceAccessMode) GetKind() string {
-	if n == nil {
-		return ""
-	}
-	return n.Kind
-}
-
-func (n *NamespaceAccessMode) GetACL() *NamespaceAccessModeACL {
-	if n == nil {
-		return nil
-	}
-	return n.ACL
-}
-
-func (n *NamespaceAccessMode) GetUnrestricted() *NamespaceAccessModeUnrestricted {
-	if n == nil {
-		return nil
-	}
-	return n.Unrestricted
-}
-
-func (n *NamespaceAccessMode) UnmarshalJSON(data []byte) error {
-	var unmarshaler struct {
-		Kind string `json:"kind"`
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	n.Kind = unmarshaler.Kind
-	if unmarshaler.Kind == "" {
-		return fmt.Errorf("%T did not include discriminant kind", n)
-	}
-	switch unmarshaler.Kind {
-	case "acl":
-		value := new(NamespaceAccessModeACL)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		n.ACL = value
-	case "unrestricted":
-		value := new(NamespaceAccessModeUnrestricted)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		n.Unrestricted = value
-	}
-	n.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (n NamespaceAccessMode) MarshalJSON() ([]byte, error) {
-	if err := n.validate(); err != nil {
-		return nil, err
-	}
-	if n.ACL != nil {
-		return internal.MarshalJSONWithExtraProperty(n.ACL, "kind", "acl")
-	}
-	if n.Unrestricted != nil {
-		return internal.MarshalJSONWithExtraProperty(n.Unrestricted, "kind", "unrestricted")
-	}
-	if len(n.rawJSON) > 0 {
-		return n.rawJSON, nil
-	}
-	return nil, fmt.Errorf("type %T does not define a non-empty union type", n)
-}
-
-type NamespaceAccessModeVisitor interface {
-	VisitACL(*NamespaceAccessModeACL) error
-	VisitUnrestricted(*NamespaceAccessModeUnrestricted) error
-}
-
-func (n *NamespaceAccessMode) Accept(visitor NamespaceAccessModeVisitor) error {
-	if n.ACL != nil {
-		return visitor.VisitACL(n.ACL)
-	}
-	if n.Unrestricted != nil {
-		return visitor.VisitUnrestricted(n.Unrestricted)
-	}
-	return fmt.Errorf("type %T does not define a non-empty union type", n)
-}
-
-func (n *NamespaceAccessMode) validate() error {
-	if n == nil {
-		return fmt.Errorf("type %T is nil", n)
-	}
-	var fields []string
-	if n.ACL != nil {
-		fields = append(fields, "acl")
-	}
-	if n.Unrestricted != nil {
-		fields = append(fields, "unrestricted")
-	}
-	if len(fields) == 0 {
-		if n.Kind != "" {
-			if len(n.rawJSON) > 0 {
-				return nil
-			}
-			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", n, n.Kind)
-		}
-		return fmt.Errorf("type %T is empty", n)
-	}
-	if len(fields) > 1 {
-		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", n, fields)
-	}
-	if n.Kind != "" {
-		field := fields[0]
-		if n.Kind != field {
-			return fmt.Errorf(
-				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
-				n,
-				n.Kind,
-				n,
-			)
-		}
-	}
-	return nil
-}
-
-// Access rows control the operations that principals in this identity domain can perform.
-var (
-	namespaceAccessModeACLFieldPrincipalScope = big.NewInt(1 << 0)
-)
-
-type NamespaceAccessModeACL struct {
-	// The identity domain that the namespace's principal IDs belong to.
-	PrincipalScope PrincipalScope `json:"principal_scope" url:"principal_scope"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (n *NamespaceAccessModeACL) GetPrincipalScope() PrincipalScope {
-	if n == nil {
-		return ""
-	}
-	return n.PrincipalScope
-}
-
-func (n *NamespaceAccessModeACL) GetExtraProperties() map[string]interface{} {
-	if n == nil {
-		return nil
-	}
-	return n.extraProperties
-}
-
-func (n *NamespaceAccessModeACL) require(field *big.Int) {
-	if n.explicitFields == nil {
-		n.explicitFields = big.NewInt(0)
-	}
-	n.explicitFields.Or(n.explicitFields, field)
-}
-
-// SetPrincipalScope sets the PrincipalScope field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceAccessModeACL) SetPrincipalScope(principalScope PrincipalScope) {
-	n.PrincipalScope = principalScope
-	n.require(namespaceAccessModeACLFieldPrincipalScope)
-}
-
-func (n *NamespaceAccessModeACL) UnmarshalJSON(data []byte) error {
-	type unmarshaler NamespaceAccessModeACL
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*n = NamespaceAccessModeACL(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *n)
-	if err != nil {
-		return err
-	}
-	n.extraProperties = extraProperties
-	n.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (n *NamespaceAccessModeACL) MarshalJSON() ([]byte, error) {
-	type embed NamespaceAccessModeACL
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*n),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (n *NamespaceAccessModeACL) String() string {
-	if n == nil {
-		return "<nil>"
-	}
-	if len(n.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(n); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", n)
-}
-
-// Every caller with the deployment credential can perform every operation.
-type NamespaceAccessModeUnrestricted struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (n *NamespaceAccessModeUnrestricted) GetExtraProperties() map[string]interface{} {
-	if n == nil {
-		return nil
-	}
-	return n.extraProperties
-}
-
-func (n *NamespaceAccessModeUnrestricted) require(field *big.Int) {
-	if n.explicitFields == nil {
-		n.explicitFields = big.NewInt(0)
-	}
-	n.explicitFields.Or(n.explicitFields, field)
-}
-
-func (n *NamespaceAccessModeUnrestricted) UnmarshalJSON(data []byte) error {
-	type unmarshaler NamespaceAccessModeUnrestricted
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*n = NamespaceAccessModeUnrestricted(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *n)
-	if err != nil {
-		return err
-	}
-	n.extraProperties = extraProperties
-	n.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (n *NamespaceAccessModeUnrestricted) MarshalJSON() ([]byte, error) {
-	type embed NamespaceAccessModeUnrestricted
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*n),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (n *NamespaceAccessModeUnrestricted) String() string {
-	if n == nil {
-		return "<nil>"
-	}
-	if len(n.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(n); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", n)
-}
-
-// Every caller with the deployment credential can perform every operation.
-type NamespaceAccessUnrestricted struct {
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (n *NamespaceAccessUnrestricted) GetExtraProperties() map[string]interface{} {
-	if n == nil {
-		return nil
-	}
-	return n.extraProperties
-}
-
-func (n *NamespaceAccessUnrestricted) require(field *big.Int) {
-	if n.explicitFields == nil {
-		n.explicitFields = big.NewInt(0)
-	}
-	n.explicitFields.Or(n.explicitFields, field)
-}
-
-func (n *NamespaceAccessUnrestricted) UnmarshalJSON(data []byte) error {
-	type unmarshaler NamespaceAccessUnrestricted
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*n = NamespaceAccessUnrestricted(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *n)
-	if err != nil {
-		return err
-	}
-	n.extraProperties = extraProperties
-	n.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (n *NamespaceAccessUnrestricted) MarshalJSON() ([]byte, error) {
-	type embed NamespaceAccessUnrestricted
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*n),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (n *NamespaceAccessUnrestricted) String() string {
-	if n == nil {
-		return "<nil>"
-	}
-	if len(n.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(n); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", n)
-}
-
 // The current state of one namespace.
 var (
-	namespaceMetadataFieldAccess            = big.NewInt(1 << 0)
-	namespaceMetadataFieldCreatedAtMs       = big.NewInt(1 << 1)
-	namespaceMetadataFieldCreatedBy         = big.NewInt(1 << 2)
-	namespaceMetadataFieldForkBasis         = big.NewInt(1 << 3)
-	namespaceMetadataFieldHeadSeq           = big.NewInt(1 << 4)
-	namespaceMetadataFieldNamespaceID       = big.NewInt(1 << 5)
-	namespaceMetadataFieldPoolID            = big.NewInt(1 << 6)
-	namespaceMetadataFieldRetentionFloorSeq = big.NewInt(1 << 7)
-	namespaceMetadataFieldRetentionWindowMs = big.NewInt(1 << 8)
+	namespaceMetadataFieldCreatedAtMs       = big.NewInt(1 << 0)
+	namespaceMetadataFieldCreatedBy         = big.NewInt(1 << 1)
+	namespaceMetadataFieldForkBasis         = big.NewInt(1 << 2)
+	namespaceMetadataFieldHeadSeq           = big.NewInt(1 << 3)
+	namespaceMetadataFieldNamespaceID       = big.NewInt(1 << 4)
+	namespaceMetadataFieldPoolID            = big.NewInt(1 << 5)
+	namespaceMetadataFieldRetentionFloorSeq = big.NewInt(1 << 6)
+	namespaceMetadataFieldRetentionWindowMs = big.NewInt(1 << 7)
 )
 
 type NamespaceMetadata struct {
-	// The namespace's access mode.
-	Access *NamespaceAccessMode `json:"access" url:"access"`
 	// The time the namespace was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
 	// The actor that created the namespace, as the application supplied it.
@@ -1542,13 +999,6 @@ type NamespaceMetadata struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (n *NamespaceMetadata) GetAccess() *NamespaceAccessMode {
-	if n == nil {
-		return nil
-	}
-	return n.Access
 }
 
 func (n *NamespaceMetadata) GetCreatedAtMs() int64 {
@@ -1619,13 +1069,6 @@ func (n *NamespaceMetadata) require(field *big.Int) {
 		n.explicitFields = big.NewInt(0)
 	}
 	n.explicitFields.Or(n.explicitFields, field)
-}
-
-// SetAccess sets the Access field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceMetadata) SetAccess(access *NamespaceAccessMode) {
-	n.Access = access
-	n.require(namespaceMetadataFieldAccess)
 }
 
 // SetCreatedAtMs sets the CreatedAtMs field and marks it as non-optional;
@@ -2301,9 +1744,6 @@ func (n *NextMergeRangeResponse) validate() error {
 	return nil
 }
 
-// An opaque identity domain ID of 1 to 256 visible ASCII characters other than the comma.
-type PrincipalScope = string
-
 // The result of a replay commit: the new fork, and the changes that the replay commit left out.
 var (
 	replayForkResponseFieldConflicts = big.NewInt(1 << 0)
@@ -2312,10 +1752,10 @@ var (
 
 type ReplayForkResponse struct {
 	// The replay commit's conflict report, with one entry for each inode whose change the replay
-	// commit didn't apply. It's absent when the request's commit ID identifies a replay commit
-	// that an earlier request committed, because only the response that committed the replay
-	// commit has its report.
-	Conflicts []*MergeConflict `json:"conflicts,omitempty" url:"conflicts,omitempty"`
+	// commit didn't apply. It's empty when the replay commit left nothing out. The replay
+	// commit's merge record stores the report, so a retry with the same commit ID returns the
+	// same report.
+	Conflicts []*MergeConflict `json:"conflicts" url:"conflicts"`
 	// The new fork after the replay commit.
 	Namespace *NamespaceMetadata `json:"namespace" url:"namespace"`
 

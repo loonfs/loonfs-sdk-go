@@ -434,7 +434,7 @@ type CommitID = string
 // The sequence number of one namespace commit. Commits become visible in the order of these numbers.
 type CommitSeq = int64
 
-// The random identity of one immutable content object.
+// The random ID of a content chain. An append can extend the chain without changing its ID.
 type ContentID = string
 
 // A reference to a prefix of one content chain, by its content ID, size, and checksum.
@@ -448,12 +448,11 @@ var (
 type ContentRef struct {
 	// The required checksum of the referenced bytes.
 	Checksum *Checksum `json:"checksum" url:"checksum"`
-	// The immutable identity of the content. The content ID and the reading namespace's pool
-	// together determine the object key.
+	// The ID of the content chain in the reading namespace's pool.
 	ContentID ContentID `json:"content_id" url:"content_id"`
 	// The kind of content reference. The format defines one kind, `blob_v1`.
 	Kind ContentRefKind `json:"kind" url:"kind"`
-	// The length of the referenced bytes, which are a prefix of the content object.
+	// The length of the referenced prefix of the chain, in bytes.
 	SizeBytes int64 `json:"size_bytes" url:"size_bytes"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -845,7 +844,7 @@ var (
 )
 
 type DeletedSnapshotsByOwner struct {
-	// The fork snapshot on the namespace's source that the collection deleted when it retired the namespace (0 or 1).
+	// The fork snapshots that the collection deleted when it retired the namespace, the one on the namespace's source and the namespace's own fork point snapshot (0 to 2).
 	Fork int64 `json:"fork" url:"fork"`
 	// The user snapshots that the collection deleted after they expired or their namespace was deleted.
 	User int64 `json:"user" url:"user"`
@@ -1184,6 +1183,38 @@ func (d *DownloadRange) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
+// The cause of an error, for a code that two causes share because the client's remedy is the same
+// for both. A client branches on the code, and it can report or count the cause.
+//
+// A newer server can return a cause that isn't listed here.
+type ErrorCause string
+
+const (
+	ErrorCauseManifestMissing   ErrorCause = "manifest_missing"
+	ErrorCausePublicationBudget ErrorCause = "publication_budget"
+	ErrorCauseDeadline          ErrorCause = "deadline"
+	ErrorCauseUnconfirmed       ErrorCause = "unconfirmed"
+)
+
+func NewErrorCauseFromString(s string) (ErrorCause, error) {
+	switch s {
+	case "manifest_missing":
+		return ErrorCauseManifestMissing, nil
+	case "publication_budget":
+		return ErrorCausePublicationBudget, nil
+	case "deadline":
+		return ErrorCauseDeadline, nil
+	case "unconfirmed":
+		return ErrorCauseUnconfirmed, nil
+	}
+	var t ErrorCause
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (e ErrorCause) Ptr() *ErrorCause {
+	return &e
+}
+
 // The machine-readable identifiers and state that explain an error response.
 //
 // Every field is optional.
@@ -1200,32 +1231,33 @@ var (
 	errorDetailsFieldActualInodeID                = big.NewInt(1 << 9)
 	errorDetailsFieldActualRevisionNo             = big.NewInt(1 << 10)
 	errorDetailsFieldAfterSeq                     = big.NewInt(1 << 11)
-	errorDetailsFieldCommitID                     = big.NewInt(1 << 12)
-	errorDetailsFieldCommittedFingerprint         = big.NewInt(1 << 13)
-	errorDetailsFieldCommittedSeq                 = big.NewInt(1 << 14)
-	errorDetailsFieldConflict                     = big.NewInt(1 << 15)
-	errorDetailsFieldConflictCount                = big.NewInt(1 << 16)
-	errorDetailsFieldExpectedAccessRevisionNo     = big.NewInt(1 << 17)
-	errorDetailsFieldExpectedAfterSeq             = big.NewInt(1 << 18)
-	errorDetailsFieldExpectedAttributesRevisionNo = big.NewInt(1 << 19)
-	errorDetailsFieldExpectedBindingVersion       = big.NewInt(1 << 20)
-	errorDetailsFieldExpectedDeletionSeq          = big.NewInt(1 << 21)
-	errorDetailsFieldExpectedHeadSeq              = big.NewInt(1 << 22)
-	errorDetailsFieldExpectedInodeID              = big.NewInt(1 << 23)
-	errorDetailsFieldExpectedRevisionNo           = big.NewInt(1 << 24)
-	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 25)
-	errorDetailsFieldForkPointSeq                 = big.NewInt(1 << 26)
-	errorDetailsFieldFromSeq                      = big.NewInt(1 << 27)
-	errorDetailsFieldInodeID                      = big.NewInt(1 << 28)
-	errorDetailsFieldMergeBound                   = big.NewInt(1 << 29)
-	errorDetailsFieldNamespaceID                  = big.NewInt(1 << 30)
-	errorDetailsFieldOperationIndex               = big.NewInt(1 << 31)
-	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 32)
-	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 33)
-	errorDetailsFieldSizeBytes                    = big.NewInt(1 << 34)
-	errorDetailsFieldSourceAfterSeq               = big.NewInt(1 << 35)
-	errorDetailsFieldSourceNamespaceID            = big.NewInt(1 << 36)
-	errorDetailsFieldSplitAtSeq                   = big.NewInt(1 << 37)
+	errorDetailsFieldCause                        = big.NewInt(1 << 12)
+	errorDetailsFieldCommitID                     = big.NewInt(1 << 13)
+	errorDetailsFieldCommittedFingerprint         = big.NewInt(1 << 14)
+	errorDetailsFieldCommittedSeq                 = big.NewInt(1 << 15)
+	errorDetailsFieldConflict                     = big.NewInt(1 << 16)
+	errorDetailsFieldConflictCount                = big.NewInt(1 << 17)
+	errorDetailsFieldExpectedAccessRevisionNo     = big.NewInt(1 << 18)
+	errorDetailsFieldExpectedAfterSeq             = big.NewInt(1 << 19)
+	errorDetailsFieldExpectedAttributesRevisionNo = big.NewInt(1 << 20)
+	errorDetailsFieldExpectedBindingVersion       = big.NewInt(1 << 21)
+	errorDetailsFieldExpectedDeletionSeq          = big.NewInt(1 << 22)
+	errorDetailsFieldExpectedHeadSeq              = big.NewInt(1 << 23)
+	errorDetailsFieldExpectedInodeID              = big.NewInt(1 << 24)
+	errorDetailsFieldExpectedRevisionNo           = big.NewInt(1 << 25)
+	errorDetailsFieldFencedWriterEpoch            = big.NewInt(1 << 26)
+	errorDetailsFieldForkPointSeq                 = big.NewInt(1 << 27)
+	errorDetailsFieldFromSeq                      = big.NewInt(1 << 28)
+	errorDetailsFieldInodeID                      = big.NewInt(1 << 29)
+	errorDetailsFieldMergeBound                   = big.NewInt(1 << 30)
+	errorDetailsFieldNamespaceID                  = big.NewInt(1 << 31)
+	errorDetailsFieldOperationIndex               = big.NewInt(1 << 32)
+	errorDetailsFieldPreconditionIndex            = big.NewInt(1 << 33)
+	errorDetailsFieldRetentionFloorSeq            = big.NewInt(1 << 34)
+	errorDetailsFieldSizeBytes                    = big.NewInt(1 << 35)
+	errorDetailsFieldSourceAfterSeq               = big.NewInt(1 << 36)
+	errorDetailsFieldSourceNamespaceID            = big.NewInt(1 << 37)
+	errorDetailsFieldSplitAtSeq                   = big.NewInt(1 << 38)
 )
 
 type ErrorDetails struct {
@@ -1254,6 +1286,9 @@ type ErrorDetails struct {
 	ActualRevisionNo *RevisionNo `json:"actual_revision_no,omitempty" url:"actual_revision_no,omitempty"`
 	// The `after_seq` value from the change feed request.
 	AfterSeq *CommitSeq `json:"after_seq,omitempty" url:"after_seq,omitempty"`
+	// Which of the causes that share the error's code and remedy occurred, for a code whose row
+	// in the details table lists causes.
+	Cause *ErrorCause `json:"cause,omitempty" url:"cause,omitempty"`
 	// The idempotency key of the commit that the error is about.
 	CommitID *CommitID `json:"commit_id,omitempty" url:"commit_id,omitempty"`
 	// The fingerprint of the mutation that was committed under `commit_id`. This field is present
@@ -1406,6 +1441,13 @@ func (e *ErrorDetails) GetAfterSeq() *CommitSeq {
 		return nil
 	}
 	return e.AfterSeq
+}
+
+func (e *ErrorDetails) GetCause() *ErrorCause {
+	if e == nil {
+		return nil
+	}
+	return e.Cause
 }
 
 func (e *ErrorDetails) GetCommitID() *CommitID {
@@ -1686,6 +1728,13 @@ func (e *ErrorDetails) SetActualRevisionNo(actualRevisionNo *RevisionNo) {
 func (e *ErrorDetails) SetAfterSeq(afterSeq *CommitSeq) {
 	e.AfterSeq = afterSeq
 	e.require(errorDetailsFieldAfterSeq)
+}
+
+// SetCause sets the Cause field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ErrorDetails) SetCause(cause *ErrorCause) {
+	e.Cause = cause
+	e.require(errorDetailsFieldCause)
 }
 
 // SetCommitID sets the CommitID field and marks it as non-optional;
@@ -4956,23 +5005,24 @@ func (n *NamespaceDiagnostics) String() string {
 
 // The source namespace and sequence that a forked namespace started from.
 var (
-	namespaceForkBasisFieldForkPointSeq      = big.NewInt(1 << 0)
-	namespaceForkBasisFieldRebasedFrom       = big.NewInt(1 << 1)
-	namespaceForkBasisFieldSourceNamespaceID = big.NewInt(1 << 2)
-	namespaceForkBasisFieldSourceSnapshotID  = big.NewInt(1 << 3)
+	namespaceForkBasisFieldForkPointSeq        = big.NewInt(1 << 0)
+	namespaceForkBasisFieldForkPointSnapshotID = big.NewInt(1 << 1)
+	namespaceForkBasisFieldRebasedFrom         = big.NewInt(1 << 2)
+	namespaceForkBasisFieldSourceNamespaceID   = big.NewInt(1 << 3)
 )
 
 type NamespaceForkBasis struct {
 	// The source namespace's sequence that the fork captured.
 	ForkPointSeq CommitSeq `json:"fork_point_seq" url:"fork_point_seq"`
+	// The fork point snapshot, which keeps this namespace's state at `fork_point_seq` readable.
+	// That state is the source's state at the fork point. A read of this namespace accepts the
+	// ID as `snapshot_id`.
+	ForkPointSnapshotID SnapshotID `json:"fork_point_snapshot_id" url:"fork_point_snapshot_id"`
 	// The fork whose unmerged commits a rebase replays into this namespace. Only a namespace that
 	// a rebase created has this field.
 	RebasedFrom *NamespaceRebasedFrom `json:"rebased_from,omitempty" url:"rebased_from,omitempty"`
 	// The namespace that the fork was taken from.
 	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"source_namespace_id"`
-	// The fork snapshot that keeps the source's state at `fork_point_seq` readable. A read of the
-	// source namespace accepts it as `snapshot_id`.
-	SourceSnapshotID SnapshotID `json:"source_snapshot_id" url:"source_snapshot_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -4988,6 +5038,13 @@ func (n *NamespaceForkBasis) GetForkPointSeq() CommitSeq {
 	return n.ForkPointSeq
 }
 
+func (n *NamespaceForkBasis) GetForkPointSnapshotID() SnapshotID {
+	if n == nil {
+		return ""
+	}
+	return n.ForkPointSnapshotID
+}
+
 func (n *NamespaceForkBasis) GetRebasedFrom() *NamespaceRebasedFrom {
 	if n == nil {
 		return nil
@@ -5000,13 +5057,6 @@ func (n *NamespaceForkBasis) GetSourceNamespaceID() NamespaceID {
 		return ""
 	}
 	return n.SourceNamespaceID
-}
-
-func (n *NamespaceForkBasis) GetSourceSnapshotID() SnapshotID {
-	if n == nil {
-		return ""
-	}
-	return n.SourceSnapshotID
 }
 
 func (n *NamespaceForkBasis) GetExtraProperties() map[string]interface{} {
@@ -5030,6 +5080,13 @@ func (n *NamespaceForkBasis) SetForkPointSeq(forkPointSeq CommitSeq) {
 	n.require(namespaceForkBasisFieldForkPointSeq)
 }
 
+// SetForkPointSnapshotID sets the ForkPointSnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NamespaceForkBasis) SetForkPointSnapshotID(forkPointSnapshotID SnapshotID) {
+	n.ForkPointSnapshotID = forkPointSnapshotID
+	n.require(namespaceForkBasisFieldForkPointSnapshotID)
+}
+
 // SetRebasedFrom sets the RebasedFrom field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NamespaceForkBasis) SetRebasedFrom(rebasedFrom *NamespaceRebasedFrom) {
@@ -5042,13 +5099,6 @@ func (n *NamespaceForkBasis) SetRebasedFrom(rebasedFrom *NamespaceRebasedFrom) {
 func (n *NamespaceForkBasis) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
 	n.SourceNamespaceID = sourceNamespaceID
 	n.require(namespaceForkBasisFieldSourceNamespaceID)
-}
-
-// SetSourceSnapshotID sets the SourceSnapshotID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NamespaceForkBasis) SetSourceSnapshotID(sourceSnapshotID SnapshotID) {
-	n.SourceSnapshotID = sourceSnapshotID
-	n.require(namespaceForkBasisFieldSourceSnapshotID)
 }
 
 func (n *NamespaceForkBasis) UnmarshalJSON(data []byte) error {
@@ -5906,7 +5956,8 @@ type PathEntryFile struct {
 	// namespace root.
 	BindingVersion *BindingVersion `json:"binding_version,omitempty" url:"binding_version,omitempty"`
 	// The file's current content. It's present on entry reads (a stat by
-	// path or by inode) and absent from directory listings.
+	// path or by inode) and on directory listings, and a listing leaves
+	// it out for a file that the subject can't read.
 	ContentRef *ContentRef `json:"content_ref,omitempty" url:"content_ref,omitempty"`
 	// The time the inode was created, in Unix milliseconds.
 	CreatedAtMs int64 `json:"created_at_ms" url:"created_at_ms"`
@@ -6551,9 +6602,6 @@ func (p *PoolRetainedCandidates) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
-// A stable, opaque principal ID of 1 to 256 visible ASCII characters other than the comma.
-type PrincipalID = string
-
 // The ID of one run of the store contract probe.
 //
 // The probe stores its temporary objects under a key prefix that includes this ID.
@@ -6769,12 +6817,11 @@ type RevisionNo = int64
 
 // One maintenance job for one namespace.
 type RunMaintenanceJobRequest struct {
-	Kind                 string
-	Gc                   *RunMaintenanceJobRequestGc
-	Metadata             *RunMaintenanceJobRequestMetadata
-	RecoverAdministrator *RunMaintenanceJobRequestRecoverAdministrator
-	Retention            *RunMaintenanceJobRequestRetention
-	RetentionWindow      *RunMaintenanceJobRequestRetentionWindow
+	Kind            string
+	Gc              *RunMaintenanceJobRequestGc
+	Metadata        *RunMaintenanceJobRequestMetadata
+	Retention       *RunMaintenanceJobRequestRetention
+	RetentionWindow *RunMaintenanceJobRequestRetentionWindow
 
 	rawJSON json.RawMessage
 }
@@ -6798,13 +6845,6 @@ func (r *RunMaintenanceJobRequest) GetMetadata() *RunMaintenanceJobRequestMetada
 		return nil
 	}
 	return r.Metadata
-}
-
-func (r *RunMaintenanceJobRequest) GetRecoverAdministrator() *RunMaintenanceJobRequestRecoverAdministrator {
-	if r == nil {
-		return nil
-	}
-	return r.RecoverAdministrator
 }
 
 func (r *RunMaintenanceJobRequest) GetRetention() *RunMaintenanceJobRequestRetention {
@@ -6845,12 +6885,6 @@ func (r *RunMaintenanceJobRequest) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		r.Metadata = value
-	case "recover_administrator":
-		value := new(RunMaintenanceJobRequestRecoverAdministrator)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.RecoverAdministrator = value
 	case "retention":
 		value := new(RunMaintenanceJobRequestRetention)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -6878,9 +6912,6 @@ func (r RunMaintenanceJobRequest) MarshalJSON() ([]byte, error) {
 	if r.Metadata != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Metadata, "kind", "metadata")
 	}
-	if r.RecoverAdministrator != nil {
-		return internal.MarshalJSONWithExtraProperty(r.RecoverAdministrator, "kind", "recover_administrator")
-	}
 	if r.Retention != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Retention, "kind", "retention")
 	}
@@ -6896,7 +6927,6 @@ func (r RunMaintenanceJobRequest) MarshalJSON() ([]byte, error) {
 type RunMaintenanceJobRequestVisitor interface {
 	VisitGc(*RunMaintenanceJobRequestGc) error
 	VisitMetadata(*RunMaintenanceJobRequestMetadata) error
-	VisitRecoverAdministrator(*RunMaintenanceJobRequestRecoverAdministrator) error
 	VisitRetention(*RunMaintenanceJobRequestRetention) error
 	VisitRetentionWindow(*RunMaintenanceJobRequestRetentionWindow) error
 }
@@ -6907,9 +6937,6 @@ func (r *RunMaintenanceJobRequest) Accept(visitor RunMaintenanceJobRequestVisito
 	}
 	if r.Metadata != nil {
 		return visitor.VisitMetadata(r.Metadata)
-	}
-	if r.RecoverAdministrator != nil {
-		return visitor.VisitRecoverAdministrator(r.RecoverAdministrator)
 	}
 	if r.Retention != nil {
 		return visitor.VisitRetention(r.Retention)
@@ -6930,9 +6957,6 @@ func (r *RunMaintenanceJobRequest) validate() error {
 	}
 	if r.Metadata != nil {
 		fields = append(fields, "metadata")
-	}
-	if r.RecoverAdministrator != nil {
-		fields = append(fields, "recover_administrator")
 	}
 	if r.Retention != nil {
 		fields = append(fields, "retention")
@@ -7107,92 +7131,6 @@ func (r *RunMaintenanceJobRequestMetadata) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RunMaintenanceJobRequestMetadata) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// A job that restores a root administrator.
-var (
-	runMaintenanceJobRequestRecoverAdministratorFieldPrincipalID = big.NewInt(1 << 0)
-)
-
-type RunMaintenanceJobRequestRecoverAdministrator struct {
-	// The principal that receives administrator rights.
-	PrincipalID PrincipalID `json:"principal_id" url:"principal_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *RunMaintenanceJobRequestRecoverAdministrator) GetPrincipalID() PrincipalID {
-	if r == nil {
-		return ""
-	}
-	return r.PrincipalID
-}
-
-func (r *RunMaintenanceJobRequestRecoverAdministrator) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *RunMaintenanceJobRequestRecoverAdministrator) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-// SetPrincipalID sets the PrincipalID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceJobRequestRecoverAdministrator) SetPrincipalID(principalID PrincipalID) {
-	r.PrincipalID = principalID
-	r.require(runMaintenanceJobRequestRecoverAdministratorFieldPrincipalID)
-}
-
-func (r *RunMaintenanceJobRequestRecoverAdministrator) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceJobRequestRecoverAdministrator
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = RunMaintenanceJobRequestRecoverAdministrator(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *RunMaintenanceJobRequestRecoverAdministrator) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceJobRequestRecoverAdministrator
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *RunMaintenanceJobRequestRecoverAdministrator) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -7408,12 +7346,11 @@ func (r *RunMaintenanceJobRequestRetentionWindow) String() string {
 //
 // The `kind` matches the request.
 type RunMaintenanceJobResponse struct {
-	Kind                 string
-	Gc                   *RunMaintenanceJobResponseGc
-	Metadata             *RunMaintenanceJobResponseMetadata
-	RecoverAdministrator *RunMaintenanceJobResponseRecoverAdministrator
-	Retention            *RunMaintenanceJobResponseRetention
-	RetentionWindow      *RunMaintenanceJobResponseRetentionWindow
+	Kind            string
+	Gc              *RunMaintenanceJobResponseGc
+	Metadata        *RunMaintenanceJobResponseMetadata
+	Retention       *RunMaintenanceJobResponseRetention
+	RetentionWindow *RunMaintenanceJobResponseRetentionWindow
 
 	rawJSON json.RawMessage
 }
@@ -7437,13 +7374,6 @@ func (r *RunMaintenanceJobResponse) GetMetadata() *RunMaintenanceJobResponseMeta
 		return nil
 	}
 	return r.Metadata
-}
-
-func (r *RunMaintenanceJobResponse) GetRecoverAdministrator() *RunMaintenanceJobResponseRecoverAdministrator {
-	if r == nil {
-		return nil
-	}
-	return r.RecoverAdministrator
 }
 
 func (r *RunMaintenanceJobResponse) GetRetention() *RunMaintenanceJobResponseRetention {
@@ -7484,12 +7414,6 @@ func (r *RunMaintenanceJobResponse) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		r.Metadata = value
-	case "recover_administrator":
-		value := new(RunMaintenanceJobResponseRecoverAdministrator)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		r.RecoverAdministrator = value
 	case "retention":
 		value := new(RunMaintenanceJobResponseRetention)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -7517,9 +7441,6 @@ func (r RunMaintenanceJobResponse) MarshalJSON() ([]byte, error) {
 	if r.Metadata != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Metadata, "kind", "metadata")
 	}
-	if r.RecoverAdministrator != nil {
-		return internal.MarshalJSONWithExtraProperty(r.RecoverAdministrator, "kind", "recover_administrator")
-	}
 	if r.Retention != nil {
 		return internal.MarshalJSONWithExtraProperty(r.Retention, "kind", "retention")
 	}
@@ -7535,7 +7456,6 @@ func (r RunMaintenanceJobResponse) MarshalJSON() ([]byte, error) {
 type RunMaintenanceJobResponseVisitor interface {
 	VisitGc(*RunMaintenanceJobResponseGc) error
 	VisitMetadata(*RunMaintenanceJobResponseMetadata) error
-	VisitRecoverAdministrator(*RunMaintenanceJobResponseRecoverAdministrator) error
 	VisitRetention(*RunMaintenanceJobResponseRetention) error
 	VisitRetentionWindow(*RunMaintenanceJobResponseRetentionWindow) error
 }
@@ -7546,9 +7466,6 @@ func (r *RunMaintenanceJobResponse) Accept(visitor RunMaintenanceJobResponseVisi
 	}
 	if r.Metadata != nil {
 		return visitor.VisitMetadata(r.Metadata)
-	}
-	if r.RecoverAdministrator != nil {
-		return visitor.VisitRecoverAdministrator(r.RecoverAdministrator)
 	}
 	if r.Retention != nil {
 		return visitor.VisitRetention(r.Retention)
@@ -7569,9 +7486,6 @@ func (r *RunMaintenanceJobResponse) validate() error {
 	}
 	if r.Metadata != nil {
 		fields = append(fields, "metadata")
-	}
-	if r.RecoverAdministrator != nil {
-		fields = append(fields, "recover_administrator")
 	}
 	if r.Retention != nil {
 		fields = append(fields, "retention")
@@ -7917,143 +7831,6 @@ func (r *RunMaintenanceJobResponseMetadata) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RunMaintenanceJobResponseMetadata) String() string {
-	if r == nil {
-		return "<nil>"
-	}
-	if len(r.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(r); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", r)
-}
-
-// The committed administrator recovery.
-var (
-	runMaintenanceJobResponseRecoverAdministratorFieldAccessRevisionNo = big.NewInt(1 << 0)
-	runMaintenanceJobResponseRecoverAdministratorFieldCommitID         = big.NewInt(1 << 1)
-	runMaintenanceJobResponseRecoverAdministratorFieldCommittedSeq     = big.NewInt(1 << 2)
-	runMaintenanceJobResponseRecoverAdministratorFieldNamespaceID      = big.NewInt(1 << 3)
-)
-
-type RunMaintenanceJobResponseRecoverAdministrator struct {
-	// The root's access revision after the recovery.
-	AccessRevisionNo AccessRevisionNo `json:"access_revision_no" url:"access_revision_no"`
-	// The ID of the recovery commit.
-	CommitID CommitID `json:"commit_id" url:"commit_id"`
-	// The sequence of the recovery commit.
-	CommittedSeq CommitSeq `json:"committed_seq" url:"committed_seq"`
-	// The namespace whose root grants changed.
-	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (r *RunMaintenanceJobResponseRecoverAdministrator) GetAccessRevisionNo() AccessRevisionNo {
-	if r == nil {
-		return 0
-	}
-	return r.AccessRevisionNo
-}
-
-func (r *RunMaintenanceJobResponseRecoverAdministrator) GetCommitID() CommitID {
-	if r == nil {
-		return ""
-	}
-	return r.CommitID
-}
-
-func (r *RunMaintenanceJobResponseRecoverAdministrator) GetCommittedSeq() CommitSeq {
-	if r == nil {
-		return 0
-	}
-	return r.CommittedSeq
-}
-
-func (r *RunMaintenanceJobResponseRecoverAdministrator) GetNamespaceID() NamespaceID {
-	if r == nil {
-		return ""
-	}
-	return r.NamespaceID
-}
-
-func (r *RunMaintenanceJobResponseRecoverAdministrator) GetExtraProperties() map[string]interface{} {
-	if r == nil {
-		return nil
-	}
-	return r.extraProperties
-}
-
-func (r *RunMaintenanceJobResponseRecoverAdministrator) require(field *big.Int) {
-	if r.explicitFields == nil {
-		r.explicitFields = big.NewInt(0)
-	}
-	r.explicitFields.Or(r.explicitFields, field)
-}
-
-// SetAccessRevisionNo sets the AccessRevisionNo field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceJobResponseRecoverAdministrator) SetAccessRevisionNo(accessRevisionNo AccessRevisionNo) {
-	r.AccessRevisionNo = accessRevisionNo
-	r.require(runMaintenanceJobResponseRecoverAdministratorFieldAccessRevisionNo)
-}
-
-// SetCommitID sets the CommitID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceJobResponseRecoverAdministrator) SetCommitID(commitID CommitID) {
-	r.CommitID = commitID
-	r.require(runMaintenanceJobResponseRecoverAdministratorFieldCommitID)
-}
-
-// SetCommittedSeq sets the CommittedSeq field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceJobResponseRecoverAdministrator) SetCommittedSeq(committedSeq CommitSeq) {
-	r.CommittedSeq = committedSeq
-	r.require(runMaintenanceJobResponseRecoverAdministratorFieldCommittedSeq)
-}
-
-// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (r *RunMaintenanceJobResponseRecoverAdministrator) SetNamespaceID(namespaceID NamespaceID) {
-	r.NamespaceID = namespaceID
-	r.require(runMaintenanceJobResponseRecoverAdministratorFieldNamespaceID)
-}
-
-func (r *RunMaintenanceJobResponseRecoverAdministrator) UnmarshalJSON(data []byte) error {
-	type unmarshaler RunMaintenanceJobResponseRecoverAdministrator
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*r = RunMaintenanceJobResponseRecoverAdministrator(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *r)
-	if err != nil {
-		return err
-	}
-	r.extraProperties = extraProperties
-	r.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (r *RunMaintenanceJobResponseRecoverAdministrator) MarshalJSON() ([]byte, error) {
-	type embed RunMaintenanceJobResponseRecoverAdministrator
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*r),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (r *RunMaintenanceJobResponseRecoverAdministrator) String() string {
 	if r == nil {
 		return "<nil>"
 	}
@@ -8898,7 +8675,9 @@ func (s *ServiceUnavailableErrorBody) String() string {
 
 // The durable ID of one snapshot.
 //
-// The manifest number in the ID determines which namespace manifest the snapshot protects.
+// A snapshot ID uses the spelling of every generated ID: `snp_` and the 26-character
+// body. The high 64 bits of the body's 128 bits are the number of the manifest that the
+// snapshot keeps, and the low 64 bits are random.
 type SnapshotID = string
 
 // One snapshot, as its durable record stores it.
