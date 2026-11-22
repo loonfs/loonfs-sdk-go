@@ -40,7 +40,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &loonfs.CreateUploadRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    Body: &loonfs.CreateUploadBody{
 //	        DirectMultipart: &loonfs.CreateUploadBodyDirectMultipart{},
 //	    },
@@ -70,8 +70,8 @@ func (c *Client) Create(
 // Example:
 //
 //	request := &loonfs.GetUploadRequest{
-//	    NamespaceID: "namespace_id",
-//	    UploadID: "upload_id",
+//	    NamespaceID: "demo",
+//	    UploadID: "upl_2dhwp939xk9r7srv8t5cz5yw4c",
 //	}
 //	client.Uploads.Retrieve(
 //	    context.TODO(),
@@ -98,8 +98,8 @@ func (c *Client) Retrieve(
 // Example:
 //
 //	request := &loonfs.AbortUploadRequest{
-//	    NamespaceID: "namespace_id",
-//	    UploadID: "upload_id",
+//	    NamespaceID: "demo",
+//	    UploadID: "upl_2dhwp939xk9r7srv8t5cz5yw4c",
 //	}
 //	client.Uploads.Abort(
 //	    context.TODO(),
@@ -126,8 +126,8 @@ func (c *Client) Abort(
 // Example:
 //
 //	request := &loonfs.CompleteUploadRequest{
-//	    NamespaceID: "namespace_id",
-//	    UploadID: "upload_id",
+//	    NamespaceID: "demo",
+//	    UploadID: "upl_2dhwp939xk9r7srv8t5cz5yw4c",
 //	    Body: &loonfs.CompleteUploadBody{
 //	        DirectMultipart: &loonfs.CompleteUploadBodyDirectMultipart{
 //	            Content: &loonfs.UploadContentClaim{
@@ -174,9 +174,9 @@ func (c *Client) Complete(
 func (c *Client) PutContent(
 	ctx context.Context,
 	// The namespace ID.
-	namespaceID string,
+	namespaceID loonfs.NamespaceID,
 	// The upload session ID.
-	uploadID string,
+	uploadID loonfs.UploadID,
 	request io.Reader,
 	opts ...option.RequestOption,
 ) (*loonfs.UploadSession, error) {
@@ -198,8 +198,8 @@ func (c *Client) PutContent(
 // Example:
 //
 //	request := &loonfs.SignUploadPartsRequest{
-//	    NamespaceID: "namespace_id",
-//	    UploadID: "upload_id",
+//	    NamespaceID: "demo",
+//	    UploadID: "upl_2dhwp939xk9r7srv8t5cz5yw4c",
 //	    Parts: []*loonfs.UploadPartChecksumClaim{
 //	        &loonfs.UploadPartChecksumClaim{
 //	            Checksum: &loonfs.Checksum{

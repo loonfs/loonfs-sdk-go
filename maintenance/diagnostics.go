@@ -3,6 +3,7 @@
 package maintenance
 
 import (
+	loonfssdkgo "github.com/loonfs/loonfs-sdk-go"
 	big "math/big"
 )
 
@@ -12,7 +13,7 @@ var (
 
 type GetNamespaceDiagnosticsRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID loonfssdkgo.NamespaceID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -27,7 +28,7 @@ func (g *GetNamespaceDiagnosticsRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetNamespaceDiagnosticsRequest) SetNamespaceID(namespaceID string) {
+func (g *GetNamespaceDiagnosticsRequest) SetNamespaceID(namespaceID loonfssdkgo.NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getNamespaceDiagnosticsRequestFieldNamespaceID)
 }

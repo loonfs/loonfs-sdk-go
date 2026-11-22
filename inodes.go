@@ -22,9 +22,9 @@ type GetFileContentByInodeRequest struct {
 	// One byte range of the file to read instead of the whole file, as `bytes=start-end`, where `end` is the offset of the last byte, or as `bytes=start-`. An `end` past the last byte reads to the end of the file. Any other value, including a suffix range or several ranges, returns 400 `invalid_request`.
 	Range *string `json:"-" url:"-"`
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The file's inode ID.
-	InodeID string `json:"-" url:"-"`
+	InodeID InodeID `json:"-" url:"-"`
 	// The snapshot whose captured file revision to read.
 	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
 	// How recently the read confirms the namespace head. `eventual` (the default, unless the
@@ -56,14 +56,14 @@ func (g *GetFileContentByInodeRequest) SetRange(range_ *string) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileContentByInodeRequest) SetNamespaceID(namespaceID string) {
+func (g *GetFileContentByInodeRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getFileContentByInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileContentByInodeRequest) SetInodeID(inodeID string) {
+func (g *GetFileContentByInodeRequest) SetInodeID(inodeID InodeID) {
 	g.InodeID = inodeID
 	g.require(getFileContentByInodeRequestFieldInodeID)
 }
@@ -100,9 +100,9 @@ var (
 
 type CreateDownloadByInodeRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The file's inode ID.
-	InodeID string `json:"-" url:"-"`
+	InodeID InodeID `json:"-" url:"-"`
 	// How recently the read confirms the namespace head. `eventual` (the default, unless the
 	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
 	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
@@ -131,14 +131,14 @@ func (c *CreateDownloadByInodeRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateDownloadByInodeRequest) SetNamespaceID(namespaceID string) {
+func (c *CreateDownloadByInodeRequest) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(createDownloadByInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateDownloadByInodeRequest) SetInodeID(inodeID string) {
+func (c *CreateDownloadByInodeRequest) SetInodeID(inodeID InodeID) {
 	c.InodeID = inodeID
 	c.require(createDownloadByInodeRequestFieldInodeID)
 }
@@ -204,9 +204,9 @@ var (
 
 type CreateRevisionDownloadByInodeRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The file's inode ID.
-	InodeID string `json:"-" url:"-"`
+	InodeID InodeID `json:"-" url:"-"`
 	// The revision number.
 	RevisionNo RevisionNo `json:"-" url:"-"`
 	// How recently the read confirms the namespace head that it finds the revision in. `eventual`
@@ -238,14 +238,14 @@ func (c *CreateRevisionDownloadByInodeRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateRevisionDownloadByInodeRequest) SetNamespaceID(namespaceID string) {
+func (c *CreateRevisionDownloadByInodeRequest) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(createRevisionDownloadByInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateRevisionDownloadByInodeRequest) SetInodeID(inodeID string) {
+func (c *CreateRevisionDownloadByInodeRequest) SetInodeID(inodeID InodeID) {
 	c.InodeID = inodeID
 	c.require(createRevisionDownloadByInodeRequestFieldInodeID)
 }
@@ -320,9 +320,9 @@ var (
 
 type ListInodeChildrenRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The directory's inode ID.
-	InodeID string `json:"-" url:"-"`
+	InodeID InodeID `json:"-" url:"-"`
 	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
@@ -358,14 +358,14 @@ func (l *ListInodeChildrenRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListInodeChildrenRequest) SetNamespaceID(namespaceID string) {
+func (l *ListInodeChildrenRequest) SetNamespaceID(namespaceID NamespaceID) {
 	l.NamespaceID = namespaceID
 	l.require(listInodeChildrenRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListInodeChildrenRequest) SetInodeID(inodeID string) {
+func (l *ListInodeChildrenRequest) SetInodeID(inodeID InodeID) {
 	l.InodeID = inodeID
 	l.require(listInodeChildrenRequestFieldInodeID)
 }
@@ -424,23 +424,27 @@ var (
 	listFileRevisionsByInodeRequestFieldInodeID        = big.NewInt(1 << 1)
 	listFileRevisionsByInodeRequestFieldLimit          = big.NewInt(1 << 2)
 	listFileRevisionsByInodeRequestFieldCursor         = big.NewInt(1 << 3)
-	listFileRevisionsByInodeRequestFieldConsistency    = big.NewInt(1 << 4)
-	listFileRevisionsByInodeRequestFieldMaxStalenessMs = big.NewInt(1 << 5)
+	listFileRevisionsByInodeRequestFieldSnapshotID     = big.NewInt(1 << 4)
+	listFileRevisionsByInodeRequestFieldConsistency    = big.NewInt(1 << 5)
+	listFileRevisionsByInodeRequestFieldMaxStalenessMs = big.NewInt(1 << 6)
 )
 
 type ListFileRevisionsByInodeRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The file's inode ID.
-	InodeID string `json:"-" url:"-"`
+	InodeID InodeID `json:"-" url:"-"`
 	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
+	// The snapshot whose state to list the file's revisions in. The listing starts at the
+	// revision that the snapshot captured.
+	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
 	// How recently the read confirms the namespace head. `eventual` (the default, unless the
 	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
 	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
-	// head before the read.
+	// head before the read. It can't be combined with `snapshot_id`.
 	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
 	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
 	// milliseconds. The default is the server's `max_staleness_ms`.
@@ -459,14 +463,14 @@ func (l *ListFileRevisionsByInodeRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListFileRevisionsByInodeRequest) SetNamespaceID(namespaceID string) {
+func (l *ListFileRevisionsByInodeRequest) SetNamespaceID(namespaceID NamespaceID) {
 	l.NamespaceID = namespaceID
 	l.require(listFileRevisionsByInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListFileRevisionsByInodeRequest) SetInodeID(inodeID string) {
+func (l *ListFileRevisionsByInodeRequest) SetInodeID(inodeID InodeID) {
 	l.InodeID = inodeID
 	l.require(listFileRevisionsByInodeRequestFieldInodeID)
 }
@@ -483,6 +487,13 @@ func (l *ListFileRevisionsByInodeRequest) SetLimit(limit *int) {
 func (l *ListFileRevisionsByInodeRequest) SetCursor(cursor *string) {
 	l.Cursor = cursor
 	l.require(listFileRevisionsByInodeRequestFieldCursor)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFileRevisionsByInodeRequest) SetSnapshotID(snapshotID *SnapshotID) {
+	l.SnapshotID = snapshotID
+	l.require(listFileRevisionsByInodeRequestFieldSnapshotID)
 }
 
 // SetConsistency sets the Consistency field and marks it as non-optional;
@@ -510,9 +521,9 @@ var (
 
 type GetInodeRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The inode ID.
-	InodeID string `json:"-" url:"-"`
+	InodeID InodeID `json:"-" url:"-"`
 	// Whether the response includes the inode's attribute map and attribute revision. The default
 	// is `false`, as on every route that takes this parameter.
 	IncludeAttributes *bool `json:"-" url:"include_attributes,omitempty"`
@@ -540,14 +551,14 @@ func (g *GetInodeRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetInodeRequest) SetNamespaceID(namespaceID string) {
+func (g *GetInodeRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetInodeRequest) SetInodeID(inodeID string) {
+func (g *GetInodeRequest) SetInodeID(inodeID InodeID) {
 	g.InodeID = inodeID
 	g.require(getInodeRequestFieldInodeID)
 }
@@ -594,9 +605,9 @@ type GetFileRevisionContentByInodeRequest struct {
 	// One byte range of the file to read instead of the whole file, as `bytes=start-end`, where `end` is the offset of the last byte, or as `bytes=start-`. An `end` past the last byte reads to the end of the file. Any other value, including a suffix range or several ranges, returns 400 `invalid_request`.
 	Range *string `json:"-" url:"-"`
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The file's inode ID.
-	InodeID string `json:"-" url:"-"`
+	InodeID InodeID `json:"-" url:"-"`
 	// The revision number.
 	RevisionNo RevisionNo `json:"-" url:"-"`
 	// A snapshot, or one of the namespace's fork snapshots, whose state to find the revision
@@ -631,14 +642,14 @@ func (g *GetFileRevisionContentByInodeRequest) SetRange(range_ *string) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileRevisionContentByInodeRequest) SetNamespaceID(namespaceID string) {
+func (g *GetFileRevisionContentByInodeRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getFileRevisionContentByInodeRequestFieldNamespaceID)
 }
 
 // SetInodeID sets the InodeID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileRevisionContentByInodeRequest) SetInodeID(inodeID string) {
+func (g *GetFileRevisionContentByInodeRequest) SetInodeID(inodeID InodeID) {
 	g.InodeID = inodeID
 	g.require(getFileRevisionContentByInodeRequestFieldInodeID)
 }

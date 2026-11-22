@@ -17,7 +17,7 @@ var (
 
 type CreateSnapshotRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The snapshot's label, which doesn't need to be unique. Omit the field for a snapshot with no
 	// label.
 	Name *string `json:"name,omitempty" url:"-"`
@@ -38,7 +38,7 @@ func (c *CreateSnapshotRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateSnapshotRequest) SetNamespaceID(namespaceID string) {
+func (c *CreateSnapshotRequest) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(createSnapshotRequestFieldNamespaceID)
 }
@@ -85,7 +85,7 @@ var (
 
 type DeleteSnapshotRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The snapshot ID.
 	SnapshotID SnapshotID `json:"-" url:"-"`
 
@@ -102,7 +102,7 @@ func (d *DeleteSnapshotRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteSnapshotRequest) SetNamespaceID(namespaceID string) {
+func (d *DeleteSnapshotRequest) SetNamespaceID(namespaceID NamespaceID) {
 	d.NamespaceID = namespaceID
 	d.require(deleteSnapshotRequestFieldNamespaceID)
 }
@@ -122,7 +122,7 @@ var (
 
 type ExtendSnapshotRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The snapshot ID.
 	SnapshotID SnapshotID `json:"-" url:"-"`
 	// The new lifetime in milliseconds, counted from the server's current time.
@@ -141,7 +141,7 @@ func (e *ExtendSnapshotRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExtendSnapshotRequest) SetNamespaceID(namespaceID string) {
+func (e *ExtendSnapshotRequest) SetNamespaceID(namespaceID NamespaceID) {
 	e.NamespaceID = namespaceID
 	e.require(extendSnapshotRequestFieldNamespaceID)
 }
@@ -189,7 +189,7 @@ var (
 
 type ListSnapshotsRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
@@ -208,7 +208,7 @@ func (l *ListSnapshotsRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListSnapshotsRequest) SetNamespaceID(namespaceID string) {
+func (l *ListSnapshotsRequest) SetNamespaceID(namespaceID NamespaceID) {
 	l.NamespaceID = namespaceID
 	l.require(listSnapshotsRequestFieldNamespaceID)
 }
@@ -234,7 +234,7 @@ var (
 
 type GetSnapshotRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The snapshot ID.
 	SnapshotID SnapshotID `json:"-" url:"-"`
 
@@ -251,7 +251,7 @@ func (g *GetSnapshotRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetSnapshotRequest) SetNamespaceID(namespaceID string) {
+func (g *GetSnapshotRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getSnapshotRequestFieldNamespaceID)
 }

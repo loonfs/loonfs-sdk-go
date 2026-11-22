@@ -40,7 +40,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &loonfs.ListSnapshotsRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Snapshots.List(
 //	    context.TODO(),
@@ -114,7 +114,7 @@ func (c *Client) List(
 // Example:
 //
 //	request := &loonfs.CreateSnapshotRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Snapshots.Create(
 //	    context.TODO(),
@@ -141,7 +141,7 @@ func (c *Client) Create(
 // Example:
 //
 //	request := &loonfs.GetSnapshotRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 //	}
 //	client.Snapshots.Retrieve(
@@ -164,12 +164,12 @@ func (c *Client) Retrieve(
 	return response.Body, nil
 }
 
-// Deletes a snapshot by recording the server's current time as its delete time. From then on, the snapshot can't be read, forked, extended, or retrieved, and the snapshot listing leaves it out. Garbage collection can then reclaim its unreferenced manifest and runs after the grace window. Deleting a missing or deleted snapshot succeeds without a write, so repeating the request has the same result. The ID of a fork snapshot returns `snapshot_not_found`. Deletion stays available after the namespace is deleted.
+// Deletes a snapshot by recording the server's current time as its delete time. From then on, the snapshot can't be read, forked, extended, or retrieved, and the snapshot listing leaves it out. Garbage collection can then reclaim its unreferenced manifest and runs after the grace window. Deleting a missing or deleted snapshot succeeds without a write, so repeating the request has the same result. The ID of a fork snapshot returns `snapshot_not_found`. Deletion stays available after the namespace is deleted, except to a request with principals, which returns `namespace_deleted`.
 //
 // Example:
 //
 //	request := &loonfs.DeleteSnapshotRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 //	}
 //	client.Snapshots.Delete(
@@ -197,7 +197,7 @@ func (c *Client) Delete(
 // Example:
 //
 //	request := &loonfs.ExtendSnapshotRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 //	    TTLMs: int64(1000000),
 //	}

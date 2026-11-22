@@ -47,9 +47,9 @@ func NewClient(options *core.RequestOptions) *Client {
 //	)
 func (c *Client) Probe(
 	ctx context.Context,
-	request loonfs.StoreProbeRequest,
+	request loonfs.ProbeStoreRequest,
 	opts ...option.RequestOption,
-) (*loonfs.StoreProbeResponse, error) {
+) (*loonfs.ProbeStoreResponse, error) {
 	response, err := c.WithRawResponse.Probe(
 		ctx,
 		request,

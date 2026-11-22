@@ -69,7 +69,7 @@ func (c *Client) Content(
 // Example:
 //
 //	request := &loonfs.CreateDownloadRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    Path: "/docs/report.txt",
 //	}
 //	client.Files.CreateDownload(
@@ -97,7 +97,7 @@ func (c *Client) CreateDownload(
 // Example:
 //
 //	request := &loonfs.ListPathEntriesRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    Path: "path",
 //	    SnapshotID: loonfs.String(
 //	        "snp_0000000000000tfy68ekkbj6bx",
@@ -175,7 +175,7 @@ func (c *Client) List(
 // Example:
 //
 //	request := &loonfs.GetPathEntryRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    Path: "path",
 //	    SnapshotID: loonfs.String(
 //	        "snp_0000000000000tfy68ekkbj6bx",
@@ -206,8 +206,11 @@ func (c *Client) Retrieve(
 // Example:
 //
 //	request := &loonfs.ListFileRevisionsRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    Path: "path",
+//	    SnapshotID: loonfs.String(
+//	        "snp_0000000000000tfy68ekkbj6bx",
+//	    ),
 //	}
 //	client.Files.ListRevisions(
 //	    context.TODO(),
@@ -281,7 +284,7 @@ func (c *Client) ListRevisions(
 // Example:
 //
 //	request := &loonfs.GrepRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    Pattern: "pattern",
 //	    InodeID: loonfs.String(
 //	        "ino_000000r0000013kje0d47gc8kw",

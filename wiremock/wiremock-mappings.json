@@ -33,6 +33,38 @@
       "postServeActions": []
     },
     {
+      "id": "479ea10b-d2f3-47b5-b1ff-61a1611a36d6",
+      "name": "List namespaces - default",
+      "request": {
+        "urlPathTemplate": "/v0/namespaces",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"namespaces\": [\n    {\n      \"created_at_ms\": 1000000,\n      \"created_by\": \"usr_8f3c\",\n      \"fork_basis\": {\n        \"fork_point_seq\": 1000000,\n        \"fork_point_snapshot_id\": \"snp_0000000000000tfy68ekkbj6bx\",\n        \"rebased_from\": {\n          \"resume_after_seq\": 1000000,\n          \"source_namespace_id\": \"demo\"\n        },\n        \"source_namespace_id\": \"demo\"\n      },\n      \"head_seq\": 1000000,\n      \"namespace_id\": \"demo\",\n      \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n      \"retention_floor_seq\": 1000000,\n      \"retention_window_ms\": 1000000\n    }\n  ],\n  \"next_cursor\": \"next_cursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "479ea10b-d2f3-47b5-b1ff-61a1611a36d6",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
       "id": "7d3d4c1c-f81d-4621-8724-6a4eef4e149e",
       "name": "Create namespace - default",
       "request": {
@@ -76,7 +108,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -112,7 +144,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -148,7 +180,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -184,7 +216,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         },
         "queryParameters": {
@@ -195,7 +227,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"fork_point_seq\": 1000000,\n  \"retention_floor_seq\": 1000000,\n  \"source_head_seq\": 1000000,\n  \"outcome\": \"fork_point_below_floor\"\n}",
+        "body": "{\n  \"fork_point_seq\": 1000000,\n  \"namespace_id\": \"demo\",\n  \"retention_floor_seq\": 1000000,\n  \"source_head_seq\": 1000000,\n  \"source_namespace_id\": \"demo\",\n  \"outcome\": \"fork_point_below_floor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -225,7 +257,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -261,7 +293,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -297,13 +329,13 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"conflicts\": [\n    {\n      \"base\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"kind\": \"content\",\n      \"ours\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"theirs\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      }\n    }\n  ],\n  \"namespace\": {\n    \"created_at_ms\": 1000000,\n    \"created_by\": \"usr_8f3c\",\n    \"fork_basis\": {\n      \"fork_point_seq\": 1000000,\n      \"fork_point_snapshot_id\": \"snp_0000000000000tfy68ekkbj6bx\",\n      \"rebased_from\": {\n        \"resume_after_seq\": 1000000,\n        \"source_namespace_id\": \"demo\"\n      },\n      \"source_namespace_id\": \"demo\"\n    },\n    \"head_seq\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n    \"retention_floor_seq\": 1000000,\n    \"retention_window_ms\": 1000000\n  }\n}",
+        "body": "{\n  \"commit\": {\n    \"commit_id\": \"cmt_7kn71d9dq885x91hejz3gvf9p0\",\n    \"committed_at_ms\": 1000000,\n    \"committed_by\": \"usr_8f3c\",\n    \"committed_seq\": 1000000,\n    \"events\": [\n      {\n        \"access_revision_no\": 1000000,\n        \"boundary\": true,\n        \"grants\": {\n          \"key\": [\n            \"read\"\n          ]\n        },\n        \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n        \"kind\": \"access_changed\"\n      }\n    ],\n    \"merge\": {\n      \"source_after_seq\": 1000000,\n      \"source_namespace_id\": \"demo\",\n      \"source_through_seq\": 1000000\n    },\n    \"message\": \"message\",\n    \"namespace_id\": \"demo\"\n  },\n  \"conflicts\": [\n    {\n      \"base\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"inode_id\": \"ino_000000r0000013kje0d47gc8kw\",\n      \"kind\": \"content\",\n      \"ours\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      },\n      \"theirs\": {\n        \"content_ref\": {\n          \"checksum\": {\n            \"algorithm\": \"crc64nvme\",\n            \"value\": \"value\"\n          },\n          \"content_id\": \"con_4z59p0wjvx9a8b2frdhhf6mat1\",\n          \"kind\": \"blob_v1\",\n          \"size_bytes\": 1000000\n        },\n        \"path\": \"/docs/report.txt\"\n      }\n    }\n  ],\n  \"namespace\": {\n    \"created_at_ms\": 1000000,\n    \"created_by\": \"usr_8f3c\",\n    \"fork_basis\": {\n      \"fork_point_seq\": 1000000,\n      \"fork_point_snapshot_id\": \"snp_0000000000000tfy68ekkbj6bx\",\n      \"rebased_from\": {\n        \"resume_after_seq\": 1000000,\n        \"source_namespace_id\": \"demo\"\n      },\n      \"source_namespace_id\": \"demo\"\n    },\n    \"head_seq\": 1000000,\n    \"namespace_id\": \"demo\",\n    \"pool_id\": \"pool_3s0drmj8em84yb4mnetqkz2j0x\",\n    \"retention_floor_seq\": 1000000,\n    \"retention_window_ms\": 1000000\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -333,7 +365,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         },
         "queryParameters": {
@@ -377,7 +409,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -413,7 +445,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         },
         "queryParameters": {
@@ -495,7 +527,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -531,7 +563,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         },
         "queryParameters": {
@@ -575,7 +607,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         },
         "queryParameters": {
@@ -619,12 +651,15 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         },
         "queryParameters": {
           "path": {
             "equalTo": "path"
+          },
+          "snapshot_id": {
+            "equalTo": "snp_0000000000000tfy68ekkbj6bx"
           }
         }
       },
@@ -660,7 +695,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         },
         "queryParameters": {
@@ -704,7 +739,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -740,7 +775,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "inode_id": {
             "equalTo": "ino_000000r0000013kje0d47gc8kw"
@@ -784,7 +819,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "inode_id": {
             "equalTo": "ino_000000r0000013kje0d47gc8kw"
@@ -867,7 +902,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "inode_id": {
             "equalTo": "ino_000000r0000013kje0d47gc8kw"
@@ -906,10 +941,15 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "inode_id": {
             "equalTo": "ino_000000r0000013kje0d47gc8kw"
+          }
+        },
+        "queryParameters": {
+          "snapshot_id": {
+            "equalTo": "snp_0000000000000tfy68ekkbj6bx"
           }
         }
       },
@@ -987,7 +1027,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "inode_id": {
             "equalTo": "ino_000000r0000013kje0d47gc8kw"
@@ -1029,7 +1069,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -1065,7 +1105,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -1101,7 +1141,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "snapshot_id": {
             "equalTo": "snp_0000000000000tfy68ekkbj6bx"
@@ -1140,7 +1180,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "snapshot_id": {
             "equalTo": "snp_0000000000000tfy68ekkbj6bx"
@@ -1179,7 +1219,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "snapshot_id": {
             "equalTo": "snp_0000000000000tfy68ekkbj6bx"
@@ -1218,7 +1258,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -1254,10 +1294,10 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "upload_id": {
-            "equalTo": "upload_id"
+            "equalTo": "upl_2dhwp939xk9r7srv8t5cz5yw4c"
           }
         }
       },
@@ -1293,10 +1333,10 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "upload_id": {
-            "equalTo": "upload_id"
+            "equalTo": "upl_2dhwp939xk9r7srv8t5cz5yw4c"
           }
         }
       },
@@ -1332,10 +1372,10 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "upload_id": {
-            "equalTo": "upload_id"
+            "equalTo": "upl_2dhwp939xk9r7srv8t5cz5yw4c"
           }
         }
       },
@@ -1371,10 +1411,10 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "upload_id": {
-            "equalTo": "upload_id"
+            "equalTo": "upl_2dhwp939xk9r7srv8t5cz5yw4c"
           }
         }
       },
@@ -1410,7 +1450,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -1446,7 +1486,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -1482,7 +1522,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -1518,7 +1558,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -1554,7 +1594,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -1590,7 +1630,7 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           }
         }
       },
@@ -1626,10 +1666,10 @@
         },
         "pathParameters": {
           "namespace_id": {
-            "equalTo": "namespace_id"
+            "equalTo": "demo"
           },
           "snapshot_id": {
-            "equalTo": "snapshot_id"
+            "equalTo": "snp_0000000000000tfy68ekkbj6bx"
           }
         }
       },
@@ -1696,7 +1736,7 @@
         },
         "pathParameters": {
           "pool_id": {
-            "equalTo": "pool_id"
+            "equalTo": "pool_3s0drmj8em84yb4mnetqkz2j0x"
           }
         }
       },
@@ -1721,6 +1761,6 @@
     }
   ],
   "meta": {
-    "total": 45
+    "total": 46
   }
 }

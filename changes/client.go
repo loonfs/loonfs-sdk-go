@@ -39,7 +39,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &loonfs.ListChangesRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    AfterSeq: int64(1000000),
 //	    SnapshotID: loonfs.String(
 //	        "snp_0000000000000tfy68ekkbj6bx",

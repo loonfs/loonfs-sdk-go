@@ -14,7 +14,7 @@ var (
 
 type CreateJobsRequest struct {
 	// The pool ID.
-	PoolID string                                    `json:"-" url:"-"`
+	PoolID loonfssdkgo.PoolID                        `json:"-" url:"-"`
 	Body   *loonfssdkgo.RunPoolMaintenanceJobRequest `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -30,7 +30,7 @@ func (c *CreateJobsRequest) require(field *big.Int) {
 
 // SetPoolID sets the PoolID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateJobsRequest) SetPoolID(poolID string) {
+func (c *CreateJobsRequest) SetPoolID(poolID loonfssdkgo.PoolID) {
 	c.PoolID = poolID
 	c.require(createJobsRequestFieldPoolID)
 }

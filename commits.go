@@ -20,7 +20,7 @@ var (
 
 type CommitRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The caller's idempotency key for the whole request.
 	CommitID CommitID `json:"commit_id" url:"-"`
 	// One content token for each uploaded `content_ref` that the request uses.
@@ -45,7 +45,7 @@ func (c *CommitRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CommitRequest) SetNamespaceID(namespaceID string) {
+func (c *CommitRequest) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(commitRequestFieldNamespaceID)
 }

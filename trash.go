@@ -19,7 +19,7 @@ var (
 
 type ListTrashRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
@@ -46,7 +46,7 @@ func (l *ListTrashRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListTrashRequest) SetNamespaceID(namespaceID string) {
+func (l *ListTrashRequest) SetNamespaceID(namespaceID NamespaceID) {
 	l.NamespaceID = namespaceID
 	l.require(listTrashRequestFieldNamespaceID)
 }

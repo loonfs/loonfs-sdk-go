@@ -24,7 +24,7 @@ var (
 
 type ListDiffRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The sequence that the diff starts after. Each entry compares an inode's state at this
 	// sequence with its state at `to_seq`. It can't be below the namespace's retention floor.
 	FromSeq CommitSeq `json:"-" url:"from_seq"`
@@ -65,7 +65,7 @@ func (l *ListDiffRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListDiffRequest) SetNamespaceID(namespaceID string) {
+func (l *ListDiffRequest) SetNamespaceID(namespaceID NamespaceID) {
 	l.NamespaceID = namespaceID
 	l.require(listDiffRequestFieldNamespaceID)
 }
@@ -403,17 +403,17 @@ func (d DiffEntryKind) Ptr() *DiffEntryKind {
 // A page reads the commits after `after_seq` in sequence order, and reports each inode at the
 // last commit in the range that changed it, so an inode appears on one page only.
 var (
-	diffResponseFieldAfterSeq          = big.NewInt(1 << 0)
-	diffResponseFieldEntries           = big.NewInt(1 << 1)
-	diffResponseFieldFromSeq           = big.NewInt(1 << 2)
-	diffResponseFieldNamespaceID       = big.NewInt(1 << 3)
-	diffResponseFieldNextAfterSeq      = big.NewInt(1 << 4)
-	diffResponseFieldNextEventIndex    = big.NewInt(1 << 5)
-	diffResponseFieldRetentionFloorSeq = big.NewInt(1 << 6)
-	diffResponseFieldToSeq             = big.NewInt(1 << 7)
+	listDiffResponseFieldAfterSeq          = big.NewInt(1 << 0)
+	listDiffResponseFieldEntries           = big.NewInt(1 << 1)
+	listDiffResponseFieldFromSeq           = big.NewInt(1 << 2)
+	listDiffResponseFieldNamespaceID       = big.NewInt(1 << 3)
+	listDiffResponseFieldNextAfterSeq      = big.NewInt(1 << 4)
+	listDiffResponseFieldNextEventIndex    = big.NewInt(1 << 5)
+	listDiffResponseFieldRetentionFloorSeq = big.NewInt(1 << 6)
+	listDiffResponseFieldToSeq             = big.NewInt(1 << 7)
 )
 
-type DiffResponse struct {
+type ListDiffResponse struct {
 	// The sequence that this page's scan starts after. It's the request's `after_seq`, or
 	// `from_seq` when the request leaves `after_seq` out.
 	AfterSeq CommitSeq `json:"after_seq" url:"after_seq"`
@@ -447,170 +447,170 @@ type DiffResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (d *DiffResponse) GetAfterSeq() CommitSeq {
-	if d == nil {
+func (l *ListDiffResponse) GetAfterSeq() CommitSeq {
+	if l == nil {
 		return 0
 	}
-	return d.AfterSeq
+	return l.AfterSeq
 }
 
-func (d *DiffResponse) GetEntries() []*DiffEntry {
-	if d == nil {
+func (l *ListDiffResponse) GetEntries() []*DiffEntry {
+	if l == nil {
 		return nil
 	}
-	return d.Entries
+	return l.Entries
 }
 
-func (d *DiffResponse) GetFromSeq() CommitSeq {
-	if d == nil {
+func (l *ListDiffResponse) GetFromSeq() CommitSeq {
+	if l == nil {
 		return 0
 	}
-	return d.FromSeq
+	return l.FromSeq
 }
 
-func (d *DiffResponse) GetNamespaceID() NamespaceID {
-	if d == nil {
+func (l *ListDiffResponse) GetNamespaceID() NamespaceID {
+	if l == nil {
 		return ""
 	}
-	return d.NamespaceID
+	return l.NamespaceID
 }
 
-func (d *DiffResponse) GetNextAfterSeq() *CommitSeq {
-	if d == nil {
+func (l *ListDiffResponse) GetNextAfterSeq() *CommitSeq {
+	if l == nil {
 		return nil
 	}
-	return d.NextAfterSeq
+	return l.NextAfterSeq
 }
 
-func (d *DiffResponse) GetNextEventIndex() *int {
-	if d == nil {
+func (l *ListDiffResponse) GetNextEventIndex() *int {
+	if l == nil {
 		return nil
 	}
-	return d.NextEventIndex
+	return l.NextEventIndex
 }
 
-func (d *DiffResponse) GetRetentionFloorSeq() CommitSeq {
-	if d == nil {
+func (l *ListDiffResponse) GetRetentionFloorSeq() CommitSeq {
+	if l == nil {
 		return 0
 	}
-	return d.RetentionFloorSeq
+	return l.RetentionFloorSeq
 }
 
-func (d *DiffResponse) GetToSeq() CommitSeq {
-	if d == nil {
+func (l *ListDiffResponse) GetToSeq() CommitSeq {
+	if l == nil {
 		return 0
 	}
-	return d.ToSeq
+	return l.ToSeq
 }
 
-func (d *DiffResponse) GetExtraProperties() map[string]interface{} {
-	if d == nil {
+func (l *ListDiffResponse) GetExtraProperties() map[string]interface{} {
+	if l == nil {
 		return nil
 	}
-	return d.extraProperties
+	return l.extraProperties
 }
 
-func (d *DiffResponse) require(field *big.Int) {
-	if d.explicitFields == nil {
-		d.explicitFields = big.NewInt(0)
+func (l *ListDiffResponse) require(field *big.Int) {
+	if l.explicitFields == nil {
+		l.explicitFields = big.NewInt(0)
 	}
-	d.explicitFields.Or(d.explicitFields, field)
+	l.explicitFields.Or(l.explicitFields, field)
 }
 
 // SetAfterSeq sets the AfterSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DiffResponse) SetAfterSeq(afterSeq CommitSeq) {
-	d.AfterSeq = afterSeq
-	d.require(diffResponseFieldAfterSeq)
+func (l *ListDiffResponse) SetAfterSeq(afterSeq CommitSeq) {
+	l.AfterSeq = afterSeq
+	l.require(listDiffResponseFieldAfterSeq)
 }
 
 // SetEntries sets the Entries field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DiffResponse) SetEntries(entries []*DiffEntry) {
-	d.Entries = entries
-	d.require(diffResponseFieldEntries)
+func (l *ListDiffResponse) SetEntries(entries []*DiffEntry) {
+	l.Entries = entries
+	l.require(listDiffResponseFieldEntries)
 }
 
 // SetFromSeq sets the FromSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DiffResponse) SetFromSeq(fromSeq CommitSeq) {
-	d.FromSeq = fromSeq
-	d.require(diffResponseFieldFromSeq)
+func (l *ListDiffResponse) SetFromSeq(fromSeq CommitSeq) {
+	l.FromSeq = fromSeq
+	l.require(listDiffResponseFieldFromSeq)
 }
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DiffResponse) SetNamespaceID(namespaceID NamespaceID) {
-	d.NamespaceID = namespaceID
-	d.require(diffResponseFieldNamespaceID)
+func (l *ListDiffResponse) SetNamespaceID(namespaceID NamespaceID) {
+	l.NamespaceID = namespaceID
+	l.require(listDiffResponseFieldNamespaceID)
 }
 
 // SetNextAfterSeq sets the NextAfterSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DiffResponse) SetNextAfterSeq(nextAfterSeq *CommitSeq) {
-	d.NextAfterSeq = nextAfterSeq
-	d.require(diffResponseFieldNextAfterSeq)
+func (l *ListDiffResponse) SetNextAfterSeq(nextAfterSeq *CommitSeq) {
+	l.NextAfterSeq = nextAfterSeq
+	l.require(listDiffResponseFieldNextAfterSeq)
 }
 
 // SetNextEventIndex sets the NextEventIndex field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DiffResponse) SetNextEventIndex(nextEventIndex *int) {
-	d.NextEventIndex = nextEventIndex
-	d.require(diffResponseFieldNextEventIndex)
+func (l *ListDiffResponse) SetNextEventIndex(nextEventIndex *int) {
+	l.NextEventIndex = nextEventIndex
+	l.require(listDiffResponseFieldNextEventIndex)
 }
 
 // SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DiffResponse) SetRetentionFloorSeq(retentionFloorSeq CommitSeq) {
-	d.RetentionFloorSeq = retentionFloorSeq
-	d.require(diffResponseFieldRetentionFloorSeq)
+func (l *ListDiffResponse) SetRetentionFloorSeq(retentionFloorSeq CommitSeq) {
+	l.RetentionFloorSeq = retentionFloorSeq
+	l.require(listDiffResponseFieldRetentionFloorSeq)
 }
 
 // SetToSeq sets the ToSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DiffResponse) SetToSeq(toSeq CommitSeq) {
-	d.ToSeq = toSeq
-	d.require(diffResponseFieldToSeq)
+func (l *ListDiffResponse) SetToSeq(toSeq CommitSeq) {
+	l.ToSeq = toSeq
+	l.require(listDiffResponseFieldToSeq)
 }
 
-func (d *DiffResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler DiffResponse
+func (l *ListDiffResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListDiffResponse
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*d = DiffResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	*l = ListDiffResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
 	if err != nil {
 		return err
 	}
-	d.extraProperties = extraProperties
-	d.rawJSON = json.RawMessage(data)
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (d *DiffResponse) MarshalJSON() ([]byte, error) {
-	type embed DiffResponse
+func (l *ListDiffResponse) MarshalJSON() ([]byte, error) {
+	type embed ListDiffResponse
 	var marshaler = struct {
 		embed
 	}{
-		embed: embed(*d),
+		embed: embed(*l),
 	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
 	return json.Marshal(explicitMarshaler)
 }
 
-func (d *DiffResponse) String() string {
-	if d == nil {
+func (l *ListDiffResponse) String() string {
+	if l == nil {
 		return "<nil>"
 	}
-	if len(d.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := internal.StringifyJSON(d); err == nil {
+	if value, err := internal.StringifyJSON(l); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", d)
+	return fmt.Sprintf("%#v", l)
 }

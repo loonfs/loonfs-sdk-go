@@ -40,7 +40,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &maintenance.CreateJobsRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    Body: &loonfs.RunMaintenanceJobRequest{
 //	        Gc: &loonfs.RunMaintenanceJobRequestGc{},
 //	    },

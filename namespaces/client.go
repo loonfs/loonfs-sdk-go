@@ -4,6 +4,7 @@ package namespaces
 
 import (
 	context "context"
+	http "net/http"
 
 	loonfs "github.com/loonfs/loonfs-sdk-go"
 	core "github.com/loonfs/loonfs-sdk-go/core"
@@ -32,6 +33,75 @@ func NewClient(options *core.RequestOptions) *Client {
 			},
 		),
 	}
+}
+
+// Lists the store's namespaces in object-key order (namespace ID order, except that an ID sorts after the longer IDs that extend it with `-` or `.`), and returns for each one the object that `GET /v0/namespaces/{namespace_id}` returns. The list leaves out deleted namespaces and namespaces whose creation hasn't finished, so a page can have fewer namespaces than `limit`, even none, and still include `next_cursor`. Without `limit`, a page lists up to 100 namespaces.
+//
+// Example:
+//
+//	request := &loonfs.ListNamespacesRequest{}
+//	client.Namespaces.List(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) List(
+	ctx context.Context,
+	request *loonfs.ListNamespacesRequest,
+	opts ...option.RequestOption,
+) (*core.Page[*string, *loonfs.NamespaceMetadata, *loonfs.ListNamespacesResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/v0/namespaces"
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	headers := internal.MergeHeaders(
+		c.options.ToHeader(),
+		options.ToHeader(),
+	)
+	prepareCall := func(pageRequest *core.PageRequest[*string]) *internal.CallParams {
+		if pageRequest.Cursor != nil {
+			queryParams.Set("cursor", *pageRequest.Cursor)
+		}
+		nextURL := endpointURL
+		if len(queryParams) > 0 {
+			nextURL += "?" + queryParams.Encode()
+		}
+		return &internal.CallParams{
+			URL:             nextURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        pageRequest.Response,
+			ErrorDecoder:    internal.NewErrorDecoder(loonfs.ErrorCodes),
+		}
+	}
+	readPageResponse := func(response *loonfs.ListNamespacesResponse) *core.PageResponse[*string, *loonfs.NamespaceMetadata, *loonfs.ListNamespacesResponse] {
+		var zeroValue *string
+		next := response.GetNextCursor()
+		results := response.GetNamespaces()
+		return &core.PageResponse[*string, *loonfs.NamespaceMetadata, *loonfs.ListNamespacesResponse]{
+			Results:  results,
+			Response: response,
+			Next:     next,
+			Done:     next == zeroValue || *next == "",
+		}
+	}
+	pager := internal.NewCursorPager(
+		c.caller,
+		prepareCall,
+		readPageResponse,
+	)
+	return pager.GetPage(ctx, request.Cursor)
 }
 
 // Creates a new empty namespace. Without `namespace_id` in the request, LoonFS generates an ID. The response's `namespace_id` is the new namespace's ID.
@@ -64,7 +134,7 @@ func (c *Client) Create(
 // Example:
 //
 //	request := &loonfs.GetNamespaceRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Namespaces.Retrieve(
 //	    context.TODO(),
@@ -91,7 +161,7 @@ func (c *Client) Retrieve(
 // Example:
 //
 //	request := &loonfs.DeleteNamespaceRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Namespaces.Delete(
 //	    context.TODO(),
@@ -118,7 +188,7 @@ func (c *Client) Delete(
 // Example:
 //
 //	request := &loonfs.ForkNamespaceRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Namespaces.Fork(
 //	    context.TODO(),
@@ -145,7 +215,7 @@ func (c *Client) Fork(
 // Example:
 //
 //	request := &loonfs.GetNextMergeRangeRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    SourceNamespaceID: "demo",
 //	}
 //	client.Namespaces.NextMergeRange(
@@ -173,7 +243,7 @@ func (c *Client) NextMergeRange(
 // Example:
 //
 //	request := &loonfs.MergeForkRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    CommitID: "cmt_7kn71d9dq885x91hejz3gvf9p0",
 //	    SourceNamespaceID: "demo",
 //	}
@@ -202,7 +272,7 @@ func (c *Client) Merge(
 // Example:
 //
 //	request := &loonfs.ForkNamespaceForRebaseRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    SourceNamespaceID: "demo",
 //	}
 //	client.Namespaces.ForkForRebase(
@@ -230,7 +300,7 @@ func (c *Client) ForkForRebase(
 // Example:
 //
 //	request := &loonfs.ReplayForkRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    CommitID: "cmt_7kn71d9dq885x91hejz3gvf9p0",
 //	    SourceNamespaceID: "demo",
 //	}

@@ -22,7 +22,7 @@ var (
 
 type ListChangesRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The sequence after which to return committed changes. With `event_index`, the commit at
 	// this sequence that the page resumes.
 	AfterSeq CommitSeq `json:"-" url:"after_seq"`
@@ -59,7 +59,7 @@ func (l *ListChangesRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListChangesRequest) SetNamespaceID(namespaceID string) {
+func (l *ListChangesRequest) SetNamespaceID(namespaceID NamespaceID) {
 	l.NamespaceID = namespaceID
 	l.require(listChangesRequestFieldNamespaceID)
 }

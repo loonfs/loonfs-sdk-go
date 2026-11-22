@@ -35,9 +35,9 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 
 func (r *RawClient) Probe(
 	ctx context.Context,
-	request loonfs.StoreProbeRequest,
+	request loonfs.ProbeStoreRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.StoreProbeResponse], error) {
+) (*core.Response[*loonfs.ProbeStoreResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -49,7 +49,7 @@ func (r *RawClient) Probe(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.StoreProbeResponse
+	var response *loonfs.ProbeStoreResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -69,7 +69,7 @@ func (r *RawClient) Probe(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.StoreProbeResponse]{
+	return &core.Response[*loonfs.ProbeStoreResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

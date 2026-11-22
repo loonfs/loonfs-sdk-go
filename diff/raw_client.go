@@ -36,7 +36,7 @@ func (r *RawClient) List(
 	ctx context.Context,
 	request *loonfs.ListDiffRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*loonfs.DiffResponse], error) {
+) (*core.Response[*loonfs.ListDiffResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -58,7 +58,7 @@ func (r *RawClient) List(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *loonfs.DiffResponse
+	var response *loonfs.ListDiffResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -77,7 +77,7 @@ func (r *RawClient) List(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*loonfs.DiffResponse]{
+	return &core.Response[*loonfs.ListDiffResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

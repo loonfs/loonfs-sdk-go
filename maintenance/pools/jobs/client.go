@@ -40,7 +40,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &pools.CreateJobsRequest{
-//	    PoolID: "pool_id",
+//	    PoolID: "pool_3s0drmj8em84yb4mnetqkz2j0x",
 //	    Body: &loonfs.RunPoolMaintenanceJobRequest{
 //	        Gc: &loonfs.RunPoolMaintenanceJobRequestGc{},
 //	    },
