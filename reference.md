@@ -42,6 +42,72 @@ client.Capabilities.Retrieve(
 </details>
 
 ## namespaces
+<details><summary><code>client.Namespaces.List() -> *loonfs.ListNamespacesResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the store's namespaces in object-key order (namespace ID order, except that an ID sorts after the longer IDs that extend it with `-` or `.`), and returns for each one the object that `GET /v0/namespaces/{namespace_id}` returns. The list leaves out deleted namespaces and namespaces whose creation hasn't finished, so a page can have fewer namespaces than `limit`, even none, and still include `next_cursor`. Without `limit`, a page lists up to 100 namespaces.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &loonfs.ListNamespacesRequest{}
+client.Namespaces.List(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**limit:** `*int` — The maximum number of namespace IDs the page lists from the store.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — The opaque cursor that the previous page returned.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Namespaces.Create(request) -> *loonfs.NamespaceMetadata</code></summary>
 <dl>
 <dd>
@@ -146,7 +212,7 @@ Returns the current head and retention state for a namespace.
 
 ```go
 request := &loonfs.GetNamespaceRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Namespaces.Retrieve(
     context.TODO(),
@@ -166,7 +232,7 @@ client.Namespaces.Retrieve(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -230,7 +296,7 @@ Marks a namespace as deleted. The namespace ID can never be used again to create
 
 ```go
 request := &loonfs.DeleteNamespaceRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Namespaces.Delete(
     context.TODO(),
@@ -250,7 +316,7 @@ client.Namespaces.Delete(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -298,7 +364,7 @@ Creates a new namespace from the source namespace's current head or from an unex
 
 ```go
 request := &loonfs.ForkNamespaceRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Namespaces.Fork(
     context.TODO(),
@@ -318,7 +384,7 @@ client.Namespaces.Fork(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The source namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The source namespace ID.
     
 </dd>
 </dl>
@@ -377,7 +443,7 @@ Returns where the fork's next merge into the namespace starts, without planning 
 
 ```go
 request := &loonfs.GetNextMergeRangeRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     SourceNamespaceID: "demo",
 }
 client.Namespaces.NextMergeRange(
@@ -398,7 +464,7 @@ client.Namespaces.NextMergeRange(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace that the fork merges into.
+**namespaceID:** `loonfs.NamespaceID` — The namespace that the fork merges into.
     
 </dd>
 </dl>
@@ -473,7 +539,7 @@ Merges a fork's commits into the namespace as one commit. The merge applies the 
 
 ```go
 request := &loonfs.MergeForkRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     CommitID: "cmt_7kn71d9dq885x91hejz3gvf9p0",
     SourceNamespaceID: "demo",
 }
@@ -495,7 +561,7 @@ client.Namespaces.Merge(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace that the merge commits into.
+**namespaceID:** `loonfs.NamespaceID` — The namespace that the merge commits into.
     
 </dd>
 </dl>
@@ -573,7 +639,7 @@ Creates a rebase's new fork from the namespace's head, for a fork of the namespa
 
 ```go
 request := &loonfs.ForkNamespaceForRebaseRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     SourceNamespaceID: "demo",
 }
 client.Namespaces.ForkForRebase(
@@ -594,7 +660,7 @@ client.Namespaces.ForkForRebase(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace that the fork was forked from.
+**namespaceID:** `loonfs.NamespaceID` — The namespace that the fork was forked from.
     
 </dd>
 </dl>
@@ -656,7 +722,7 @@ Replays a fork's unmerged commits into the namespace, a rebase's new fork for th
 
 ```go
 request := &loonfs.ReplayForkRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     CommitID: "cmt_7kn71d9dq885x91hejz3gvf9p0",
     SourceNamespaceID: "demo",
 }
@@ -678,7 +744,7 @@ client.Namespaces.Replay(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The rebase's new fork, which the replay commit commits into.
+**namespaceID:** `loonfs.NamespaceID` — The rebase's new fork, which the replay commit commits into.
     
 </dd>
 </dl>
@@ -757,7 +823,7 @@ Returns committed changes after a sequence. A snapshot limits the feed to its ca
 
 ```go
 request := &loonfs.ListChangesRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     AfterSeq: int64(1000000),
     SnapshotID: loonfs.String(
         "snp_0000000000000tfy68ekkbj6bx",
@@ -781,7 +847,7 @@ client.Changes.List(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -896,7 +962,7 @@ Applies one commit, which is an ordered, non-empty list of path operations that 
 
 ```go
 request := &loonfs.CommitRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     CommitID: "cmt_7kn71d9dq885x91hejz3gvf9p0",
     Operations: []*loonfs.FilesystemOperation{
         &loonfs.FilesystemOperation{
@@ -925,7 +991,7 @@ client.Commits.Create(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -978,7 +1044,7 @@ client.Commits.Create(
 </details>
 
 ## Diff
-<details><summary><code>client.Diff.List(NamespaceID) -> *loonfs.DiffResponse</code></summary>
+<details><summary><code>client.Diff.List(NamespaceID) -> *loonfs.ListDiffResponse</code></summary>
 <dl>
 <dd>
 
@@ -1006,7 +1072,7 @@ Returns a page of the inodes whose visible state at `to_seq` differs from their 
 
 ```go
 request := &loonfs.ListDiffRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     FromSeq: int64(1000000),
 }
 client.Diff.List(
@@ -1027,7 +1093,7 @@ client.Diff.List(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -1181,7 +1247,7 @@ client.Files.Content(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -1277,7 +1343,7 @@ Returns ordered, signed object ranges that cover exactly `[start_offset, size_by
 
 ```go
 request := &loonfs.CreateDownloadRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     Path: "/docs/report.txt",
 }
 client.Files.CreateDownload(
@@ -1298,7 +1364,7 @@ client.Files.CreateDownload(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -1405,7 +1471,7 @@ Lists a directory from the current state or an unexpired snapshot.
 
 ```go
 request := &loonfs.ListPathEntriesRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     Path: "path",
     SnapshotID: loonfs.String(
         "snp_0000000000000tfy68ekkbj6bx",
@@ -1429,7 +1495,7 @@ client.Files.List(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -1548,7 +1614,7 @@ Returns path metadata from the current state or an unexpired snapshot.
 
 ```go
 request := &loonfs.GetPathEntryRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     Path: "path",
     SnapshotID: loonfs.String(
         "snp_0000000000000tfy68ekkbj6bx",
@@ -1572,7 +1638,7 @@ client.Files.Retrieve(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -1663,8 +1729,11 @@ Resolves the current path to a file inode and returns that file's revisions. If 
 
 ```go
 request := &loonfs.ListFileRevisionsRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     Path: "path",
+    SnapshotID: loonfs.String(
+        "snp_0000000000000tfy68ekkbj6bx",
+    ),
 }
 client.Files.ListRevisions(
     context.TODO(),
@@ -1684,7 +1753,7 @@ client.Files.ListRevisions(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -1716,12 +1785,23 @@ client.Files.ListRevisions(
 <dl>
 <dd>
 
+**snapshotID:** `*loonfs.SnapshotID` 
+
+The snapshot whose state to list the file's revisions in. The listing starts at the
+revision that the snapshot captured.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **consistency:** `*loonfs.ReadConsistency` 
 
 How recently the read confirms the namespace head. `eventual` (the default, unless the
 server's `consistency` setting is `strong`) reads at the head that the server confirmed last
 while that confirmation is younger than the maximum staleness, and `strong` confirms the
-head before the read.
+head before the read. It can't be combined with `snapshot_id`.
     
 </dd>
 </dl>
@@ -1772,7 +1852,7 @@ Searches file content with a regular expression, using the namespace's grep inde
 
 ```go
 request := &loonfs.GrepRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     Pattern: "pattern",
     InodeID: loonfs.String(
         "ino_000000r0000013kje0d47gc8kw",
@@ -1796,7 +1876,7 @@ client.Files.Grep(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -1937,7 +2017,7 @@ Returns the namespace's trash entries, oldest deletion first. An entry leaves th
 
 ```go
 request := &loonfs.ListTrashRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Trash.List(
     context.TODO(),
@@ -1957,7 +2037,7 @@ client.Trash.List(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -2038,7 +2118,7 @@ Returns the path entry for a visible inode, from the current state or an unexpir
 
 ```go
 request := &loonfs.GetInodeRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     InodeID: "ino_000000r0000013kje0d47gc8kw",
     SnapshotID: loonfs.String(
         "snp_0000000000000tfy68ekkbj6bx",
@@ -2062,7 +2142,7 @@ client.Inodes.Retrieve(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -2070,7 +2150,7 @@ client.Inodes.Retrieve(
 <dl>
 <dd>
 
-**inodeID:** `string` — The inode ID.
+**inodeID:** `loonfs.InodeID` — The inode ID.
     
 </dd>
 </dl>
@@ -2153,7 +2233,7 @@ Lists one page of a directory's children, in canonical name key order, from the 
 
 ```go
 request := &loonfs.ListInodeChildrenRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     InodeID: "ino_000000r0000013kje0d47gc8kw",
     SnapshotID: loonfs.String(
         "snp_0000000000000tfy68ekkbj6bx",
@@ -2177,7 +2257,7 @@ client.Inodes.ListChildren(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -2185,7 +2265,7 @@ client.Inodes.ListChildren(
 <dl>
 <dd>
 
-**inodeID:** `string` — The directory's inode ID.
+**inodeID:** `loonfs.InodeID` — The directory's inode ID.
     
 </dd>
 </dl>
@@ -2317,7 +2397,7 @@ client.Inodes.Content(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -2325,7 +2405,7 @@ client.Inodes.Content(
 <dl>
 <dd>
 
-**inodeID:** `string` — The file's inode ID.
+**inodeID:** `loonfs.InodeID` — The file's inode ID.
     
 </dd>
 </dl>
@@ -2405,7 +2485,7 @@ Authorizes a direct read of the current revision of a visible file inode, wherev
 
 ```go
 request := &loonfs.CreateDownloadByInodeRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     InodeID: "ino_000000r0000013kje0d47gc8kw",
 }
 client.Inodes.CreateDownload(
@@ -2426,7 +2506,7 @@ client.Inodes.CreateDownload(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -2434,7 +2514,7 @@ client.Inodes.CreateDownload(
 <dl>
 <dd>
 
-**inodeID:** `string` — The file's inode ID.
+**inodeID:** `loonfs.InodeID` — The file's inode ID.
     
 </dd>
 </dl>
@@ -2520,8 +2600,11 @@ Returns the retained revisions of a file inode. The file doesn't need a current 
 
 ```go
 request := &loonfs.ListFileRevisionsByInodeRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     InodeID: "ino_000000r0000013kje0d47gc8kw",
+    SnapshotID: loonfs.String(
+        "snp_0000000000000tfy68ekkbj6bx",
+    ),
 }
 client.Inodes.ListRevisions(
     context.TODO(),
@@ -2541,7 +2624,7 @@ client.Inodes.ListRevisions(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -2549,7 +2632,7 @@ client.Inodes.ListRevisions(
 <dl>
 <dd>
 
-**inodeID:** `string` — The file's inode ID.
+**inodeID:** `loonfs.InodeID` — The file's inode ID.
     
 </dd>
 </dl>
@@ -2573,12 +2656,23 @@ client.Inodes.ListRevisions(
 <dl>
 <dd>
 
+**snapshotID:** `*loonfs.SnapshotID` 
+
+The snapshot whose state to list the file's revisions in. The listing starts at the
+revision that the snapshot captured.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **consistency:** `*loonfs.ReadConsistency` 
 
 How recently the read confirms the namespace head. `eventual` (the default, unless the
 server's `consistency` setting is `strong`) reads at the head that the server confirmed last
 while that confirmation is younger than the maximum staleness, and `strong` confirms the
-head before the read.
+head before the read. It can't be combined with `snapshot_id`.
     
 </dd>
 </dl>
@@ -2651,7 +2745,7 @@ client.Inodes.RevisionContent(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -2659,7 +2753,7 @@ client.Inodes.RevisionContent(
 <dl>
 <dd>
 
-**inodeID:** `string` — The file's inode ID.
+**inodeID:** `loonfs.InodeID` — The file's inode ID.
     
 </dd>
 </dl>
@@ -2750,7 +2844,7 @@ Authorizes a direct read of one retained inode revision. With `snapshot_id`, the
 
 ```go
 request := &loonfs.CreateRevisionDownloadByInodeRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     InodeID: "ino_000000r0000013kje0d47gc8kw",
     RevisionNo: int64(1000000),
 }
@@ -2772,7 +2866,7 @@ client.Inodes.CreateRevisionDownload(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -2780,7 +2874,7 @@ client.Inodes.CreateRevisionDownload(
 <dl>
 <dd>
 
-**inodeID:** `string` — The file's inode ID.
+**inodeID:** `loonfs.InodeID` — The file's inode ID.
     
 </dd>
 </dl>
@@ -2876,7 +2970,7 @@ Lists snapshots in snapshot ID order. The list leaves out expired snapshots, del
 
 ```go
 request := &loonfs.ListSnapshotsRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Snapshots.List(
     context.TODO(),
@@ -2896,7 +2990,7 @@ client.Snapshots.List(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -2952,7 +3046,7 @@ Creates a snapshot of the current namespace state. The server first folds any WA
 
 ```go
 request := &loonfs.CreateSnapshotRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Snapshots.Create(
     context.TODO(),
@@ -2972,7 +3066,7 @@ client.Snapshots.Create(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3034,7 +3128,7 @@ Returns one snapshot, as the snapshot listing returns it. A missing ID, the ID o
 
 ```go
 request := &loonfs.GetSnapshotRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 }
 client.Snapshots.Retrieve(
@@ -3055,7 +3149,7 @@ client.Snapshots.Retrieve(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3087,7 +3181,7 @@ client.Snapshots.Retrieve(
 <dl>
 <dd>
 
-Deletes a snapshot by recording the server's current time as its delete time. From then on, the snapshot can't be read, forked, extended, or retrieved, and the snapshot listing leaves it out. Garbage collection can then reclaim its unreferenced manifest and runs after the grace window. Deleting a missing or deleted snapshot succeeds without a write, so repeating the request has the same result. The ID of a fork snapshot returns `snapshot_not_found`. Deletion stays available after the namespace is deleted.
+Deletes a snapshot by recording the server's current time as its delete time. From then on, the snapshot can't be read, forked, extended, or retrieved, and the snapshot listing leaves it out. Garbage collection can then reclaim its unreferenced manifest and runs after the grace window. Deleting a missing or deleted snapshot succeeds without a write, so repeating the request has the same result. The ID of a fork snapshot returns `snapshot_not_found`. Deletion stays available after the namespace is deleted, except to a request with principals, which returns `namespace_deleted`.
 </dd>
 </dl>
 </dd>
@@ -3103,7 +3197,7 @@ Deletes a snapshot by recording the server's current time as its delete time. Fr
 
 ```go
 request := &loonfs.DeleteSnapshotRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 }
 client.Snapshots.Delete(
@@ -3124,7 +3218,7 @@ client.Snapshots.Delete(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3172,7 +3266,7 @@ Moves an unexpired snapshot's expiry to `ttl_ms` from the server's current time.
 
 ```go
 request := &loonfs.ExtendSnapshotRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
     TTLMs: int64(1000000),
 }
@@ -3194,7 +3288,7 @@ client.Snapshots.Extend(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3251,7 +3345,7 @@ Starts an upload session for content that a later commit can reference. A servic
 
 ```go
 request := &loonfs.CreateUploadRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     Body: &loonfs.CreateUploadBody{
         DirectMultipart: &loonfs.CreateUploadBodyDirectMultipart{},
     },
@@ -3274,7 +3368,7 @@ client.Uploads.Create(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3322,8 +3416,8 @@ Returns an upload session. An open `direct_put` session includes a new presigned
 
 ```go
 request := &loonfs.GetUploadRequest{
-    NamespaceID: "namespace_id",
-    UploadID: "upload_id",
+    NamespaceID: "demo",
+    UploadID: "upl_2dhwp939xk9r7srv8t5cz5yw4c",
 }
 client.Uploads.Retrieve(
     context.TODO(),
@@ -3343,7 +3437,7 @@ client.Uploads.Retrieve(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3351,7 +3445,7 @@ client.Uploads.Retrieve(
 <dl>
 <dd>
 
-**uploadID:** `string` — The upload session ID.
+**uploadID:** `loonfs.UploadID` — The upload session ID.
     
 </dd>
 </dl>
@@ -3391,8 +3485,8 @@ Aborts an open upload session and deletes the object that the session was writin
 
 ```go
 request := &loonfs.AbortUploadRequest{
-    NamespaceID: "namespace_id",
-    UploadID: "upload_id",
+    NamespaceID: "demo",
+    UploadID: "upl_2dhwp939xk9r7srv8t5cz5yw4c",
 }
 client.Uploads.Abort(
     context.TODO(),
@@ -3412,7 +3506,7 @@ client.Uploads.Abort(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3420,7 +3514,7 @@ client.Uploads.Abort(
 <dl>
 <dd>
 
-**uploadID:** `string` — The upload session ID.
+**uploadID:** `loonfs.UploadID` — The upload session ID.
     
 </dd>
 </dl>
@@ -3460,8 +3554,8 @@ Completes an upload. The request mode must match the mode that started the sessi
 
 ```go
 request := &loonfs.CompleteUploadRequest{
-    NamespaceID: "namespace_id",
-    UploadID: "upload_id",
+    NamespaceID: "demo",
+    UploadID: "upl_2dhwp939xk9r7srv8t5cz5yw4c",
     Body: &loonfs.CompleteUploadBody{
         DirectMultipart: &loonfs.CompleteUploadBodyDirectMultipart{
             Content: &loonfs.UploadContentClaim{
@@ -3502,7 +3596,7 @@ client.Uploads.Complete(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3510,7 +3604,7 @@ client.Uploads.Complete(
 <dl>
 <dd>
 
-**uploadID:** `string` — The upload session ID.
+**uploadID:** `loonfs.UploadID` — The upload session ID.
     
 </dd>
 </dl>
@@ -3558,8 +3652,8 @@ Returns one short-lived presigned URL for each requested part of an open `direct
 
 ```go
 request := &loonfs.SignUploadPartsRequest{
-    NamespaceID: "namespace_id",
-    UploadID: "upload_id",
+    NamespaceID: "demo",
+    UploadID: "upl_2dhwp939xk9r7srv8t5cz5yw4c",
     Parts: []*loonfs.UploadPartChecksumClaim{
         &loonfs.UploadPartChecksumClaim{
             Checksum: &loonfs.Checksum{
@@ -3588,7 +3682,7 @@ client.Uploads.SignParts(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3596,7 +3690,7 @@ client.Uploads.SignParts(
 <dl>
 <dd>
 
-**uploadID:** `string` — The upload session ID.
+**uploadID:** `loonfs.UploadID` — The upload session ID.
     
 </dd>
 </dl>
@@ -3645,7 +3739,7 @@ Returns namespace state together with the current manifest and visible WAL tail.
 
 ```go
 request := &maintenance.GetNamespaceDiagnosticsRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Maintenance.Diagnostics.Retrieve(
     context.TODO(),
@@ -3665,7 +3759,7 @@ client.Maintenance.Diagnostics.Retrieve(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3706,7 +3800,7 @@ Reports whether the namespace's grep index is `disabled`, `backfilling`, or `act
 
 ```go
 request := &maintenance.GetGrepIndexRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Maintenance.GrepIndex.Retrieve(
     context.TODO(),
@@ -3726,7 +3820,7 @@ client.Maintenance.GrepIndex.Retrieve(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3766,7 +3860,7 @@ Disables the namespace's grep index by publishing a namespace manifest whose gre
 
 ```go
 request := &maintenance.DisableGrepIndexRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Maintenance.GrepIndex.Disable(
     context.TODO(),
@@ -3786,7 +3880,7 @@ client.Maintenance.GrepIndex.Disable(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3826,7 +3920,7 @@ Enables the namespace's grep index. A deployment that runs maintenance starts th
 
 ```go
 request := &maintenance.EnableGrepIndexRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Maintenance.GrepIndex.Enable(
     context.TODO(),
@@ -3846,7 +3940,7 @@ client.Maintenance.GrepIndex.Enable(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3887,7 +3981,7 @@ Runs one maintenance job for the namespace. The body's `kind` selects the job, w
 
 ```go
 request := &maintenance.CreateJobsRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
     Body: &loonfs.RunMaintenanceJobRequest{
         Gc: &loonfs.RunMaintenanceJobRequestGc{},
     },
@@ -3910,7 +4004,7 @@ client.Maintenance.Jobs.Create(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -3959,7 +4053,7 @@ Lists every snapshot, user snapshots and fork snapshots, in snapshot ID order. T
 
 ```go
 request := &maintenance.ListSnapshotRecordsRequest{
-    NamespaceID: "namespace_id",
+    NamespaceID: "demo",
 }
 client.Maintenance.Snapshots.List(
     context.TODO(),
@@ -3979,7 +4073,7 @@ client.Maintenance.Snapshots.List(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -4035,8 +4129,8 @@ Returns one existing snapshot of any owner, as the snapshot inventory lists it, 
 
 ```go
 request := &maintenance.GetSnapshotRecordRequest{
-    NamespaceID: "namespace_id",
-    SnapshotID: "snapshot_id",
+    NamespaceID: "demo",
+    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 }
 client.Maintenance.Snapshots.Retrieve(
     context.TODO(),
@@ -4056,7 +4150,7 @@ client.Maintenance.Snapshots.Retrieve(
 <dl>
 <dd>
 
-**namespaceID:** `string` — The namespace ID.
+**namespaceID:** `loonfs.NamespaceID` — The namespace ID.
     
 </dd>
 </dl>
@@ -4064,7 +4158,7 @@ client.Maintenance.Snapshots.Retrieve(
 <dl>
 <dd>
 
-**snapshotID:** `string` — The snapshot ID.
+**snapshotID:** `loonfs.SnapshotID` — The snapshot ID.
     
 </dd>
 </dl>
@@ -4077,7 +4171,7 @@ client.Maintenance.Snapshots.Retrieve(
 </details>
 
 ## Maintenance Store
-<details><summary><code>client.Maintenance.Store.Probe(request) -> *loonfs.StoreProbeResponse</code></summary>
+<details><summary><code>client.Maintenance.Store.Probe(request) -> *loonfs.ProbeStoreResponse</code></summary>
 <dl>
 <dd>
 
@@ -4125,7 +4219,7 @@ client.Maintenance.Store.Probe(
 <dl>
 <dd>
 
-**request:** `loonfs.StoreProbeRequest` 
+**request:** `loonfs.ProbeStoreRequest` 
     
 </dd>
 </dl>
@@ -4166,7 +4260,7 @@ Runs one maintenance job for the pool. The body's `kind` selects the job, which 
 
 ```go
 request := &pools.CreateJobsRequest{
-    PoolID: "pool_id",
+    PoolID: "pool_3s0drmj8em84yb4mnetqkz2j0x",
     Body: &loonfs.RunPoolMaintenanceJobRequest{
         Gc: &loonfs.RunPoolMaintenanceJobRequestGc{},
     },
@@ -4189,7 +4283,7 @@ client.Maintenance.Pools.Jobs.Create(
 <dl>
 <dd>
 
-**poolID:** `string` — The pool ID.
+**poolID:** `loonfs.PoolID` — The pool ID.
     
 </dd>
 </dl>

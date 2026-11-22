@@ -41,7 +41,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &loonfs.GetInodeRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	    SnapshotID: loonfs.String(
 //	        "snp_0000000000000tfy68ekkbj6bx",
@@ -72,7 +72,7 @@ func (c *Client) Retrieve(
 // Example:
 //
 //	request := &loonfs.ListInodeChildrenRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	    SnapshotID: loonfs.String(
 //	        "snp_0000000000000tfy68ekkbj6bx",
@@ -179,7 +179,7 @@ func (c *Client) Content(
 // Example:
 //
 //	request := &loonfs.CreateDownloadByInodeRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	}
 //	client.Inodes.CreateDownload(
@@ -207,8 +207,11 @@ func (c *Client) CreateDownload(
 // Example:
 //
 //	request := &loonfs.ListFileRevisionsByInodeRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    InodeID: "ino_000000r0000013kje0d47gc8kw",
+//	    SnapshotID: loonfs.String(
+//	        "snp_0000000000000tfy68ekkbj6bx",
+//	    ),
 //	}
 //	client.Inodes.ListRevisions(
 //	    context.TODO(),
@@ -312,7 +315,7 @@ func (c *Client) RevisionContent(
 // Example:
 //
 //	request := &loonfs.CreateRevisionDownloadByInodeRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    InodeID: "ino_000000r0000013kje0d47gc8kw",
 //	    RevisionNo: int64(1000000),
 //	}

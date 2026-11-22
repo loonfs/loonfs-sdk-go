@@ -39,7 +39,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &loonfs.ListDiffRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	    FromSeq: int64(1000000),
 //	}
 //	client.Diff.List(
@@ -50,7 +50,7 @@ func (c *Client) List(
 	ctx context.Context,
 	request *loonfs.ListDiffRequest,
 	opts ...option.RequestOption,
-) (*loonfs.DiffResponse, error) {
+) (*loonfs.ListDiffResponse, error) {
 	response, err := c.WithRawResponse.List(
 		ctx,
 		request,

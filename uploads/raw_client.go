@@ -223,9 +223,9 @@ func (r *RawClient) Complete(
 func (r *RawClient) PutContent(
 	ctx context.Context,
 	// The namespace ID.
-	namespaceID string,
+	namespaceID loonfs.NamespaceID,
 	// The upload session ID.
-	uploadID string,
+	uploadID loonfs.UploadID,
 	request io.Reader,
 	opts ...option.RequestOption,
 ) (*core.Response[*loonfs.UploadSession], error) {

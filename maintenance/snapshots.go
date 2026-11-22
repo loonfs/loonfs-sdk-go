@@ -3,6 +3,7 @@
 package maintenance
 
 import (
+	loonfssdkgo "github.com/loonfs/loonfs-sdk-go"
 	big "math/big"
 )
 
@@ -14,7 +15,7 @@ var (
 
 type ListSnapshotRecordsRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID loonfssdkgo.NamespaceID `json:"-" url:"-"`
 	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
@@ -33,7 +34,7 @@ func (l *ListSnapshotRecordsRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListSnapshotRecordsRequest) SetNamespaceID(namespaceID string) {
+func (l *ListSnapshotRecordsRequest) SetNamespaceID(namespaceID loonfssdkgo.NamespaceID) {
 	l.NamespaceID = namespaceID
 	l.require(listSnapshotRecordsRequestFieldNamespaceID)
 }
@@ -59,9 +60,9 @@ var (
 
 type GetSnapshotRecordRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID loonfssdkgo.NamespaceID `json:"-" url:"-"`
 	// The snapshot ID.
-	SnapshotID string `json:"-" url:"-"`
+	SnapshotID loonfssdkgo.SnapshotID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -76,14 +77,14 @@ func (g *GetSnapshotRecordRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetSnapshotRecordRequest) SetNamespaceID(namespaceID string) {
+func (g *GetSnapshotRecordRequest) SetNamespaceID(namespaceID loonfssdkgo.NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getSnapshotRecordRequestFieldNamespaceID)
 }
 
 // SetSnapshotID sets the SnapshotID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetSnapshotRecordRequest) SetSnapshotID(snapshotID string) {
+func (g *GetSnapshotRecordRequest) SetSnapshotID(snapshotID loonfssdkgo.SnapshotID) {
 	g.SnapshotID = snapshotID
 	g.require(getSnapshotRecordRequestFieldSnapshotID)
 }

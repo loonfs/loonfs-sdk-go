@@ -40,7 +40,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &loonfs.ListTrashRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Trash.List(
 //	    context.TODO(),

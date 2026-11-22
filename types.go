@@ -6607,6 +6607,113 @@ func (p *PoolRetainedCandidates) String() string {
 // The probe stores its temporary objects under a key prefix that includes this ID.
 type ProbeID = string
 
+// A request for one run of the store contract probe, with an empty body.
+type ProbeStoreRequest = map[string]any
+
+// The results of one store contract probe, in order.
+var (
+	probeStoreResponseFieldChecks  = big.NewInt(1 << 0)
+	probeStoreResponseFieldProbeID = big.NewInt(1 << 1)
+)
+
+type ProbeStoreResponse struct {
+	// The check results, in the order that the checks ran.
+	Checks []*StoreProbeCheck `json:"checks" url:"checks"`
+	// The ID of this probe run. The server generates the ID and writes the probe's temporary
+	// objects under it.
+	ProbeID ProbeID `json:"probe_id" url:"probe_id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *ProbeStoreResponse) GetChecks() []*StoreProbeCheck {
+	if p == nil {
+		return nil
+	}
+	return p.Checks
+}
+
+func (p *ProbeStoreResponse) GetProbeID() ProbeID {
+	if p == nil {
+		return ""
+	}
+	return p.ProbeID
+}
+
+func (p *ProbeStoreResponse) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *ProbeStoreResponse) require(field *big.Int) {
+	if p.explicitFields == nil {
+		p.explicitFields = big.NewInt(0)
+	}
+	p.explicitFields.Or(p.explicitFields, field)
+}
+
+// SetChecks sets the Checks field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *ProbeStoreResponse) SetChecks(checks []*StoreProbeCheck) {
+	p.Checks = checks
+	p.require(probeStoreResponseFieldChecks)
+}
+
+// SetProbeID sets the ProbeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *ProbeStoreResponse) SetProbeID(probeID ProbeID) {
+	p.ProbeID = probeID
+	p.require(probeStoreResponseFieldProbeID)
+}
+
+func (p *ProbeStoreResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler ProbeStoreResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = ProbeStoreResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *ProbeStoreResponse) MarshalJSON() ([]byte, error) {
+	type embed ProbeStoreResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *ProbeStoreResponse) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
 // How recently a live read confirms the namespace head, without a maximum
 // staleness.
 //
@@ -9599,113 +9706,6 @@ func (s *StoreProbeCheckUnsupported) MarshalJSON() ([]byte, error) {
 }
 
 func (s *StoreProbeCheckUnsupported) String() string {
-	if s == nil {
-		return "<nil>"
-	}
-	if len(s.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(s); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", s)
-}
-
-// A request for one run of the store contract probe, with an empty body.
-type StoreProbeRequest = map[string]any
-
-// The results of one store contract probe, in order.
-var (
-	storeProbeResponseFieldChecks  = big.NewInt(1 << 0)
-	storeProbeResponseFieldProbeID = big.NewInt(1 << 1)
-)
-
-type StoreProbeResponse struct {
-	// The check results, in the order that the checks ran.
-	Checks []*StoreProbeCheck `json:"checks" url:"checks"`
-	// The ID of this probe run. The server generates the ID and writes the probe's temporary
-	// objects under it.
-	ProbeID ProbeID `json:"probe_id" url:"probe_id"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (s *StoreProbeResponse) GetChecks() []*StoreProbeCheck {
-	if s == nil {
-		return nil
-	}
-	return s.Checks
-}
-
-func (s *StoreProbeResponse) GetProbeID() ProbeID {
-	if s == nil {
-		return ""
-	}
-	return s.ProbeID
-}
-
-func (s *StoreProbeResponse) GetExtraProperties() map[string]interface{} {
-	if s == nil {
-		return nil
-	}
-	return s.extraProperties
-}
-
-func (s *StoreProbeResponse) require(field *big.Int) {
-	if s.explicitFields == nil {
-		s.explicitFields = big.NewInt(0)
-	}
-	s.explicitFields.Or(s.explicitFields, field)
-}
-
-// SetChecks sets the Checks field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StoreProbeResponse) SetChecks(checks []*StoreProbeCheck) {
-	s.Checks = checks
-	s.require(storeProbeResponseFieldChecks)
-}
-
-// SetProbeID sets the ProbeID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *StoreProbeResponse) SetProbeID(probeID ProbeID) {
-	s.ProbeID = probeID
-	s.require(storeProbeResponseFieldProbeID)
-}
-
-func (s *StoreProbeResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler StoreProbeResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*s = StoreProbeResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *s)
-	if err != nil {
-		return err
-	}
-	s.extraProperties = extraProperties
-	s.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (s *StoreProbeResponse) MarshalJSON() ([]byte, error) {
-	type embed StoreProbeResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*s),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (s *StoreProbeResponse) String() string {
 	if s == nil {
 		return "<nil>"
 	}

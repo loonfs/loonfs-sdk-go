@@ -3,6 +3,7 @@
 package maintenance
 
 import (
+	loonfssdkgo "github.com/loonfs/loonfs-sdk-go"
 	big "math/big"
 )
 
@@ -12,7 +13,7 @@ var (
 
 type DisableGrepIndexRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID loonfssdkgo.NamespaceID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -27,7 +28,7 @@ func (d *DisableGrepIndexRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DisableGrepIndexRequest) SetNamespaceID(namespaceID string) {
+func (d *DisableGrepIndexRequest) SetNamespaceID(namespaceID loonfssdkgo.NamespaceID) {
 	d.NamespaceID = namespaceID
 	d.require(disableGrepIndexRequestFieldNamespaceID)
 }
@@ -38,7 +39,7 @@ var (
 
 type EnableGrepIndexRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID loonfssdkgo.NamespaceID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -53,7 +54,7 @@ func (e *EnableGrepIndexRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *EnableGrepIndexRequest) SetNamespaceID(namespaceID string) {
+func (e *EnableGrepIndexRequest) SetNamespaceID(namespaceID loonfssdkgo.NamespaceID) {
 	e.NamespaceID = namespaceID
 	e.require(enableGrepIndexRequestFieldNamespaceID)
 }
@@ -64,7 +65,7 @@ var (
 
 type GetGrepIndexRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID loonfssdkgo.NamespaceID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -79,7 +80,7 @@ func (g *GetGrepIndexRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetGrepIndexRequest) SetNamespaceID(namespaceID string) {
+func (g *GetGrepIndexRequest) SetNamespaceID(namespaceID loonfssdkgo.NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getGrepIndexRequestFieldNamespaceID)
 }

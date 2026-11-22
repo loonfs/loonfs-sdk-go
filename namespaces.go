@@ -79,7 +79,7 @@ var (
 
 type DeleteNamespaceRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The head sequence that the namespace must still have for the delete to succeed.
 	ExpectedHeadSeq *CommitSeq `json:"-" url:"expected_head_seq,omitempty"`
 
@@ -96,7 +96,7 @@ func (d *DeleteNamespaceRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteNamespaceRequest) SetNamespaceID(namespaceID string) {
+func (d *DeleteNamespaceRequest) SetNamespaceID(namespaceID NamespaceID) {
 	d.NamespaceID = namespaceID
 	d.require(deleteNamespaceRequestFieldNamespaceID)
 }
@@ -116,7 +116,7 @@ var (
 
 type ForkNamespaceRequest struct {
 	// The source namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The durable ID of the new namespace that the fork creates. Without this field, LoonFS
 	// generates an ID. The response's `namespace_id` is the new namespace's ID.
 	NewNamespaceID *NamespaceID `json:"new_namespace_id,omitempty" url:"-"`
@@ -136,7 +136,7 @@ func (f *ForkNamespaceRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *ForkNamespaceRequest) SetNamespaceID(namespaceID string) {
+func (f *ForkNamespaceRequest) SetNamespaceID(namespaceID NamespaceID) {
 	f.NamespaceID = namespaceID
 	f.require(forkNamespaceRequestFieldNamespaceID)
 }
@@ -184,7 +184,7 @@ var (
 
 type ForkNamespaceForRebaseRequest struct {
 	// The namespace that the fork was forked from.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The durable ID of the new fork. Without this field, LoonFS generates an ID. The response's
 	// `namespace_id` is the new fork's ID.
 	NewNamespaceID *NamespaceID `json:"new_namespace_id,omitempty" url:"-"`
@@ -205,7 +205,7 @@ func (f *ForkNamespaceForRebaseRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *ForkNamespaceForRebaseRequest) SetNamespaceID(namespaceID string) {
+func (f *ForkNamespaceForRebaseRequest) SetNamespaceID(namespaceID NamespaceID) {
 	f.NamespaceID = namespaceID
 	f.require(forkNamespaceForRebaseRequestFieldNamespaceID)
 }
@@ -246,6 +246,42 @@ func (f *ForkNamespaceForRebaseRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	listNamespacesRequestFieldLimit  = big.NewInt(1 << 0)
+	listNamespacesRequestFieldCursor = big.NewInt(1 << 1)
+)
+
+type ListNamespacesRequest struct {
+	// The maximum number of namespace IDs the page lists from the store.
+	Limit *int `json:"-" url:"limit,omitempty"`
+	// The opaque cursor that the previous page returned.
+	Cursor *string `json:"-" url:"cursor,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (l *ListNamespacesRequest) require(field *big.Int) {
+	if l.explicitFields == nil {
+		l.explicitFields = big.NewInt(0)
+	}
+	l.explicitFields.Or(l.explicitFields, field)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListNamespacesRequest) SetLimit(limit *int) {
+	l.Limit = limit
+	l.require(listNamespacesRequestFieldLimit)
+}
+
+// SetCursor sets the Cursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListNamespacesRequest) SetCursor(cursor *string) {
+	l.Cursor = cursor
+	l.require(listNamespacesRequestFieldCursor)
+}
+
+var (
 	mergeForkRequestFieldNamespaceID       = big.NewInt(1 << 0)
 	mergeForkRequestFieldCommitID          = big.NewInt(1 << 1)
 	mergeForkRequestFieldMessage           = big.NewInt(1 << 2)
@@ -255,7 +291,7 @@ var (
 
 type MergeForkRequest struct {
 	// The namespace that the merge commits into.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The caller's idempotency key for the merge.
 	CommitID CommitID `json:"commit_id" url:"-"`
 	// An annotation from the caller. The message is part of the merge's identity.
@@ -280,7 +316,7 @@ func (m *MergeForkRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MergeForkRequest) SetNamespaceID(namespaceID string) {
+func (m *MergeForkRequest) SetNamespaceID(namespaceID NamespaceID) {
 	m.NamespaceID = namespaceID
 	m.require(mergeForkRequestFieldNamespaceID)
 }
@@ -343,7 +379,7 @@ var (
 
 type GetNextMergeRangeRequest struct {
 	// The namespace that the fork merges into.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The fork whose next merge into the namespace the query reads. It has to be a fork of the
 	// namespace, or the fork that a rebase replays into the namespace.
 	SourceNamespaceID NamespaceID `json:"-" url:"source_namespace_id"`
@@ -369,7 +405,7 @@ func (g *GetNextMergeRangeRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetNextMergeRangeRequest) SetNamespaceID(namespaceID string) {
+func (g *GetNextMergeRangeRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getNextMergeRangeRequestFieldNamespaceID)
 }
@@ -405,7 +441,7 @@ var (
 
 type ReplayForkRequest struct {
 	// The rebase's new fork, which the replay commit commits into.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The caller's idempotency key for the replay commit.
 	CommitID CommitID `json:"commit_id" url:"-"`
 	// An annotation from the caller. The message is part of the replay commit's identity.
@@ -430,7 +466,7 @@ func (r *ReplayForkRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (r *ReplayForkRequest) SetNamespaceID(namespaceID string) {
+func (r *ReplayForkRequest) SetNamespaceID(namespaceID NamespaceID) {
 	r.NamespaceID = namespaceID
 	r.require(replayForkRequestFieldNamespaceID)
 }
@@ -492,7 +528,7 @@ var (
 
 type GetNamespaceRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// How recently the read confirms the namespace head. `eventual` (the default, unless the
 	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
 	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
@@ -515,7 +551,7 @@ func (g *GetNamespaceRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetNamespaceRequest) SetNamespaceID(namespaceID string) {
+func (g *GetNamespaceRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getNamespaceRequestFieldNamespaceID)
 }
@@ -635,6 +671,112 @@ func (d *DeleteNamespaceResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", d)
+}
+
+// One page of the namespaces in a store.
+var (
+	listNamespacesResponseFieldNamespaces = big.NewInt(1 << 0)
+	listNamespacesResponseFieldNextCursor = big.NewInt(1 << 1)
+)
+
+type ListNamespacesResponse struct {
+	// The namespaces, in object-key order, which is namespace ID order except that an ID sorts
+	// after the longer IDs that extend it with `-` or `.`. Deleted namespaces and namespaces whose
+	// creation hasn't finished are left out, so a page can have fewer namespaces than its limit,
+	// even none, and still have a `next_cursor`.
+	Namespaces []*NamespaceMetadata `json:"namespaces" url:"namespaces"`
+	// An opaque cursor for the next page.
+	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *ListNamespacesResponse) GetNamespaces() []*NamespaceMetadata {
+	if l == nil {
+		return nil
+	}
+	return l.Namespaces
+}
+
+func (l *ListNamespacesResponse) GetNextCursor() *string {
+	if l == nil {
+		return nil
+	}
+	return l.NextCursor
+}
+
+func (l *ListNamespacesResponse) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *ListNamespacesResponse) require(field *big.Int) {
+	if l.explicitFields == nil {
+		l.explicitFields = big.NewInt(0)
+	}
+	l.explicitFields.Or(l.explicitFields, field)
+}
+
+// SetNamespaces sets the Namespaces field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListNamespacesResponse) SetNamespaces(namespaces []*NamespaceMetadata) {
+	l.Namespaces = namespaces
+	l.require(listNamespacesResponseFieldNamespaces)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListNamespacesResponse) SetNextCursor(nextCursor *string) {
+	l.NextCursor = nextCursor
+	l.require(listNamespacesResponseFieldNextCursor)
+}
+
+func (l *ListNamespacesResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListNamespacesResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = ListNamespacesResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *ListNamespacesResponse) MarshalJSON() ([]byte, error) {
+	type embed ListNamespacesResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *ListNamespacesResponse) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
 }
 
 // One inode whose change a merge can't apply, because the namespace being merged into changed
@@ -1174,19 +1316,25 @@ func (n *NamespaceMetadata) String() string {
 // a compaction might have removed the fork's newest merge from the namespace's merge index.
 var (
 	nextMergeRangeOutcomeForkPointBelowFloorFieldForkPointSeq      = big.NewInt(1 << 0)
-	nextMergeRangeOutcomeForkPointBelowFloorFieldRetentionFloorSeq = big.NewInt(1 << 1)
-	nextMergeRangeOutcomeForkPointBelowFloorFieldSourceHeadSeq     = big.NewInt(1 << 2)
+	nextMergeRangeOutcomeForkPointBelowFloorFieldNamespaceID       = big.NewInt(1 << 1)
+	nextMergeRangeOutcomeForkPointBelowFloorFieldRetentionFloorSeq = big.NewInt(1 << 2)
+	nextMergeRangeOutcomeForkPointBelowFloorFieldSourceHeadSeq     = big.NewInt(1 << 3)
+	nextMergeRangeOutcomeForkPointBelowFloorFieldSourceNamespaceID = big.NewInt(1 << 4)
 )
 
 type NextMergeRangeOutcomeForkPointBelowFloor struct {
 	// The sequence that the fork was made at, of the namespace or, for a rebase's new fork, of
 	// the namespace that the rebase forked.
 	ForkPointSeq CommitSeq `json:"fork_point_seq" url:"fork_point_seq"`
+	// The namespace that the fork merges into (or, for a rebase, the rebase's new fork).
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// The namespace's retention floor, which is above the fork point (for a rebase's new
 	// fork, above the new fork's own fork point).
 	RetentionFloorSeq CommitSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
 	// The fork's head sequence when the server read it.
 	SourceHeadSeq CommitSeq `json:"source_head_seq" url:"source_head_seq"`
+	// The fork whose next merge range was queried.
+	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"source_namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1202,6 +1350,13 @@ func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetForkPointSeq() CommitSeq {
 	return n.ForkPointSeq
 }
 
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetNamespaceID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.NamespaceID
+}
+
 func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetRetentionFloorSeq() CommitSeq {
 	if n == nil {
 		return 0
@@ -1214,6 +1369,13 @@ func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetSourceHeadSeq() CommitSeq 
 		return 0
 	}
 	return n.SourceHeadSeq
+}
+
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetSourceNamespaceID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.SourceNamespaceID
 }
 
 func (n *NextMergeRangeOutcomeForkPointBelowFloor) GetExtraProperties() map[string]interface{} {
@@ -1237,6 +1399,13 @@ func (n *NextMergeRangeOutcomeForkPointBelowFloor) SetForkPointSeq(forkPointSeq 
 	n.require(nextMergeRangeOutcomeForkPointBelowFloorFieldForkPointSeq)
 }
 
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) SetNamespaceID(namespaceID NamespaceID) {
+	n.NamespaceID = namespaceID
+	n.require(nextMergeRangeOutcomeForkPointBelowFloorFieldNamespaceID)
+}
+
 // SetRetentionFloorSeq sets the RetentionFloorSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NextMergeRangeOutcomeForkPointBelowFloor) SetRetentionFloorSeq(retentionFloorSeq CommitSeq) {
@@ -1249,6 +1418,13 @@ func (n *NextMergeRangeOutcomeForkPointBelowFloor) SetRetentionFloorSeq(retentio
 func (n *NextMergeRangeOutcomeForkPointBelowFloor) SetSourceHeadSeq(sourceHeadSeq CommitSeq) {
 	n.SourceHeadSeq = sourceHeadSeq
 	n.require(nextMergeRangeOutcomeForkPointBelowFloorFieldSourceHeadSeq)
+}
+
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeForkPointBelowFloor) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
+	n.SourceNamespaceID = sourceNamespaceID
+	n.require(nextMergeRangeOutcomeForkPointBelowFloorFieldSourceNamespaceID)
 }
 
 func (n *NextMergeRangeOutcomeForkPointBelowFloor) UnmarshalJSON(data []byte) error {
@@ -1295,10 +1471,12 @@ func (n *NextMergeRangeOutcomeForkPointBelowFloor) String() string {
 
 // The floors allow the next merge.
 var (
-	nextMergeRangeOutcomeOpenFieldForkPointSeq  = big.NewInt(1 << 0)
-	nextMergeRangeOutcomeOpenFieldMerge         = big.NewInt(1 << 1)
-	nextMergeRangeOutcomeOpenFieldNextAfterSeq  = big.NewInt(1 << 2)
-	nextMergeRangeOutcomeOpenFieldSourceHeadSeq = big.NewInt(1 << 3)
+	nextMergeRangeOutcomeOpenFieldForkPointSeq      = big.NewInt(1 << 0)
+	nextMergeRangeOutcomeOpenFieldMerge             = big.NewInt(1 << 1)
+	nextMergeRangeOutcomeOpenFieldNamespaceID       = big.NewInt(1 << 2)
+	nextMergeRangeOutcomeOpenFieldNextAfterSeq      = big.NewInt(1 << 3)
+	nextMergeRangeOutcomeOpenFieldSourceHeadSeq     = big.NewInt(1 << 4)
+	nextMergeRangeOutcomeOpenFieldSourceNamespaceID = big.NewInt(1 << 5)
 )
 
 type NextMergeRangeOutcomeOpen struct {
@@ -1309,12 +1487,16 @@ type NextMergeRangeOutcomeOpen struct {
 	// absent before the fork's first merge. In a rebase's new fork, it's the fork's newest
 	// replay commit, never a merge that the new fork inherited.
 	Merge *Merge `json:"merge,omitempty" url:"merge,omitempty"`
+	// The namespace that the fork merges into (or, for a rebase, the rebase's new fork).
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// The fork sequence that the next merge starts after: the newest merge's
 	// `source_through_seq`, or the fork point before the fork's first merge. In a rebase's
 	// new fork, it's the new fork's `resume_after_seq` before the first replay commit.
 	NextAfterSeq CommitSeq `json:"next_after_seq" url:"next_after_seq"`
 	// The fork's head sequence when the server read it.
 	SourceHeadSeq CommitSeq `json:"source_head_seq" url:"source_head_seq"`
+	// The fork whose next merge range was queried.
+	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"source_namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1337,6 +1519,13 @@ func (n *NextMergeRangeOutcomeOpen) GetMerge() *Merge {
 	return n.Merge
 }
 
+func (n *NextMergeRangeOutcomeOpen) GetNamespaceID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.NamespaceID
+}
+
 func (n *NextMergeRangeOutcomeOpen) GetNextAfterSeq() CommitSeq {
 	if n == nil {
 		return 0
@@ -1349,6 +1538,13 @@ func (n *NextMergeRangeOutcomeOpen) GetSourceHeadSeq() CommitSeq {
 		return 0
 	}
 	return n.SourceHeadSeq
+}
+
+func (n *NextMergeRangeOutcomeOpen) GetSourceNamespaceID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.SourceNamespaceID
 }
 
 func (n *NextMergeRangeOutcomeOpen) GetExtraProperties() map[string]interface{} {
@@ -1379,6 +1575,13 @@ func (n *NextMergeRangeOutcomeOpen) SetMerge(merge *Merge) {
 	n.require(nextMergeRangeOutcomeOpenFieldMerge)
 }
 
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeOpen) SetNamespaceID(namespaceID NamespaceID) {
+	n.NamespaceID = namespaceID
+	n.require(nextMergeRangeOutcomeOpenFieldNamespaceID)
+}
+
 // SetNextAfterSeq sets the NextAfterSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NextMergeRangeOutcomeOpen) SetNextAfterSeq(nextAfterSeq CommitSeq) {
@@ -1391,6 +1594,13 @@ func (n *NextMergeRangeOutcomeOpen) SetNextAfterSeq(nextAfterSeq CommitSeq) {
 func (n *NextMergeRangeOutcomeOpen) SetSourceHeadSeq(sourceHeadSeq CommitSeq) {
 	n.SourceHeadSeq = sourceHeadSeq
 	n.require(nextMergeRangeOutcomeOpenFieldSourceHeadSeq)
+}
+
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeOpen) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
+	n.SourceNamespaceID = sourceNamespaceID
+	n.require(nextMergeRangeOutcomeOpenFieldSourceNamespaceID)
 }
 
 func (n *NextMergeRangeOutcomeOpen) UnmarshalJSON(data []byte) error {
@@ -1441,9 +1651,11 @@ func (n *NextMergeRangeOutcomeOpen) String() string {
 var (
 	nextMergeRangeOutcomeRangeStartBelowFloorFieldForkPointSeq      = big.NewInt(1 << 0)
 	nextMergeRangeOutcomeRangeStartBelowFloorFieldMerge             = big.NewInt(1 << 1)
-	nextMergeRangeOutcomeRangeStartBelowFloorFieldNextAfterSeq      = big.NewInt(1 << 2)
-	nextMergeRangeOutcomeRangeStartBelowFloorFieldRetentionFloorSeq = big.NewInt(1 << 3)
-	nextMergeRangeOutcomeRangeStartBelowFloorFieldSourceHeadSeq     = big.NewInt(1 << 4)
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldNamespaceID       = big.NewInt(1 << 2)
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldNextAfterSeq      = big.NewInt(1 << 3)
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldRetentionFloorSeq = big.NewInt(1 << 4)
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldSourceHeadSeq     = big.NewInt(1 << 5)
+	nextMergeRangeOutcomeRangeStartBelowFloorFieldSourceNamespaceID = big.NewInt(1 << 6)
 )
 
 type NextMergeRangeOutcomeRangeStartBelowFloor struct {
@@ -1453,12 +1665,16 @@ type NextMergeRangeOutcomeRangeStartBelowFloor struct {
 	// The fork's newest merge into the namespace, as for `open`. It's absent before the
 	// fork's first merge.
 	Merge *Merge `json:"merge,omitempty" url:"merge,omitempty"`
+	// The namespace that the fork merges into (or, for a rebase, the rebase's new fork).
+	NamespaceID NamespaceID `json:"namespace_id" url:"namespace_id"`
 	// The fork sequence that the next merge would start after, as for `open`.
 	NextAfterSeq CommitSeq `json:"next_after_seq" url:"next_after_seq"`
 	// The fork's retention floor, which is above `next_after_seq`.
 	RetentionFloorSeq CommitSeq `json:"retention_floor_seq" url:"retention_floor_seq"`
 	// The fork's head sequence when the server read it.
 	SourceHeadSeq CommitSeq `json:"source_head_seq" url:"source_head_seq"`
+	// The fork whose next merge range was queried.
+	SourceNamespaceID NamespaceID `json:"source_namespace_id" url:"source_namespace_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1481,6 +1697,13 @@ func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetMerge() *Merge {
 	return n.Merge
 }
 
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetNamespaceID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.NamespaceID
+}
+
 func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetNextAfterSeq() CommitSeq {
 	if n == nil {
 		return 0
@@ -1500,6 +1723,13 @@ func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetSourceHeadSeq() CommitSeq
 		return 0
 	}
 	return n.SourceHeadSeq
+}
+
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetSourceNamespaceID() NamespaceID {
+	if n == nil {
+		return ""
+	}
+	return n.SourceNamespaceID
 }
 
 func (n *NextMergeRangeOutcomeRangeStartBelowFloor) GetExtraProperties() map[string]interface{} {
@@ -1530,6 +1760,13 @@ func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetMerge(merge *Merge) {
 	n.require(nextMergeRangeOutcomeRangeStartBelowFloorFieldMerge)
 }
 
+// SetNamespaceID sets the NamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetNamespaceID(namespaceID NamespaceID) {
+	n.NamespaceID = namespaceID
+	n.require(nextMergeRangeOutcomeRangeStartBelowFloorFieldNamespaceID)
+}
+
 // SetNextAfterSeq sets the NextAfterSeq field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetNextAfterSeq(nextAfterSeq CommitSeq) {
@@ -1549,6 +1786,13 @@ func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetRetentionFloorSeq(retenti
 func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetSourceHeadSeq(sourceHeadSeq CommitSeq) {
 	n.SourceHeadSeq = sourceHeadSeq
 	n.require(nextMergeRangeOutcomeRangeStartBelowFloorFieldSourceHeadSeq)
+}
+
+// SetSourceNamespaceID sets the SourceNamespaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NextMergeRangeOutcomeRangeStartBelowFloor) SetSourceNamespaceID(sourceNamespaceID NamespaceID) {
+	n.SourceNamespaceID = sourceNamespaceID
+	n.require(nextMergeRangeOutcomeRangeStartBelowFloorFieldSourceNamespaceID)
 }
 
 func (n *NextMergeRangeOutcomeRangeStartBelowFloor) UnmarshalJSON(data []byte) error {
@@ -1744,13 +1988,18 @@ func (n *NextMergeRangeResponse) validate() error {
 	return nil
 }
 
-// The result of a replay commit: the new fork, and the changes that the replay commit left out.
+// The result of a replay commit: the new fork, the replay commit, and the
+// changes that the replay commit left out.
 var (
-	replayForkResponseFieldConflicts = big.NewInt(1 << 0)
-	replayForkResponseFieldNamespace = big.NewInt(1 << 1)
+	replayForkResponseFieldCommit    = big.NewInt(1 << 0)
+	replayForkResponseFieldConflicts = big.NewInt(1 << 1)
+	replayForkResponseFieldNamespace = big.NewInt(1 << 2)
 )
 
 type ReplayForkResponse struct {
+	// The replay commit applied to the new fork. A retry with the same commit
+	// ID returns the same commit.
+	Commit *Commit `json:"commit" url:"commit"`
 	// The replay commit's conflict report, with one entry for each inode whose change the replay
 	// commit didn't apply. It's empty when the replay commit left nothing out. The replay
 	// commit's merge record stores the report, so a retry with the same commit ID returns the
@@ -1764,6 +2013,13 @@ type ReplayForkResponse struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (r *ReplayForkResponse) GetCommit() *Commit {
+	if r == nil {
+		return nil
+	}
+	return r.Commit
 }
 
 func (r *ReplayForkResponse) GetConflicts() []*MergeConflict {
@@ -1792,6 +2048,13 @@ func (r *ReplayForkResponse) require(field *big.Int) {
 		r.explicitFields = big.NewInt(0)
 	}
 	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetCommit sets the Commit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReplayForkResponse) SetCommit(commit *Commit) {
+	r.Commit = commit
+	r.require(replayForkResponseFieldCommit)
 }
 
 // SetConflicts sets the Conflicts field and marks it as non-optional;

@@ -41,7 +41,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &maintenance.ListSnapshotRecordsRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Maintenance.Snapshots.List(
 //	    context.TODO(),
@@ -115,8 +115,8 @@ func (c *Client) List(
 // Example:
 //
 //	request := &maintenance.GetSnapshotRecordRequest{
-//	    NamespaceID: "namespace_id",
-//	    SnapshotID: "snapshot_id",
+//	    NamespaceID: "demo",
+//	    SnapshotID: "snp_0000000000000tfy68ekkbj6bx",
 //	}
 //	client.Maintenance.Snapshots.Retrieve(
 //	    context.TODO(),

@@ -40,7 +40,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &maintenance.GetGrepIndexRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Maintenance.GrepIndex.Retrieve(
 //	    context.TODO(),
@@ -67,7 +67,7 @@ func (c *Client) Retrieve(
 // Example:
 //
 //	request := &maintenance.DisableGrepIndexRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Maintenance.GrepIndex.Disable(
 //	    context.TODO(),
@@ -94,7 +94,7 @@ func (c *Client) Disable(
 // Example:
 //
 //	request := &maintenance.EnableGrepIndexRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Maintenance.GrepIndex.Enable(
 //	    context.TODO(),

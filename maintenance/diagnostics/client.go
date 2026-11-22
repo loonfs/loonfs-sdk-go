@@ -40,7 +40,7 @@ func NewClient(options *core.RequestOptions) *Client {
 // Example:
 //
 //	request := &maintenance.GetNamespaceDiagnosticsRequest{
-//	    NamespaceID: "namespace_id",
+//	    NamespaceID: "demo",
 //	}
 //	client.Maintenance.Diagnostics.Retrieve(
 //	    context.TODO(),

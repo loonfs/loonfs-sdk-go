@@ -14,7 +14,7 @@ var (
 
 type CreateJobsRequest struct {
 	// The namespace ID.
-	NamespaceID string                                `json:"-" url:"-"`
+	NamespaceID loonfssdkgo.NamespaceID               `json:"-" url:"-"`
 	Body        *loonfssdkgo.RunMaintenanceJobRequest `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -30,7 +30,7 @@ func (c *CreateJobsRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateJobsRequest) SetNamespaceID(namespaceID string) {
+func (c *CreateJobsRequest) SetNamespaceID(namespaceID loonfssdkgo.NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(createJobsRequestFieldNamespaceID)
 }

@@ -16,9 +16,9 @@ var (
 
 type AbortUploadRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The upload session ID.
-	UploadID string `json:"-" url:"-"`
+	UploadID UploadID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -33,14 +33,14 @@ func (a *AbortUploadRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (a *AbortUploadRequest) SetNamespaceID(namespaceID string) {
+func (a *AbortUploadRequest) SetNamespaceID(namespaceID NamespaceID) {
 	a.NamespaceID = namespaceID
 	a.require(abortUploadRequestFieldNamespaceID)
 }
 
 // SetUploadID sets the UploadID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (a *AbortUploadRequest) SetUploadID(uploadID string) {
+func (a *AbortUploadRequest) SetUploadID(uploadID UploadID) {
 	a.UploadID = uploadID
 	a.require(abortUploadRequestFieldUploadID)
 }
@@ -52,9 +52,9 @@ var (
 
 type CompleteUploadRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The upload session ID.
-	UploadID string              `json:"-" url:"-"`
+	UploadID UploadID            `json:"-" url:"-"`
 	Body     *CompleteUploadBody `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -70,14 +70,14 @@ func (c *CompleteUploadRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CompleteUploadRequest) SetNamespaceID(namespaceID string) {
+func (c *CompleteUploadRequest) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(completeUploadRequestFieldNamespaceID)
 }
 
 // SetUploadID sets the UploadID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CompleteUploadRequest) SetUploadID(uploadID string) {
+func (c *CompleteUploadRequest) SetUploadID(uploadID UploadID) {
 	c.UploadID = uploadID
 	c.require(completeUploadRequestFieldUploadID)
 }
@@ -101,7 +101,7 @@ var (
 
 type CreateUploadRequest struct {
 	// The namespace ID.
-	NamespaceID string            `json:"-" url:"-"`
+	NamespaceID NamespaceID       `json:"-" url:"-"`
 	Body        *CreateUploadBody `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -117,7 +117,7 @@ func (c *CreateUploadRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateUploadRequest) SetNamespaceID(namespaceID string) {
+func (c *CreateUploadRequest) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(createUploadRequestFieldNamespaceID)
 }
@@ -142,9 +142,9 @@ var (
 
 type GetUploadRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The upload session ID.
-	UploadID string `json:"-" url:"-"`
+	UploadID UploadID `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -159,14 +159,14 @@ func (g *GetUploadRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetUploadRequest) SetNamespaceID(namespaceID string) {
+func (g *GetUploadRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getUploadRequestFieldNamespaceID)
 }
 
 // SetUploadID sets the UploadID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetUploadRequest) SetUploadID(uploadID string) {
+func (g *GetUploadRequest) SetUploadID(uploadID UploadID) {
 	g.UploadID = uploadID
 	g.require(getUploadRequestFieldUploadID)
 }
@@ -179,9 +179,9 @@ var (
 
 type SignUploadPartsRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The upload session ID.
-	UploadID string `json:"-" url:"-"`
+	UploadID UploadID `json:"-" url:"-"`
 	// The parts to authorize. A repeated part number replaces the earlier upload of that part.
 	Parts []*UploadPartChecksumClaim `json:"parts" url:"-"`
 
@@ -198,14 +198,14 @@ func (s *SignUploadPartsRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SignUploadPartsRequest) SetNamespaceID(namespaceID string) {
+func (s *SignUploadPartsRequest) SetNamespaceID(namespaceID NamespaceID) {
 	s.NamespaceID = namespaceID
 	s.require(signUploadPartsRequestFieldNamespaceID)
 }
 
 // SetUploadID sets the UploadID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SignUploadPartsRequest) SetUploadID(uploadID string) {
+func (s *SignUploadPartsRequest) SetUploadID(uploadID UploadID) {
 	s.UploadID = uploadID
 	s.require(signUploadPartsRequestFieldUploadID)
 }

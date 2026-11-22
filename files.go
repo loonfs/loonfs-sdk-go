@@ -23,7 +23,7 @@ type GetFileContentRequest struct {
 	// One byte range of the file to read instead of the whole file, as `bytes=start-end`, where `end` is the offset of the last byte, or as `bytes=start-`. An `end` past the last byte reads to the end of the file. Any other value, including a suffix range or several ranges, returns 400 `invalid_request`.
 	Range *string `json:"-" url:"-"`
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The absolute path of the file to read.
 	Path string `json:"-" url:"path"`
 	// An earlier revision to read. It can't be combined with `snapshot_id`.
@@ -59,7 +59,7 @@ func (g *GetFileContentRequest) SetRange(range_ *string) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetFileContentRequest) SetNamespaceID(namespaceID string) {
+func (g *GetFileContentRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getFileContentRequestFieldNamespaceID)
 }
@@ -111,7 +111,7 @@ var (
 
 type CreateDownloadRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// How recently the read confirms the namespace head. `eventual` (the default, unless the
 	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
 	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
@@ -147,7 +147,7 @@ func (c *CreateDownloadRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateDownloadRequest) SetNamespaceID(namespaceID string) {
+func (c *CreateDownloadRequest) SetNamespaceID(namespaceID NamespaceID) {
 	c.NamespaceID = namespaceID
 	c.require(createDownloadRequestFieldNamespaceID)
 }
@@ -231,7 +231,7 @@ var (
 
 type GrepRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The search pattern, in the Rust `regex` crate's syntax. Its UTF-8 encoding must be at most
 	// 1024 bytes.
 	Pattern string `json:"-" url:"pattern"`
@@ -274,7 +274,7 @@ func (g *GrepRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GrepRequest) SetNamespaceID(namespaceID string) {
+func (g *GrepRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(grepRequestFieldNamespaceID)
 }
@@ -363,7 +363,7 @@ var (
 
 type ListPathEntriesRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The absolute path of the directory to list.
 	Path string `json:"-" url:"path"`
 	// The maximum page size.
@@ -401,7 +401,7 @@ func (l *ListPathEntriesRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListPathEntriesRequest) SetNamespaceID(namespaceID string) {
+func (l *ListPathEntriesRequest) SetNamespaceID(namespaceID NamespaceID) {
 	l.NamespaceID = namespaceID
 	l.require(listPathEntriesRequestFieldNamespaceID)
 }
@@ -467,23 +467,27 @@ var (
 	listFileRevisionsRequestFieldPath           = big.NewInt(1 << 1)
 	listFileRevisionsRequestFieldLimit          = big.NewInt(1 << 2)
 	listFileRevisionsRequestFieldCursor         = big.NewInt(1 << 3)
-	listFileRevisionsRequestFieldConsistency    = big.NewInt(1 << 4)
-	listFileRevisionsRequestFieldMaxStalenessMs = big.NewInt(1 << 5)
+	listFileRevisionsRequestFieldSnapshotID     = big.NewInt(1 << 4)
+	listFileRevisionsRequestFieldConsistency    = big.NewInt(1 << 5)
+	listFileRevisionsRequestFieldMaxStalenessMs = big.NewInt(1 << 6)
 )
 
 type ListFileRevisionsRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The absolute path of the file.
 	Path string `json:"-" url:"path"`
 	// The maximum page size.
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// The opaque cursor that the previous page returned.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
+	// The snapshot whose state to list the file's revisions in. The listing starts at the
+	// revision that the snapshot captured.
+	SnapshotID *SnapshotID `json:"-" url:"snapshot_id,omitempty"`
 	// How recently the read confirms the namespace head. `eventual` (the default, unless the
 	// server's `consistency` setting is `strong`) reads at the head that the server confirmed last
 	// while that confirmation is younger than the maximum staleness, and `strong` confirms the
-	// head before the read.
+	// head before the read. It can't be combined with `snapshot_id`.
 	Consistency *ReadConsistency `json:"-" url:"consistency,omitempty"`
 	// With `consistency=eventual`, how old the server's last confirmation of the head can be, in
 	// milliseconds. The default is the server's `max_staleness_ms`.
@@ -502,7 +506,7 @@ func (l *ListFileRevisionsRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListFileRevisionsRequest) SetNamespaceID(namespaceID string) {
+func (l *ListFileRevisionsRequest) SetNamespaceID(namespaceID NamespaceID) {
 	l.NamespaceID = namespaceID
 	l.require(listFileRevisionsRequestFieldNamespaceID)
 }
@@ -526,6 +530,13 @@ func (l *ListFileRevisionsRequest) SetLimit(limit *int) {
 func (l *ListFileRevisionsRequest) SetCursor(cursor *string) {
 	l.Cursor = cursor
 	l.require(listFileRevisionsRequestFieldCursor)
+}
+
+// SetSnapshotID sets the SnapshotID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFileRevisionsRequest) SetSnapshotID(snapshotID *SnapshotID) {
+	l.SnapshotID = snapshotID
+	l.require(listFileRevisionsRequestFieldSnapshotID)
 }
 
 // SetConsistency sets the Consistency field and marks it as non-optional;
@@ -553,7 +564,7 @@ var (
 
 type GetPathEntryRequest struct {
 	// The namespace ID.
-	NamespaceID string `json:"-" url:"-"`
+	NamespaceID NamespaceID `json:"-" url:"-"`
 	// The absolute path to read.
 	Path string `json:"-" url:"path"`
 	// Whether the response includes the inode's attribute map and attribute revision. The default
@@ -583,7 +594,7 @@ func (g *GetPathEntryRequest) require(field *big.Int) {
 
 // SetNamespaceID sets the NamespaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetPathEntryRequest) SetNamespaceID(namespaceID string) {
+func (g *GetPathEntryRequest) SetNamespaceID(namespaceID NamespaceID) {
 	g.NamespaceID = namespaceID
 	g.require(getPathEntryRequestFieldNamespaceID)
 }

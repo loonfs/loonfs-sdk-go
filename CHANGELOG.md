@@ -1,3 +1,41 @@
+# Unreleased
+
+Regenerated from LoonFS d884e8165. The API version stays 0.6.0.
+
+Breaking changes:
+
+- The store probe types are `ProbeStoreRequest` and `ProbeStoreResponse`, and
+  the diff listing type is `ListDiffResponse`. They replace
+  `StoreProbeRequest`, `StoreProbeResponse`, and `DiffResponse`, which are
+  removed. `Maintenance.Store.Probe` and `Diff.List` return the new types. The
+  JSON is unchanged.
+
+Other changes:
+
+- `Namespaces.List` (`list_namespaces`, `GET /v0/namespaces`) lists the
+  store's namespaces in object-key order and returns a
+  `ListNamespacesResponse`. Each page lists up to `limit` namespace IDs from
+  the store, 100 by default and 1,000 at most, and leaves out deleted
+  namespaces and namespaces whose creation hasn't finished, so a page can have
+  fewer namespaces than `limit` and still include `next_cursor`. The method
+  returns a pager that follows `next_cursor`.
+- `Files.ListRevisions` and `Inodes.ListRevisions` take an optional
+  `SnapshotID`. The listing then reads the snapshot's state and starts at the
+  revision that the snapshot captured. A request can't combine it with
+  `Consistency`.
+- The three `NextMergeRangeResponse` outcomes include the required
+  `NamespaceID` and `SourceNamespaceID`.
+- `ReplayForkResponse.Commit` is required and contains the replay commit. A
+  retry with the same commit ID returns the same commit.
+- Path parameters use the ID types `NamespaceID`, `InodeID`, `SnapshotID`,
+  `UploadID`, and `PoolID`, which are Go type aliases for `string`.
+- `create_namespace`, `fork_namespace`, `create_snapshot`,
+  `create_download_by_inode`, `create_revision_download_by_inode`, and
+  `probe_store` accept a request with no body, which uses the defaults.
+- A request that repeats `Loonfs-Actor`, `Loonfs-Principals`, or
+  `Loonfs-Context` returns 400 `invalid_request`.
+- More routes declare their 403, 409, 410, and 501 responses.
+
 # SDK 0.6.0
 
 Regenerated from LoonFS da8a28cba, which sets the API version to 0.6.0. This
